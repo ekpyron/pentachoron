@@ -1,0 +1,12 @@
+#version 420 core
+layout(location = 0) out vec4 color;
+layout(binding = 0) uniform sampler2D texture;
+uniform uvec2 viewport;
+
+void main (void)
+{
+	vec2 coord;
+	coord = gl_FragCoord.xy / viewport;
+
+	color = texture2D (texture, coord).r * vec4 (1, 1, 1, 1);
+}

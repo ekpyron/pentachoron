@@ -1,0 +1,7 @@
+---
+basedir:       /home/daniel/dev/DRE/data
+window:	       { width: 1280, height: 800, fullscreen: false }
+font:          { fshader: font.fs, vshader: font.vs, font: Averia/Averia.ttf }
+model:	       kitty.yaml
+gbuffer:       { width: 1280, height: 800 }
+shadowmap:     { width: 4096, height: 4096 }

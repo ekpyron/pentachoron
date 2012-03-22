@@ -1,0 +1,49 @@
+#version 420 core
+
+layout(location = 0) out vec3 color;
+layout(location = 1) out vec3 normal;
+layout(location = 2) out vec3 specular;
+layout(location = 3) out float depth;
+
+layout(binding = 0) uniform sampler2D texture;
+layout(binding = 1) uniform sampler2D normalmap;
+layout(binding = 2) uniform sampler2D specularmap;
+uniform bool diffuse_enabled;
+uniform bool normalmap_enabled;
+uniform bool specularmap_enabled;
+
+in vec2 uv;
+
+smooth in vec3 fTangent;
+smooth in vec3 fBinormal;
+smooth in vec3 fNormal;
+
+void main (void)
+{
+	if (diffuse_enabled)
+		color = texture2D (texture, uv).xyz;
+	else
+		color = vec3 (1.0, 1.0, 1.0);
+
+	if (specularmap_enabled)
+		specular = texture2D (specularmap, uv).xyz;
+	else
+		specular = vec3 (0.0, 0.0, 0.0);
+
+	if (normalmap_enabled)
+	{
+		vec3 n;
+		mat3x3 tangentmat;
+		tangentmat = mat3x3 (fTangent, fBinormal, fNormal);
+
+		n.xy = texture2D (normalmap, uv).xy * 2.0 - 1.0;
+		n.z = sqrt (1.0 - n.x * n.x - n.y * n.y);
+		normal = (tangentmat * n) * 0.5 + 0.5;
+	}
+	else
+	{
+		normal = fNormal * 0.5 + 0.5;
+	}
+
+	depth = gl_FragCoord.z;
+}

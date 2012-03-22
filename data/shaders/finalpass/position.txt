@@ -1,0 +1,20 @@
+#version 420 core
+layout(location = 0) out vec4 color;
+layout(binding = 0) uniform sampler2D positionbuffer;
+uniform uvec2 viewport;
+uniform float farClipPlane;
+
+uniform mat4 projmat;
+uniform mat4 mvmat;
+
+void main (void)
+{
+	vec2 coord;
+	vec4 pos;
+	coord = gl_FragCoord.xy / viewport;
+	pos.xyz = texture2D (positionbuffer, coord).xyz;
+	pos.w = 1;
+//	pos = mvmat * pos;
+//	pos = projmat * pos;
+	color =  vec4 (pos.x, pos.y, pos.z, 1);
+}

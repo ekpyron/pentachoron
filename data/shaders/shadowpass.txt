@@ -1,0 +1,48 @@
+#version 420 core
+layout(location = 0) out float shadowmask;
+layout(binding = 0) uniform sampler2D shadowmap;
+
+uniform uvec2 viewport;
+
+struct Shadow
+{
+	mat4 mat;
+};
+uniform Shadow shadow;
+
+/* reconstructs object space coordinates
+ * from depth and w information */
+vec3 GetPos (in vec2 coord);
+
+void main (void)
+{
+	vec3 pos;
+	vec2 coord;
+
+	coord = gl_FragCoord.xy / viewport;
+
+	pos = GetPos (coord);
+
+	vec4 lspos;
+
+	lspos = shadow.mat * vec4 (pos, 1.0);
+	lspos.xyz /= lspos.w;
+	float shadowdepth;
+
+	if (lspos.w < 0
+	    || lspos.x < 0 || lspos.y < 0
+	    || lspos.x > 1 || lspos.y > 1)
+	{
+		discard;
+	}
+
+	shadowdepth = texture2D (shadowmap, lspos.xy).r;
+
+	lspos.z -= 0.001;
+	if (shadowdepth >= lspos.z)
+	{
+		discard;
+	}
+
+	shadowmask = 1;
+}
