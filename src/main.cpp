@@ -40,20 +40,12 @@ std::ostream *logstream;
 
 int main (int argc, char *argv[])
 {
+	std::ofstream logfile;
 #ifdef _WIN32
-	freopen ("stdout.txt", "a", stdout);
-	freopen ("stderr.txt", "a", stderr);
+	freopen ("CON", "a", stdout);
+	freopen ("CON", "a", stderr);
 #endif
-
-//	std::ofstream logfile;
 	try {
-/*		logfile.open ("DRE.log");
-		if (!logfile.is_open ())
-		{
-			std::cerr << "Cannot open log file." << std::endl;
-			return -1;
-			}*/
-
 		logstream = &std::cerr;
 	
 		if (argc > 2)
@@ -79,6 +71,17 @@ int main (int argc, char *argv[])
 										 << " has an invalid format." << std::endl;
 				return -1;
 			}
+		}
+
+		if (config["logfile"])
+		{
+			logfile.open (config["logfile"].as<std::string> ());
+			if (!logfile.is_open ())
+			{
+				(*logstream) << "Cannot open log file." << std::endl;
+				return -1;
+			}
+			logstream = &logfile;
 		}
 
 		int w, h;

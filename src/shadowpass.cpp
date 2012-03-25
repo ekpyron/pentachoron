@@ -80,7 +80,6 @@ bool ShadowPass::Init (void)
 
 	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
-	std::cerr << "Create from shadow mask" << std::endl;
 	shadowmem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, renderer->shadowpass.shadowmask);
 
