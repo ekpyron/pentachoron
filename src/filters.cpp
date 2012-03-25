@@ -49,13 +49,6 @@ bool Filters::Init (void)
 Blur Filters::CreateBlur (cl::Memory &memory, float sigma)
 {
 	cl::Memory weights;
-/*
-	cl::Memory memory;
-	std::cerr << "Create for Blur" << std::endl;
-	memory = renderer->clctx.CreateFromGLTexture2D (CL_MEM_READ_WRITE,
-																									GL_TEXTURE_2D,
-																									0, texture);*/
-
 	std::vector<float> weights_data;
 	for (int i = 0; i < ceil (2 * sigma); i++)
 	{

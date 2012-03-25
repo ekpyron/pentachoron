@@ -41,21 +41,18 @@ bool Composition::Init (void)
 									renderer->gbuffer.height,
 									0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-	std::cerr << "Create from screen" << std::endl;
 	screenmem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, screen);
 
-	std::cerr << "Create from color buffer" << std::endl;
 	colormem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.colorbuffer);
-	std::cerr << "Create from normal buffer" << std::endl;
+
 	normalmem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.normalbuffer);
-	std::cerr << "Create from specular buffer" << std::endl;
+
 	specularmem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.specularbuffer);
 
-	std::cerr << "Create from depth buffer" << std::endl;
 	depthmem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.depthbuffer);
 
@@ -99,10 +96,12 @@ void Composition::Frame (float timefactor)
 	const size_t local_dim[] = { 16, 16 };
 
 	queue.EnqueueAcquireGLObjects ({ screenmem, colormem, normalmem,
-				 specularmem, depthmem, renderer->shadowpass.shadowmem }, 0, NULL, NULL);
+				 specularmem, depthmem, renderer->shadowpass.shadowmem },
+		0, NULL, NULL);
 	queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
 															local_dim, 0, NULL, NULL);
 	queue.EnqueueReleaseGLObjects ({ screenmem, colormem, normalmem,
-				 specularmem, depthmem, renderer->shadowpass.shadowmem }, 0, NULL, NULL);
+				 specularmem, depthmem, renderer->shadowpass.shadowmem },
+		0, NULL, NULL);
 	queue.Flush ();
 }
