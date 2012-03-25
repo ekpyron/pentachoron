@@ -101,9 +101,11 @@ void ShadowMap::Render (const Geometry &geometry, const Shadow &shadow)
 
 	gl::CullFace (GL_FRONT);
 	gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	gl::DepthMask (GL_TRUE);
 
 	geometry.Render (program, vmat, true);
 
+	gl::DepthMask (GL_FALSE);
 	gl::ColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	gl::CullFace (GL_BACK);
 

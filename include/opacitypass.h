@@ -14,38 +14,25 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef GBUFFER_H
-#define GBUFFER_H
+#ifndef OPACITYPASS_H
+#define OPACITYPASS_H
 
 #include <common.h>
-#include "geometry.h"
 
 class Renderer;
 
-class GBuffer
+class OpacityPass
 {
 public:
-	 GBuffer (Renderer *parent);
-	 ~GBuffer (void);
+	 OpacityPass (Renderer *parent);
+	 ~OpacityPass (void);
 	 bool Init (void);
-	 void Render (const Geometry &geometry);
-
-	 gl::Texture colorbuffer;
-	 gl::Texture normalbuffer;
-	 gl::Texture specularbuffer;
-	 gl::Texture depthtexture;
-	 gl::Renderbuffer depthbuffer;
-
-	 GLuint width, height;
-
-	 gl::Framebuffer framebuffer;
-
+	 void Render (void);
+	 gl::Texture texture;
 private:
 	 gl::Program program;
-
+	 gl::Framebuffer framebuffer;
 	 Renderer *renderer;
-	 friend class Renderer;
 };
 
-
-#endif /* !defined GBUFFER_H */
+#endif /* !defined OPACITYPASS_H */

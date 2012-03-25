@@ -33,9 +33,11 @@ public:
 	 Scene &operator= (const Scene&) = delete;
 	 bool Load (const std::string &filename);
 	 void Render (const gl::Program &program, bool shadowpass) const;
+	 void RenderOpaque (const gl::Program &program) const;
 private:
 	 std::vector<Material> materials;
 	 std::vector<Mesh> meshes;
+	 std::vector<Mesh> opaque_meshes;
 	 friend class Material;
 	 friend class Mesh;
 	 Geometry *parent;

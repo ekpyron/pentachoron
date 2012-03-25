@@ -19,7 +19,7 @@
 Renderer::Renderer (void)
 	: geometry (this), shadowpass (this),
 		finalpass (this), gbuffer (this), filters (this),
-		interface (this), composition (this)
+		interface (this), composition (this), opacitypass (this)
 {
 }
 
@@ -46,6 +46,8 @@ bool Renderer::Init (void)
 	if (!filters.Init ())
 		 return false;
 	if (!shadowpass.Init ())
+		 return false;
+	if (!opacitypass.Init ())
 		 return false;
 
 	interface.AddLight (0);
@@ -96,6 +98,8 @@ void Renderer::Frame (void)
 		shadowpass.Render (shadow);
 	}
 	shadowpass.FrameFinish ();
+
+	opacitypass.Render ();
 
 	composition.Frame (timefactor);
 

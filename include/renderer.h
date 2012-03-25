@@ -24,6 +24,7 @@
 #include "windowgrid.h"
 #include "camera.h"
 #include "shadowpass.h"
+#include "opacitypass.h"
 #include "filters.h"
 #include "interface.h"
 #include "composition.h"
@@ -47,10 +48,12 @@ private:
 	 Geometry geometry;
 	 GBuffer gbuffer;
 	 ShadowPass shadowpass;
+	 OpacityPass opacitypass;
 	 FinalPass finalpass;
 	 WindowGrid windowgrid;
 	 Filters filters;
 	 Composition composition;
+	 gl::Program opacityprogram;
 
 	 std::vector<Shadow> shadows;
 
@@ -65,6 +68,7 @@ private:
 	 friend class GBuffer;
 	 friend class ShadowMap;
 	 friend class ShadowPass;
+	 friend class OpacityPass;
 	 friend class FinalPass;
 	 friend class Filters;
 	 friend class Interface;

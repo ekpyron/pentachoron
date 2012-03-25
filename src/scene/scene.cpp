@@ -28,6 +28,7 @@ Scene::Scene (Geometry *p) : parent (p)
 }
 
 Scene::Scene (Scene &&scene) : meshes (std::move (scene.meshes)),
+															 opaque_meshes (std::move (scene.opaque_meshes)),
 															 materials (std::move (scene.materials)),
 															 parent (scene.parent)
 {
@@ -40,6 +41,7 @@ Scene::~Scene (void)
 Scene &Scene::operator= (Scene &&scene)
 {
 	meshes = std::move (scene.meshes);
+	opaque_meshes = std::move (scene.opaque_meshes);
 	materials = std::move (scene.materials);
 	parent = scene.parent;
 }
@@ -156,11 +158,8 @@ bool Scene::Load (const std::string &filename)
 		return false;
 	}
 
-//	for (const YAML::Node &node : desc["meshes"])
-	for (auto it = desc["meshes"].begin (); it != desc["meshes"].end ();
-         it++)
+	for (const YAML::Node &node : desc["meshes"])
 	{
-		const YAML::Node &node = *it;
 		unsigned int mesh = node["number"].as<unsigned int> ();
 		const Material &material = parent->GetMaterial
 			 (node["material"].as<std::string> ());
@@ -178,17 +177,33 @@ bool Scene::Load (const std::string &filename)
 									 << " has an invalid primitive type." << std::endl;
 			return false;
 		}
-		meshes.emplace_back (*this);
-		if (!meshes.back ().Load (static_cast<void*> (scene->mMeshes[mesh]),
-															&material))
+		if (material.IsOpaque ())
 		{
-			(*logstream) << "Mesh " << mesh << " in " << modelfile
-									 << " could not be loaded." << std::endl;
-			return false;
+			(*logstream) << "Opaque Mesh here!" << std::endl;
+			opaque_meshes.emplace_back (*this);
+			if (!opaque_meshes.back ().Load (static_cast<void*>
+																			 (scene->mMeshes[mesh]),
+																			 &material))
+			{
+				(*logstream) << "Opaque mesh " << mesh << " in " << modelfile
+										 << " could not be loaded." << std::endl;
+				return false;
+			}
+		}
+		else
+		{
+			meshes.emplace_back (*this);
+			if (!meshes.back ().Load (static_cast<void*> (scene->mMeshes[mesh]),
+																&material))
+			{
+				(*logstream) << "Mesh " << mesh << " in " << modelfile
+										 << " could not be loaded." << std::endl;
+				return false;
+			}
 		}
 	}
 
-	if (meshes.size () < 1)
+	if (meshes.size () < 1 && opaque_meshes.size () < 1)
 	{
 		(*logstream) << filename << " contains no triangle meshes." << std::endl;
 		return false;
@@ -200,9 +215,16 @@ bool Scene::Load (const std::string &filename)
 
 void Scene::Render (const gl::Program &program, bool shadowpass) const
 {
-//	for (const Mesh &mesh : meshes)
-	for (auto it = meshes.begin (); it != meshes.end (); it++)
+	for (const Mesh &mesh : meshes)
 	{
-		it->Render (program, shadowpass);
+		mesh.Render (program, shadowpass);
+	}
+}
+
+void Scene::RenderOpaque (const gl::Program &program) const
+{
+	for (const Mesh &mesh : opaque_meshes)
+	{
+		mesh.Render (program, false);
 	}
 }

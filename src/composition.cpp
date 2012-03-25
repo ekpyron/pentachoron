@@ -54,7 +54,7 @@ bool Composition::Init (void)
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.specularbuffer);
 
 	depthmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.depthbuffer);
+		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.depthtexture);
 
 	queue = renderer->clctx.CreateCommandQueue (0);
 

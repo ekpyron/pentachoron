@@ -1,9 +1,7 @@
 #version 420 core
 layout(location = 0) out vec4 output;
 layout(binding = 0) uniform sampler2D colorbuffer;
-layout(binding = 1) uniform sampler2D diffusebuffer;
-layout(binding = 2) uniform sampler2D specularbuffer;
-uniform vec3 lightpos;
+layout(binding = 1) uniform sampler2D opacitybuffer;
 uniform uvec2 viewport;
 
 void main (void)
@@ -13,11 +11,8 @@ void main (void)
 	vec3 color;
 	color = texture2D (colorbuffer, coord).xyz;
 
-	vec3 diffuse;
-	diffuse = texture2D (diffusebuffer, coord).xyz + 0.05;
+	vec4 opaque;
+	opaque = texture2D (opacitybuffer, coord);
 
-	vec3 specular;
-	specular = texture2D (specularbuffer, coord).xyz;
-
-	output = vec4 (color * diffuse, 1) + vec4 (specular, 1);
+	output = vec4 (mix (color, opaque.xyz, opaque.w), 1.0);
 }

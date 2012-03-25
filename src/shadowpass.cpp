@@ -132,7 +132,6 @@ void ShadowPass::Render (const Shadow &shadow)
 	gl::Viewport (0, 0, renderer->gbuffer.width, renderer->gbuffer.height);
 
 	gl::Disable (GL_DEPTH_TEST);
-	gl::DepthMask (GL_FALSE);
 
 	gl::BlendEquation (GL_FUNC_REVERSE_SUBTRACT);
 	gl::BlendFunc (GL_ONE, GL_ONE);
@@ -141,12 +140,11 @@ void ShadowPass::Render (const Shadow &shadow)
 	renderer->windowgrid.sampler.Bind (0);
 	shadowmap.shadowmap.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	renderer->windowgrid.sampler.Bind (1);
-	renderer->gbuffer.depthbuffer.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
+	renderer->gbuffer.depthtexture.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 
 	pipeline.Bind ();
 	renderer->windowgrid.Render ();
 
-	gl::DepthMask (GL_TRUE);
 	gl::Disable (GL_BLEND);
 
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);

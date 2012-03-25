@@ -100,7 +100,9 @@ void FinalPass::Render (void)
 	case 0:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->composition.screen.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[2].Bind ();
+		renderer->windowgrid.sampler.Bind (1);
+		renderer->opacitypass.texture.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
+		pipelines[0].Bind ();
 		break;
 	case 1:
 		renderer->windowgrid.sampler.Bind (0);
@@ -132,12 +134,9 @@ void FinalPass::Render (void)
 		break;
 	}
 
-	gl::DepthMask (GL_FALSE);
 	gl::Disable (GL_DEPTH_TEST);
 
 	renderer->windowgrid.Render ();
-
-	gl::DepthMask (GL_TRUE);
 
 	GL_CHECK_ERROR;
 }
