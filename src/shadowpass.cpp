@@ -140,7 +140,7 @@ void ShadowPass::Render (const Shadow &shadow)
 	renderer->windowgrid.sampler.Bind (0);
 	shadowmap.shadowmap.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	renderer->windowgrid.sampler.Bind (1);
-	renderer->gbuffer.depthtexture.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
+	renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE1, GL_TEXTURE_RECTANGLE);
 
 	pipeline.Bind ();
 	renderer->windowgrid.Render ();

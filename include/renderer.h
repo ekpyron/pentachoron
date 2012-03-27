@@ -24,7 +24,6 @@
 #include "windowgrid.h"
 #include "camera.h"
 #include "shadowpass.h"
-#include "opacitypass.h"
 #include "filters.h"
 #include "interface.h"
 #include "composition.h"
@@ -48,7 +47,6 @@ private:
 	 Geometry geometry;
 	 GBuffer gbuffer;
 	 ShadowPass shadowpass;
-	 OpacityPass opacitypass;
 	 FinalPass finalpass;
 	 WindowGrid windowgrid;
 	 Filters filters;

@@ -50,7 +50,7 @@ bool GBuffer::Init (void)
 		{
 			(*logstream) << "Cannot compile "
 									 << MakePath ("shaders", "gbuffer", "fshader.txt")
-									 << ":" << std::endl << vshader.GetInfoLog () << std::endl;
+									 << ":" << std::endl << fshader.GetInfoLog () << std::endl;
 			return false;
 		}
 
@@ -70,28 +70,31 @@ bool GBuffer::Init (void)
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
-	colorbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
-											 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	normalbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
-												0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	specularbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
-													0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	depthtexture.Image2D (GL_TEXTURE_2D, 0, GL_R32F, width, height,
-												0, GL_RED, GL_FLOAT, NULL);
-	depthbuffer.Storage (GL_DEPTH_COMPONENT24, width, height);
-
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-												 colorbuffer, 0);
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
-												 normalbuffer, 0);
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
-												 specularbuffer, 0);
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
-												 depthtexture, 0);
-	framebuffer.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
-
-	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
-				 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
+	for (auto i = 0; i < layers; i++)
+	{
+		colorbuffer[i].Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
+														0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		normalbuffer[i].Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
+														 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		specularbuffer[i].Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
+															 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	
+		depthtexture[i].Image2D (GL_TEXTURE_RECTANGLE, 0, GL_R32F, width, height,
+														 0, GL_RED, GL_FLOAT, NULL);
+		depthbuffer[i].Storage (GL_DEPTH_COMPONENT24, width, height);
+		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+																 colorbuffer[i], 0);
+		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+																 normalbuffer[i], 0);
+		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+																 specularbuffer[i], 0);
+		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_RECTANGLE,
+															depthtexture[i], 0);
+		framebuffer[i].Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer[i]);
+		
+		framebuffer[i].DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+					 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
+	}
 
 	return true;
 }
@@ -100,28 +103,35 @@ void GBuffer::Render (const Geometry &geometry)
 {
 	program["projmat"] = renderer->camera.GetProjMatrix ();
 
-	framebuffer.Bind (GL_FRAMEBUFFER);
-	gl::Viewport (0, 0, width, height);
-
-	gl::ClearBufferfv (GL_COLOR, 0, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
-	gl::ClearBufferfv (GL_COLOR, 1, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
-	gl::ClearBufferfv (GL_COLOR, 2, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
-	gl::ClearBufferfv (GL_COLOR, 3, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
-	gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
-
 	gl::Enable (GL_DEPTH_TEST);
-
-	GL_CHECK_ERROR;
+	gl::DepthMask (GL_TRUE);
+	gl::DepthFunc (GL_LESS);
 
 	program.Use ();
 
-	gl::DepthMask (GL_TRUE);
-	geometry.Render (program, renderer->camera.GetViewMatrix ());
-	gl::DepthMask (GL_FALSE);
+	for (auto i = 0; i < layers; i++)
+	{
+		program["first_pass"] = (i == 0);
+		framebuffer[i].Bind (GL_FRAMEBUFFER);
+		gl::Viewport (0, 0, width, height);
+		
+		gl::ClearBufferfv (GL_COLOR, 0, (float[]) {0.0f, 0.0f, 0.0f, 1.0f} );
+		gl::ClearBufferfv (GL_COLOR, 1, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
+		gl::ClearBufferfv (GL_COLOR, 2, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
+		gl::ClearBufferfv (GL_COLOR, 3, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
+		gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
 
+		if (i)
+		{
+			depthtexture[i - 1].Bind (GL_TEXTURE3, GL_TEXTURE_RECTANGLE);
+		}
+
+		geometry.Render (program, renderer->camera.GetViewMatrix ());
+	}
+	gl::DepthMask (GL_FALSE);
 	gl::Program::UseNone ();
 	
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
-
+		
 	GL_CHECK_ERROR;
 }

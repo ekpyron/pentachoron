@@ -19,7 +19,7 @@
 Renderer::Renderer (void)
 	: geometry (this), shadowpass (this),
 		finalpass (this), gbuffer (this), filters (this),
-		interface (this), composition (this), opacitypass (this)
+		interface (this), composition (this)
 {
 }
 
@@ -33,28 +33,38 @@ bool Renderer::Init (void)
 	gl::CullFace (GL_BACK);
 	gl::Enable (GL_CULL_FACE);
 
+	(*logstream) << "Initialize Interface..." << std::endl;
+
 	if (!interface.Init ())
 		 return false;
 
+	(*logstream) << "Initialize Window Grid..." << std::endl;
 	if (!windowgrid.Init ())
 		 return false;
 
+	(*logstream) << "Initialize Geometry..." << std::endl;
 	if (!geometry.Init ())
 		 return false;
+
+	(*logstream) << "Initialize GBuffer..." << std::endl;
 	if (!gbuffer.Init ())
 		 return false;
+
+	(*logstream) << "Initialize Filters..." << std::endl;
 	if (!filters.Init ())
 		 return false;
+
+	(*logstream) << "Initialize Shadow Pass..." << std::endl;
 	if (!shadowpass.Init ())
-		 return false;
-	if (!opacitypass.Init ())
 		 return false;
 
 	interface.AddLight (0);
 
+	(*logstream) << "Initialize Composition..." << std::endl;
 	if (!composition.Init ())
 		 return false;
 
+	(*logstream) << "Initialize Final Pass..." << std::endl;
 	if (!finalpass.Init ())
 		 return false;
 
@@ -98,8 +108,6 @@ void Renderer::Frame (void)
 		shadowpass.Render (shadow);
 	}
 	shadowpass.FrameFinish ();
-
-	opacitypass.Render ();
 
 	composition.Frame (timefactor);
 

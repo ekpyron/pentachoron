@@ -18,6 +18,7 @@
 #define COMPOSITION_H
 
 #include <common.h>
+#include <gbuffer.h>
 
 class Renderer;
 
@@ -35,10 +36,10 @@ private:
 	 cl::Program program;
 	 cl::Kernel composition;
 	 cl::Memory screenmem;
-	 cl::Memory colormem;
-	 cl::Memory normalmem;
-	 cl::Memory specularmem;
-	 cl::Memory depthmem;
+	 cl::Memory colormem[GBuffer::layers];
+	 cl::Memory normalmem[GBuffer::layers];
+	 cl::Memory specularmem[GBuffer::layers];
+	 cl::Memory depthmem[GBuffer::layers];
 	 Renderer *renderer;
 };
 

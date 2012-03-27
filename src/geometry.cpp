@@ -81,6 +81,7 @@ void Geometry::Render (const gl::Program &program, const glm::mat4 &viewmat,
 	{
 		sampler.Bind (0);
 		sampler.Bind (1);
+		sampler.Bind (2);
 	}
 
 	for (int z = -3; z <= 3; z++)
@@ -103,32 +104,4 @@ void Geometry::Render (const gl::Program &program, const glm::mat4 &viewmat,
 	program["mvmat"] = viewmat;
 
 	grid.Render (program, shadowpass);
-}
-
-void Geometry::RenderOpaque (const gl::Program &program,
-														 const glm::mat4 &viewmat) const
-{
-	sampler.Bind (0);
-	sampler.Bind (1);
-
-	for (int z = -3; z <= 3; z++)
-	{
-		for (int x = -3; x <= 3; x++)
-		{
-			program["mvmat"] = glm::translate (viewmat,
-																				 glm::vec3 (5 * x, 0, 8 * z));
-			if ((x&1) + (z&1) == 0)
-			{
-				kitty.RenderOpaque (program);
-			}
-			else
-			{
-				box.RenderOpaque (program);
-			}
-		}
-	}
-
-	program["mvmat"] = viewmat;
-
-	grid.RenderOpaque (program);
 }

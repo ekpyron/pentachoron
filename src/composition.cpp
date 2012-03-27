@@ -42,25 +42,30 @@ bool Composition::Init (void)
 									0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 	screenmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, screen);
+		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, screen);
+	for (auto i = 0; i < GBuffer::layers; i++)
+	{
+		colormem[i] = renderer->clctx.CreateFromGLTexture2D
+			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
+				renderer->gbuffer.colorbuffer[i]);
 
-	colormem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.colorbuffer);
+		normalmem[i] = renderer->clctx.CreateFromGLTexture2D
+			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
+				renderer->gbuffer.normalbuffer[i]);
+	
+		specularmem[i] = renderer->clctx.CreateFromGLTexture2D
+			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
+				renderer->gbuffer.specularbuffer[i]);
 
-	normalmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.normalbuffer);
-
-	specularmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.specularbuffer);
-
-	depthmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderer->gbuffer.depthtexture);
+		depthmem[i] = renderer->clctx.CreateFromGLTexture2D
+			 (CL_MEM_READ_ONLY, GL_TEXTURE_RECTANGLE, 0,
+				renderer->gbuffer.depthtexture[i]);
+	}
 
 	queue = renderer->clctx.CreateCommandQueue (0);
 
 	return true;
 }
-
 
 void Composition::Frame (float timefactor)
 {
@@ -76,10 +81,10 @@ void Composition::Frame (float timefactor)
 	cl_uint num_lights = renderer->lights.size ();
 
 	composition.SetArg (0, screenmem);
-	composition.SetArg (1, colormem);
-	composition.SetArg (2, depthmem);
-	composition.SetArg (3, normalmem);
-	composition.SetArg (4, specularmem);
+	composition.SetArg (1, colormem[0]);
+	composition.SetArg (2, depthmem[0]);
+	composition.SetArg (3, normalmem[0]);
+	composition.SetArg (4, specularmem[0]);
 	composition.SetArg (5, renderer->shadowpass.shadowmem);
 	composition.SetArg (6, sizeof (cl_uint), &num_lights);
 	composition.SetArg (7, renderer->lightmem);
@@ -95,13 +100,13 @@ void Composition::Frame (float timefactor)
 															renderer->gbuffer.height };
 	const size_t local_dim[] = { 16, 16 };
 
-	queue.EnqueueAcquireGLObjects ({ screenmem, colormem, normalmem,
-				 specularmem, depthmem, renderer->shadowpass.shadowmem },
+	queue.EnqueueAcquireGLObjects ({ screenmem, colormem[0], normalmem[0],
+				 specularmem[0], depthmem[0], renderer->shadowpass.shadowmem },
 		0, NULL, NULL);
 	queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
 															local_dim, 0, NULL, NULL);
-	queue.EnqueueReleaseGLObjects ({ screenmem, colormem, normalmem,
-				 specularmem, depthmem, renderer->shadowpass.shadowmem },
+	queue.EnqueueReleaseGLObjects ({ screenmem, colormem[0], normalmem[0],
+				 specularmem[0], depthmem[0], renderer->shadowpass.shadowmem },
 		0, NULL, NULL);
-	queue.Flush ();
+	queue.Finish ();
 }

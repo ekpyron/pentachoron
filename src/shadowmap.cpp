@@ -91,8 +91,6 @@ void ShadowMap::Render (const Geometry &geometry, const Shadow &shadow)
 	framebuffer.Bind (GL_FRAMEBUFFER);
 	gl::Viewport (0, 0, width, height);
 
-	gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
-
 	gl::Enable (GL_DEPTH_TEST);
 
 	GL_CHECK_ERROR;
@@ -102,6 +100,7 @@ void ShadowMap::Render (const Geometry &geometry, const Shadow &shadow)
 	gl::CullFace (GL_FRONT);
 	gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 	gl::DepthMask (GL_TRUE);
+	gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
 
 	geometry.Render (program, vmat, true);
 

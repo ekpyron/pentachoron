@@ -2,8 +2,6 @@
 layout(location = 0) out float shadowmask;
 layout(binding = 0) uniform sampler2D shadowmap;
 
-uniform uvec2 viewport;
-
 struct Shadow
 {
 	mat4 mat;
@@ -12,16 +10,12 @@ uniform Shadow shadow;
 
 /* reconstructs object space coordinates
  * from depth and w information */
-vec3 GetPos (in vec2 coord);
+vec3 GetPos (void);
 
 void main (void)
 {
 	vec3 pos;
-	vec2 coord;
-
-	coord = gl_FragCoord.xy / viewport;
-
-	pos = GetPos (coord);
+	pos = GetPos ();
 
 	vec4 lspos;
 

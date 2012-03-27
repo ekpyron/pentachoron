@@ -1,18 +1,14 @@
 #version 420 core
 layout(location = 0) out vec4 output;
 layout(binding = 0) uniform sampler2D colorbuffer;
-layout(binding = 1) uniform sampler2D opacitybuffer;
 uniform uvec2 viewport;
 
 void main (void)
 {
 	vec2 coord = gl_FragCoord.xy / viewport;
 
-	vec3 color;
-	color = texture2D (colorbuffer, coord).xyz;
+	vec4 color;
+	color = texture2D (colorbuffer, coord);
 
-	vec4 opaque;
-	opaque = texture2D (opacitybuffer, coord);
-
-	output = vec4 (mix (color, opaque.xyz, opaque.w), 1.0);
+	output = color;
 }

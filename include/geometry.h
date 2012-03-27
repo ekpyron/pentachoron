@@ -33,8 +33,6 @@ public:
 	 void Render (const gl::Program &program,
 								const glm::mat4 &viewmat,
 								bool shadowpass = false) const;
-	 void RenderOpaque (const gl::Program &program,
-											const glm::mat4 &viewmat) const;
 	 const Material &GetMaterial (const std::string &name);
 
 private:

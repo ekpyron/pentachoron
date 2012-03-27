@@ -1,4 +1,5 @@
 #version 420 core
+
 /*
  * projinfo.x = 1.0f / projmat[0].x;
  * projinfo.y = 1.0f / projmat[1].y;
@@ -7,19 +8,21 @@
  */
 uniform vec4 projinfo;
 uniform mat4 vmatinv;
-layout(binding = 1) uniform sampler2D depthbuffer;
-
+layout(binding = 1) uniform samplerRect depthbuffer;
+uniform uvec2 viewport;
 
 /* reconstructs the object space coordinates
  * from depth and w information */
-vec3 GetPos (in vec2 coord)
+vec3 GetPos (void)
 {
 	vec4 pos;
 	float near = 0.1;
 	float far = 50.0;
 
 	// reconstruct clip coordinates
-	pos.xyz = vec3 (coord, texture2D (depthbuffer, coord).r) * 2 - 1;
+	pos.xyz = vec3 (gl_FragCoord.xy / viewport,
+		        texture (depthbuffer, gl_FragCoord.xy).r)
+		  * 2 - 1;
 	pos.w = 1;
 
 	// reconstruct eye coordinates

@@ -157,21 +157,16 @@ kernel void composition (write_only image2d_t screen,
 	diffuse *= shadow;
 	specular *= shadow;
 
-	float3 pixel = (float3) (0, 0, 0);
+	float4 pixel = read_imagef (colormap, sampler, (int2) (x, y));
 
-	if (any (diffuse > small4))
-	{
-		pixel = mad (read_imagef (colormap, sampler,
-		      	    		  (int2) (x, y)).xyz,
-		      	     diffuse, pixel);
-	}
+	pixel.xyz *= diffuse;
 
 	if (any (specular > small4))
 	{
-		pixel = mad (read_imagef (specularmap, sampler,
-			       	          (int2) (x, y)).xyz,
-			     specular, pixel);
+		specular *= read_imagef (specularmap, sampler,
+			    		 (int2) (x, y)).xyz;
+		pixel.xyz += specular;
 	}
 
-	write_imagef (screen, (int2) (x, y), (float4) (pixel, 1.0f));
+	write_imagef (screen, (int2) (x, y), pixel);
 }

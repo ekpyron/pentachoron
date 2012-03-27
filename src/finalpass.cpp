@@ -100,23 +100,21 @@ void FinalPass::Render (void)
 	case 0:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->composition.screen.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		renderer->windowgrid.sampler.Bind (1);
-		renderer->opacitypass.texture.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 		pipelines[0].Bind ();
 		break;
 	case 1:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.colorbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->gbuffer.colorbuffer[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[2].Bind ();
 		break;
 	case 2:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.normalbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->gbuffer.normalbuffer[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[1].Bind ();
 		break;
 	case 3:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.specularbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->gbuffer.specularbuffer[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[2].Bind ();
 		break;
 	case 4:

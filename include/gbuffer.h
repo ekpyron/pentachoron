@@ -30,15 +30,17 @@ public:
 	 bool Init (void);
 	 void Render (const Geometry &geometry);
 
-	 gl::Texture colorbuffer;
-	 gl::Texture normalbuffer;
-	 gl::Texture specularbuffer;
-	 gl::Texture depthtexture;
-	 gl::Renderbuffer depthbuffer;
+	 static const unsigned int layers = 3;
+
+	 gl::Texture colorbuffer[layers];
+	 gl::Texture normalbuffer[layers];
+	 gl::Texture specularbuffer[layers];
+	 gl::Texture depthtexture[layers];
+	 gl::Renderbuffer depthbuffer[layers];
 
 	 GLuint width, height;
 
-	 gl::Framebuffer framebuffer;
+	 gl::Framebuffer framebuffer[layers];
 
 private:
 	 gl::Program program;

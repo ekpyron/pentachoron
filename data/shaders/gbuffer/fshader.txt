@@ -1,13 +1,15 @@
 #version 420 core
 
-layout(location = 0) out vec3 color;
+layout(location = 0) out vec4 color;
 layout(location = 1) out vec3 normal;
 layout(location = 2) out vec3 specular;
 layout(location = 3) out float depth;
 
-layout(binding = 0) uniform sampler2D texture;
+layout(binding = 0) uniform sampler2D diffusemap;
 layout(binding = 1) uniform sampler2D normalmap;
 layout(binding = 2) uniform sampler2D specularmap;
+layout(binding = 3) uniform samplerRect depthtexture;
+uniform bool first_pass;
 uniform bool diffuse_enabled;
 uniform bool normalmap_enabled;
 uniform bool specularmap_enabled;
@@ -20,10 +22,20 @@ smooth in vec3 fNormal;
 
 void main (void)
 {
+	if (!first_pass)
+	{
+		float previous_depth;
+		previous_depth = texture (depthtexture, gl_FragCoord.xy).r;
+		if (previous_depth >= gl_FragCoord.z)
+		{
+			discard;
+		}
+	}
+
 	if (diffuse_enabled)
-		color = texture2D (texture, uv).xyz;
+		color = texture2D (diffusemap, uv);
 	else
-		color = vec3 (1.0, 1.0, 1.0);
+		color = vec4 (1.0, 1.0, 1.0, 1.0);
 
 	if (specularmap_enabled)
 		specular = texture2D (specularmap, uv).xyz;

@@ -30,7 +30,6 @@ public:
 	 Material &operator= (Material &&material);
 	 Material &operator= (const Material&) = delete;
 	 void Use (const gl::Program &program) const;
-	 bool IsOpaque (void) const;
 private:
 	 bool Load (const std::string &name);
 	 gl::Texture diffuse;
@@ -39,8 +38,6 @@ private:
 	 bool normalmap_enabled;
 	 gl::Texture specularmap;
 	 bool specularmap_enabled;
-	 gl::Texture opacitymap;
-	 bool opacitymap_enabled;
 	 friend class Scene;
 	 friend class Geometry;
 };
