@@ -150,6 +150,8 @@ float4 compute_pixel (read_only image2d_t colormap, read_only image2d_t depthbuf
 	diffuse *= shadow;
 	specular *= shadow;
 
+	diffuse += 0.1;
+
 	float4 pixel = read_imagef (colormap, sampler, (int2) (x, y));
 
 	pixel.xyz *= diffuse;
