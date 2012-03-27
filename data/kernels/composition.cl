@@ -33,25 +33,10 @@ float3 reflect (float3 I, float3 N)
 	return mad (-2.0 * dot (N, I), N, I);
 }
 
-kernel void composition (write_only image2d_t screen,
-	      		 read_only image2d_t colormap,
-			 read_only image2d_t depthbuffer,
-			 read_only image2d_t normalmap,
-			 read_only image2d_t specularmap,
-			 read_only image2d_t shadowmask,
-			 unsigned int num_lights,
-			 global struct Light *lights,
-			 struct ViewInfo info)
+float4 getpos (uint x, uint y, read_only image2d_t depthbuffer,
+               struct ViewInfo info)
 {
-	uint lx = get_local_id (0),
-	    ly = get_local_id (1);
-	uint x = mad24 (get_group_id (0), get_local_size (0), lx),
-	    y = mad24 (get_group_id (1), get_local_size (1), ly);
-	uint offset = mad24 (ly, get_local_size (1), lx);
-
-	float depth;
-	depth = read_imagef (depthbuffer, sampler, (int2) (x, y)).x;
-
+	float depth = read_imagef (depthbuffer, sampler, (int2) (x, y)).x;
 	float4 pos;
 	pos.x = native_divide ((float)x, (float)get_image_width (depthbuffer));
 	pos.y = native_divide ((float)y, (float)get_image_height (depthbuffer));
@@ -73,25 +58,32 @@ kernel void composition (write_only image2d_t screen,
 	pos.w = dot (info.vmatinv[3], p);
 	pos.xyz = native_divide (pos.xyz, pos.w);
 
-	float shadow;
-	shadow = read_imagef (shadowmask, sampler, (int2) (x, y)).x;
+	return pos;
+}
 
+float4 compute_pixel (read_only image2d_t colormap, read_only image2d_t depthbuffer, read_only image2d_t normalmap, read_only image2d_t specularmap,
+       	        read_only image2d_t shadowmask, uint offset, uint x, uint y, unsigned int num_lights, global struct Light *lights, struct ViewInfo info)
+{
+	float4 pos = getpos (x, y, depthbuffer, info);
 	float3 diffuse = (float3) (0, 0, 0);
 	float3 specular = (float3) (0, 0, 0);
-
 	local ushort light_indices[256];
 	local uint num_light_indices;
+
+	float shadow;
+
+	shadow = read_imagef (shadowmask, sampler, (int2) (x, y)).x;
 
 	local float min_depth, max_depth;
 
 	min_depth = FLT_MAX;
 	max_depth = FLT_MIN;
 
-	barrier (CLK_LOCAL_MEM_FENCE);
+/*	barrier (CLK_LOCAL_MEM_FENCE);
 
 	// TODO: maybe atomic operations are in fact necessary
 	min_depth = min (min_depth, depth);
-	max_depth = max (max_depth, depth);
+	max_depth = max (max_depth, depth);*/
 
 	num_light_indices = 0;
 
@@ -103,6 +95,7 @@ kernel void composition (write_only image2d_t screen,
 		ulong light = atom_inc (&num_light_indices);
 		light_indices[light] = offset;
 	}
+
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
@@ -166,6 +159,39 @@ kernel void composition (write_only image2d_t screen,
 		specular *= read_imagef (specularmap, sampler,
 			    		 (int2) (x, y)).xyz;
 		pixel.xyz += specular;
+	}
+
+	return pixel;
+}
+
+kernel void composition (write_only image2d_t screen,
+	      		 read_only image2d_t colormap,
+	      		 read_only image2d_t colormap2,
+			 read_only image2d_t depthbuffer,
+			 read_only image2d_t depthbuffer2,
+			 read_only image2d_t normalmap,
+			 read_only image2d_t normalmap2,
+			 read_only image2d_t specularmap,
+			 read_only image2d_t specularmap2,
+			 read_only image2d_t shadowmask,
+			 unsigned int num_lights,
+			 global struct Light *lights,
+			 struct ViewInfo info)
+{
+	uint lx = get_local_id (0),
+	    ly = get_local_id (1);
+	uint x = mad24 (get_group_id (0), get_local_size (0), lx),
+	    y = mad24 (get_group_id (1), get_local_size (1), ly);
+	uint offset = mad24 (ly, get_local_size (1), lx);
+
+	float4 pixel;
+
+	pixel = compute_pixel (colormap, depthbuffer, normalmap, specularmap, shadowmask, offset, x, y, num_lights, lights, info);
+	if (pixel.w < 1)
+	{
+		float4 pixel2;
+		pixel2 = compute_pixel (colormap2, depthbuffer2, normalmap2, specularmap2, shadowmask, offset, x, y, num_lights, lights, info);
+		pixel = pixel * pixel.w + pixel2 * (1 - pixel.w);
 	}
 
 	write_imagef (screen, (int2) (x, y), pixel);
