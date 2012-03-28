@@ -83,36 +83,42 @@ void Composition::Frame (float timefactor)
 	composition.SetArg (0, screenmem);
 	composition.SetArg (1, colormem[0]);
 	composition.SetArg (2, colormem[1]);
-	composition.SetArg (3, depthmem[0]);
-	composition.SetArg (4, depthmem[1]);
-	composition.SetArg (5, normalmem[0]);
-	composition.SetArg (6, normalmem[1]);
-	composition.SetArg (7, specularmem[0]);
-	composition.SetArg (8, specularmem[1]);
-	composition.SetArg (9, renderer->shadowpass.shadowmem);
-	composition.SetArg (10, sizeof (cl_uint), &num_lights);
-	composition.SetArg (11, renderer->lightmem);
+	composition.SetArg (3, colormem[2]);
+	composition.SetArg (4, depthmem[0]);
+	composition.SetArg (5, depthmem[1]);
+	composition.SetArg (6, depthmem[2]);
+	composition.SetArg (7, normalmem[0]);
+	composition.SetArg (8, normalmem[1]);
+	composition.SetArg (9, normalmem[2]);
+	composition.SetArg (10, specularmem[0]);
+	composition.SetArg (11, specularmem[1]);
+	composition.SetArg (12, specularmem[2]);
+	composition.SetArg (13, renderer->shadowpass.shadowmem);
+	composition.SetArg (14, sizeof (cl_uint), &num_lights);
+	composition.SetArg (15, renderer->lightmem);
 
 	info.projinfo = renderer->camera.GetProjInfo ();
 	info.vmatinv = glm::transpose
 		 (glm::inverse (renderer->camera.GetViewMatrix ()));
 	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
 
-	composition.SetArg (12, sizeof (ViewInfo), &info);
+	composition.SetArg (16, sizeof (ViewInfo), &info);
 
 	const size_t work_dim[] = { renderer->gbuffer.width,
 															renderer->gbuffer.height };
 	const size_t local_dim[] = { 16, 16 };
 
 	queue.EnqueueAcquireGLObjects ({ screenmem, colormem[0], colormem[1],
-				 normalmem[0], normalmem[1], specularmem[0], specularmem[1],
-				 depthmem[0], depthmem[1], renderer->shadowpass.shadowmem },
+				 colormem[2],  normalmem[0], normalmem[1], normalmem[2],
+				 specularmem[0], specularmem[1], specularmem[2], depthmem[0],
+				 depthmem[1], depthmem[2], renderer->shadowpass.shadowmem },
 		0, NULL, NULL);
 	queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
 															local_dim, 0, NULL, NULL);
 	queue.EnqueueReleaseGLObjects ({ screenmem, colormem[0], colormem[1],
-				 normalmem[0], normalmem[1], specularmem[0], specularmem[1],
-				 depthmem[0], depthmem[1], renderer->shadowpass.shadowmem },
+				 colormem[2], normalmem[0], normalmem[1], normalmem[2],
+				 specularmem[0], specularmem[1], specularmem[2], depthmem[0],
+				 depthmem[1], depthmem[2], renderer->shadowpass.shadowmem },
 		0, NULL, NULL);
 //	queue.Flush ();
 }

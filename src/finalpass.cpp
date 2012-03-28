@@ -104,7 +104,7 @@ void FinalPass::Render (void)
 		break;
 	case 1:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.colorbuffer[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->gbuffer.colorbuffer[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[2].Bind ();
 		break;
 	case 2:

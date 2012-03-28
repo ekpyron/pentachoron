@@ -9,15 +9,15 @@ constant float4 small4 = (float4) (0.001, 0.001, 0.001, 0.001);
 struct Light
 {
 	union {
-	struct {
-	float4 position;
-	float4 color;
-	float4 direction;
-	float4 spot;
-	float4 specular;
-	float4 attenuation;
-	};
-	float4 data[6];
+	      struct {
+	      	     float4 position;
+		     float4 color;
+		     float4 direction;
+		     float4 spot;
+		     float4 specular;
+		     float4 attenuation;
+	      };
+	      float4 data[6];
 	};
 };
 
@@ -62,17 +62,13 @@ float4 getpos (uint x, uint y, read_only image2d_t depthbuffer,
 }
 
 float4 compute_pixel (read_only image2d_t colormap, read_only image2d_t depthbuffer, read_only image2d_t normalmap, read_only image2d_t specularmap,
-       	        read_only image2d_t shadowmask, uint offset, uint x, uint y, unsigned int num_lights, global struct Light *lights, struct ViewInfo info)
+       	        float shadow, uint offset, uint x, uint y, unsigned int num_lights, global struct Light *lights, struct ViewInfo info)
 {
 	float4 pos = getpos (x, y, depthbuffer, info);
 	float3 diffuse = (float3) (0, 0, 0);
 	float3 specular = (float3) (0, 0, 0);
 	local ushort light_indices[256];
 	local uint num_light_indices;
-
-	float shadow;
-
-	shadow = read_imagef (shadowmask, sampler, (int2) (x, y)).x;
 
 	local float min_depth, max_depth;
 
@@ -169,12 +165,16 @@ float4 compute_pixel (read_only image2d_t colormap, read_only image2d_t depthbuf
 kernel void composition (write_only image2d_t screen,
 	      		 read_only image2d_t colormap,
 	      		 read_only image2d_t colormap2,
+	      		 read_only image2d_t colormap3,
 			 read_only image2d_t depthbuffer,
 			 read_only image2d_t depthbuffer2,
+			 read_only image2d_t depthbuffer3,
 			 read_only image2d_t normalmap,
 			 read_only image2d_t normalmap2,
+			 read_only image2d_t normalmap3,
 			 read_only image2d_t specularmap,
 			 read_only image2d_t specularmap2,
+			 read_only image2d_t specularmap3,
 			 read_only image2d_t shadowmask,
 			 unsigned int num_lights,
 			 global struct Light *lights,
@@ -185,15 +185,29 @@ kernel void composition (write_only image2d_t screen,
 	uint x = mad24 (get_group_id (0), get_local_size (0), lx),
 	    y = mad24 (get_group_id (1), get_local_size (1), ly);
 	uint offset = mad24 (ly, get_local_size (1), lx);
+	float shadow = read_imagef (shadowmask, sampler, (int2) (x, y)).x;
 
 	float4 pixel;
 
-	pixel = compute_pixel (colormap, depthbuffer, normalmap, specularmap, shadowmask, offset, x, y, num_lights, lights, info);
-	if (pixel.w < 1)
+	pixel = compute_pixel (colormap, depthbuffer, normalmap,
+	      		       specularmap, shadow, offset,
+			       x, y, num_lights, lights, info);
+	if (pixel.w < 0.99)
 	{
 		float4 pixel2;
-		pixel2 = compute_pixel (colormap2, depthbuffer2, normalmap2, specularmap2, shadowmask, offset, x, y, num_lights, lights, info);
-		pixel = mix (pixel2, pixel, pixel.w);
+		pixel2 = compute_pixel (colormap2, depthbuffer2,
+		       	 	        normalmap2, specularmap2,
+					shadow, offset, x, y,
+					num_lights, lights, info);
+		pixel.xyz = mix (pixel2.xyz, pixel.xyz, pixel.w);
+		if (pixel.w < 0.99)
+		{
+			pixel2.xyz = compute_pixel (colormap3, depthbuffer3,
+			       	 	        normalmap3, specularmap3,
+						shadow, offset, x, y,
+						num_lights, lights, info).xyz;
+			pixel.xyz = mix (pixel2.xyz, pixel.xyz, pixel2.w);
+		}
 	}
 
 	write_imagef (screen, (int2) (x, y), pixel);

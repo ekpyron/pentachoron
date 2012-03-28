@@ -131,11 +131,6 @@ bool Mesh::Load (void *m, const Material *mat)
 		}
 	}
 
-	(*logstream) << "Bounding box: (" << bsphere.center.x << ", "
-							 << bsphere.center.y << ", " << bsphere.center.z << "): "
-							 << bsphere.radius << std::endl;
-
-
 	buffers.emplace_back ();
 	buffers.back ().Data (vertexcount * sizeof (aiVector3D),
 												mesh->mVertices, GL_STATIC_DRAW);
