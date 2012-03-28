@@ -193,7 +193,7 @@ kernel void composition (write_only image2d_t screen,
 	{
 		float4 pixel2;
 		pixel2 = compute_pixel (colormap2, depthbuffer2, normalmap2, specularmap2, shadowmask, offset, x, y, num_lights, lights, info);
-		pixel = pixel * pixel.w + pixel2 * (1 - pixel.w);
+		pixel = mix (pixel2, pixel, pixel.w);
 	}
 
 	write_imagef (screen, (int2) (x, y), pixel);

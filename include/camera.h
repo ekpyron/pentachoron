@@ -35,6 +35,8 @@ public:
 	 float GetNearClipPlane (void) const;
 	 float GetFarClipPlane (void) const;
 	 glm::vec4 GetProjInfo (void) const;
+	 bool IsVisible (const glm::mat4 &mmat, const glm::vec3 &center,
+									 float radius) const;
 private:
 	 glm::uvec2 viewport;
 	 float farClipPlane;

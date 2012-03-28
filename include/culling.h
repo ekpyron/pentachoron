@@ -1,4 +1,4 @@
-/*
+/*  
  * This file is part of DRE.
  *
  * DRE is free software: you can redistribute it and/or modify
@@ -14,42 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef MESH_H
-#define MESH_H
+#ifndef CULLING_H
+#define CULLING_H
 
 #include <common.h>
-#include <oglp/oglp.h>
 
-class Scene;
-class Material;
-
-class Mesh
+class Culling
 {
 public:
-	 Mesh (Scene &scene);
-	 Mesh (Mesh &&mesh);
-	 Mesh (const Mesh&) = delete;
-	 ~Mesh (void);
-	 Mesh &operator= (Mesh &&mesh);
-	 Mesh &operator= (const Mesh&) = delete;
-	 void Render (const gl::Program &program, bool shadowpass) const;
+	 Culling (void);
+	 ~Culling (void);
+	 bool IsVisible (const glm::vec3 &center, float radius) const;
+	 void SetProjMatrix (const glm::mat4 &mat);
+	 void SetModelViewMatrix (const glm::mat4 &mat);
+	 void Frame (void);
 private:
-	 bool Load (void*, const Material *mat);
-	 Scene &parent;
-	 friend class Scene;
-	 const Material *material;
-
-	 struct
-	 {
-			glm::vec3 center;
-			float radius;
-	 } bsphere;
-
-	 gl::VertexArray vertexarray, shadowpassarray;
-	 GLuint trianglecount;
-	 GLuint vertexcount;
-	 std::vector<gl::Buffer> buffers;
-	 gl::Buffer indices;
+	 glm::mat4 projmat, mvmat;
 };
 
-#endif /* !defined MESH_H */
+#endif /* !defined CULLING_H */

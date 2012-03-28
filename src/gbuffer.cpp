@@ -102,6 +102,7 @@ bool GBuffer::Init (void)
 void GBuffer::Render (const Geometry &geometry)
 {
 	program["projmat"] = renderer->camera.GetProjMatrix ();
+	renderer->culling.SetProjMatrix (renderer->camera.GetProjMatrix ());
 
 	gl::Enable (GL_DEPTH_TEST);
 	gl::DepthMask (GL_TRUE);

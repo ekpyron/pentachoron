@@ -114,5 +114,5 @@ void Composition::Frame (float timefactor)
 				 normalmem[0], normalmem[1], specularmem[0], specularmem[1],
 				 depthmem[0], depthmem[1], renderer->shadowpass.shadowmem },
 		0, NULL, NULL);
-	queue.Finish ();
+//	queue.Flush ();
 }

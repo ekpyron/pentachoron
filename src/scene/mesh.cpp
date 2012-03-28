@@ -20,9 +20,11 @@
 #include <iostream>
 #include "scene/scene.h"
 #include "geometry.h"
+#include "renderer.h"
 
 Mesh::Mesh (Scene &scene) : trianglecount (0), vertexcount (0),
-														parent (scene), material (NULL)
+														parent (scene), material (NULL),
+														bsphere ({ glm::vec3 (0, 0, 0), 0.0f })
 {
 }
 
@@ -34,9 +36,12 @@ Mesh::Mesh (Mesh &&mesh)
 		buffers (std::move (mesh.buffers)),
 		indices (std::move (mesh.indices)),
 		material (mesh.material),
-		parent (mesh.parent)
+		parent (mesh.parent),
+		bsphere ({ mesh.bsphere.center, mesh.bsphere.radius })
 {
 	mesh.trianglecount = mesh.vertexcount = 0;
+	mesh.bsphere.center = glm::vec3 (0, 0, 0);
+	mesh.bsphere.radius = 0.0f;
 	mesh.material = NULL;
 }
 
@@ -53,9 +58,13 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 	buffers = std::move (mesh.buffers);
 	indices = std::move (indices);
 	material = mesh.material;
+	bsphere.center = mesh.bsphere.center;
+	bsphere.radius = mesh.bsphere.radius;
 	parent = std::move (mesh.parent);
 	mesh.trianglecount = mesh.vertexcount = 0;
 	mesh.material = NULL;
+	mesh.bsphere.center = glm::vec3 (0, 0, 0);
+	mesh.bsphere.radius = 0.0f;
 }
 
 bool Mesh::Load (void *m, const Material *mat)
@@ -97,6 +106,35 @@ bool Mesh::Load (void *m, const Material *mat)
 
 	trianglecount = mesh->mNumFaces;
 	vertexcount = mesh->mNumVertices;
+
+	// calculate the center of the bounding sphere
+	{
+		float factor = 1.0f / float (vertexcount);
+		bsphere.center = glm::vec3 (0, 0, 0);
+		for (auto i = 0; i < vertexcount; i++)
+		{
+			glm::vec3 vertex (mesh->mVertices[i].x, mesh->mVertices[i].y,
+												mesh->mVertices[i].z);
+			bsphere.center += factor * vertex;
+		}
+	}
+	// calculate the radius of the bounding sphere
+	{
+		bsphere.radius = 0;
+		for (auto i = 0; i < vertexcount; i++)
+		{
+			glm::vec3 vertex (mesh->mVertices[i].x, mesh->mVertices[i].y,
+												mesh->mVertices[i].z);
+			float distance = glm::distance (bsphere.center, vertex);
+			if (distance > bsphere.radius)
+				 bsphere.radius = distance;
+		}
+	}
+
+	(*logstream) << "Bounding box: (" << bsphere.center.x << ", "
+							 << bsphere.center.y << ", " << bsphere.center.z << "): "
+							 << bsphere.radius << std::endl;
+
 
 	buffers.emplace_back ();
 	buffers.back ().Data (vertexcount * sizeof (aiVector3D),
@@ -157,6 +195,9 @@ bool Mesh::Load (void *m, const Material *mat)
 
 void Mesh::Render (const gl::Program &program, bool shadowpass) const
 {
+	if (!parent.parent->renderer->culling.IsVisible
+			(bsphere.center, bsphere.radius))
+		return;
 	if (!shadowpass)
 	{
 		material->Use (program);

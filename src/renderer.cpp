@@ -100,6 +100,7 @@ void Renderer::Frame (void)
 	}
 
 	camera.Frame (timefactor);
+	culling.Frame ();
 	gbuffer.Render (geometry);
 
 	shadowpass.FrameInit ();

@@ -87,6 +87,7 @@ void ShadowMap::Render (const Geometry &geometry, const Shadow &shadow)
 	projmat = glm::perspective (2 * shadow.spot.angle * 180.0f / float (M_PI),
 															1.0f,	0.2f, 100.0f);
 	program["projmat"] = projmat;
+	renderer->culling.SetProjMatrix (projmat);
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
 	gl::Viewport (0, 0, width, height);

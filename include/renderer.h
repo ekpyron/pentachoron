@@ -28,6 +28,7 @@
 #include "interface.h"
 #include "composition.h"
 #include "light.h"
+#include "culling.h"
 
 class Renderer
 {
@@ -51,6 +52,7 @@ private:
 	 WindowGrid windowgrid;
 	 Filters filters;
 	 Composition composition;
+	 Culling culling;
 	 gl::Program opacityprogram;
 
 	 std::vector<Shadow> shadows;
@@ -71,6 +73,7 @@ private:
 	 friend class Filters;
 	 friend class Interface;
 	 friend class Composition;
+	 friend class Mesh;
 };
 
 #endif /* !defined RENDERER_H */

@@ -88,8 +88,10 @@ void Geometry::Render (const gl::Program &program, const glm::mat4 &viewmat,
 	{
 		for (int x = -3; x <= 3; x++)
 		{
-			program["mvmat"] = glm::translate (viewmat,
-																				 glm::vec3 (5 * x, 0, 8 * z));
+			glm::mat4 mvmat = glm::translate (viewmat,
+																				glm::vec3 (5 * x, 0, 8 * z));
+			program["mvmat"] = mvmat;
+			renderer->culling.SetModelViewMatrix (mvmat);
 			if ((x&1) + (z&1) == 0)
 			{
 				kitty.Render (program, shadowpass);
@@ -102,6 +104,7 @@ void Geometry::Render (const gl::Program &program, const glm::mat4 &viewmat,
 	}
 
 	program["mvmat"] = viewmat;
+	renderer->culling.SetModelViewMatrix (viewmat);
 
 	grid.Render (program, shadowpass);
 }

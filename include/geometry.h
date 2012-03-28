@@ -42,6 +42,8 @@ private:
 	 gl::Sampler sampler;
 	 std::map<std::string, Material*> materials;
 
+	 friend class Scene;
+	 friend class Mesh;
 	 Renderer *renderer;
 };
 

@@ -14,40 +14,38 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "camera.h"
+#include "culling.h"
 
-Camera::Camera (void)
-	: center (0, 0, 0), angle (0), viewport (glm::ivec2 (0, 0)),
-		nearClipPlane (0.1f), farClipPlane (100.0f)
+Culling::Culling (void)
 {
 }
 
-Camera::~Camera (void)
+Culling::~Culling (void)
 {
 }
 
-void Camera::Frame (float timefactor)
+void Culling::Frame (void)
 {
-	vmat = glm::lookAt (GetEye (), center, glm::vec3 (0, 1, 0));
+	projmat = mvmat = glm::mat4 (1.0f);
 }
 
-void Camera::Resize (int w, int h)
+void Culling::SetProjMatrix (const glm::mat4 &mat)
 {
-	viewport.x = w;
-	viewport.y = h;
-
-	projmat = glm::perspective (45.0f, float (viewport.x) / float (viewport.y),
-															nearClipPlane, farClipPlane);
+	projmat = mat;
 }
 
-bool Camera::IsVisible (const glm::mat4 &mmat, const glm::vec3 &center,
-												float radius) const
+void Culling::SetModelViewMatrix (const glm::mat4 &mat)
+{
+	mvmat = mat;
+}
+
+bool Culling::IsVisible (const glm::vec3 &center, float radius) const
 {
 	glm::mat4 mvpmat;
 	glm::vec4 left, right, bottom, top, near, far;
 	float distance;
 
-	mvpmat = projmat * vmat * mmat;
+	mvpmat = projmat * mvmat;
 
 	left.x = mvpmat[0].w + mvpmat[0].x;
 	left.y = mvpmat[1].w + mvpmat[1].x;
@@ -116,51 +114,4 @@ bool Camera::IsVisible (const glm::mat4 &mmat, const glm::vec3 &center,
 		 return false;
 
 	return true;
-}
-
-glm::vec3 Camera::GetEye (void) const
-{
-	glm::vec3 dir (sin (angle), 0, cos (angle));
-	return center - dir * 1.0f;
-}
-
-glm::mat4 Camera::GetViewMatrix (void) const
-{
-	return vmat;
-}
-
-glm::mat4 Camera::GetProjMatrix (void) const
-{
-	return projmat;
-}
-
-glm::uvec2 Camera::GetViewport (void) const
-{
-	return viewport;
-}
-
-int Camera::GetViewportWidth (void) const
-{
-	return viewport.x;
-}
-
-int Camera::GetViewportHeight (void) const
-{
-	return viewport.y;
-}
-
-float Camera::GetNearClipPlane (void) const
-{
-	return nearClipPlane;
-}
-
-float Camera::GetFarClipPlane (void) const
-{
-	return farClipPlane;
-}
-
-glm::vec4 Camera::GetProjInfo (void) const
-{
-	return glm::vec4 (1.0f / projmat[0].x, 1.0f / projmat[1].y,
-										nearClipPlane, farClipPlane);
 }
