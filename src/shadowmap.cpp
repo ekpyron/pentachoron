@@ -70,7 +70,7 @@ bool ShadowMap::Init (void)
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
-	shadowmap.Image2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height,
+	shadowmap.Image2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height,
 										 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
 	framebuffer.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,

@@ -188,6 +188,11 @@ bool Mesh::Load (void *m, const Material *mat)
 	return true;
 }
 
+bool Mesh::IsOpaque (void) const
+{
+	return material->IsOpaque ();
+}
+
 void Mesh::Render (const gl::Program &program, bool shadowpass) const
 {
 	if (!parent.parent->renderer->culling.IsVisible

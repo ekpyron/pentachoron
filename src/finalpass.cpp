@@ -31,7 +31,7 @@ bool FinalPass::Init (void)
 {
 	std::vector<const char *> fprogram_sources = {
 		"compose.txt", "normal.txt", "passthrough.txt", "diffuse.txt",
-		"shadowmap.txt", "monochrome.txt"
+		"shadowmap.txt", "monochrome.txt", "depth.txt"
 	};
 	for (const char *&filename : fprogram_sources)
 	{
@@ -89,6 +89,8 @@ void FinalPass::Render (void)
 	for (gl::Program &program : fprograms)
 	{
 		program["viewport"] = viewport;
+		program["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+		program["farClipPlane"] = renderer->camera.GetFarClipPlane ();
 	}
 	gl::Viewport (0, 0, viewport.x, viewport.y);
 
@@ -109,20 +111,65 @@ void FinalPass::Render (void)
 		break;
 	case 2:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.normalbuffer[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[1].Bind ();
+		renderer->gbuffer.colorbuffer[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[2].Bind ();
 		break;
 	case 3:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.specularbuffer[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->gbuffer.colorbuffer[2].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[2].Bind ();
 		break;
 	case 4:
 		renderer->windowgrid.sampler.Bind (0);
+		renderer->gbuffer.normalbuffer[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[1].Bind ();
+		break;
+	case 5:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->gbuffer.normalbuffer[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[1].Bind ();
+		break;
+	case 6:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->gbuffer.normalbuffer[2].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[1].Bind ();
+		break;
+	case 7:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->gbuffer.specularbuffer[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[2].Bind ();
+		break;
+	case 8:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->gbuffer.specularbuffer[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[2].Bind ();
+		break;
+	case 9:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->gbuffer.specularbuffer[2].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[2].Bind ();
+		break;
+	case 10:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
+		pipelines[6].Bind ();
+		break;
+  case 11:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->gbuffer.depthtexture[1].Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
+		pipelines[6].Bind ();
+		break;
+  case 12:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->gbuffer.depthtexture[2].Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
+		pipelines[6].Bind ();
+		break;
+	case 13:
+		renderer->windowgrid.sampler.Bind (0);
 		renderer->shadowpass.shadowmask.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[5].Bind ();
 		break;
-	case 5:
+	case 14:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->shadowpass.shadowmap.shadowmap.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[4].Bind ();

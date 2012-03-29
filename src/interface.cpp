@@ -251,7 +251,7 @@ void Interface::EditShadows (int what)
 	}
 }
 
-#define NUM_RENDERMODES 6
+#define NUM_RENDERMODES 15
 
 void Interface::ToggleRendermode (int what)
 {
@@ -277,9 +277,18 @@ void Interface::PrintRendermode (void)
 {
 	const char *rendermodes[NUM_RENDERMODES] = {
 		"compose",
-		"color",
-		"normal buffer",
-		"specular buffer",
+		"color [0]",
+		"color [1]",
+		"color [2]",
+		"normal buffer [0]",
+		"normal buffer [1]",
+		"normal buffer [2]",
+		"specular buffer [0]",
+		"specular buffer [1]",
+		"specular buffer [2]",
+		"depth buffer [0]",
+		"depth buffer [1]",
+		"depth buffer [2]",
 		"shadow mask",
 		"shadow projection"
 	};

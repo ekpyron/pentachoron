@@ -98,7 +98,7 @@ int main (int argc, char *argv[])
 
 		if (glfwOpenWindow (config["window"]["width"].as<int> (800),
 												config["window"]["height"].as<int> (600),
-												8, 8, 8, 8, 24, 8,
+												8, 8, 8, 8, 32, 8,
 												config["window"]["fullscreen"].as<bool> (false)
 												? GLFW_FULLSCREEN : GLFW_WINDOW) != GL_TRUE)
 		{

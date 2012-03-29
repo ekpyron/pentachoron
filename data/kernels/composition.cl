@@ -61,13 +61,18 @@ float4 getpos (uint x, uint y, read_only image2d_t depthbuffer,
 	return pos;
 }
 
-float4 compute_pixel (read_only image2d_t colormap, read_only image2d_t depthbuffer, read_only image2d_t normalmap, read_only image2d_t specularmap,
-       	        float shadow, uint offset, uint x, uint y, unsigned int num_lights, global struct Light *lights, struct ViewInfo info)
+float4 compute_pixel (read_only image2d_t colormap,
+       		      read_only image2d_t depthbuffer,
+		      read_only image2d_t normalmap,
+		      read_only image2d_t specularmap,
+		      float shadow, uint offset, uint x, uint y,
+		      unsigned int num_lights, global struct Light *lights,
+		      struct ViewInfo info)
 {
 	float4 pos = getpos (x, y, depthbuffer, info);
 	float3 diffuse = (float3) (0, 0, 0);
 	float3 specular = (float3) (0, 0, 0);
-	local ushort light_indices[256];
+/*	local ushort light_indices[256];
 	local uint num_light_indices;
 
 	local float min_depth, max_depth;
@@ -75,11 +80,11 @@ float4 compute_pixel (read_only image2d_t colormap, read_only image2d_t depthbuf
 	min_depth = FLT_MAX;
 	max_depth = FLT_MIN;
 
-/*	barrier (CLK_LOCAL_MEM_FENCE);
+	barrier (CLK_LOCAL_MEM_FENCE);
 
 	// TODO: maybe atomic operations are in fact necessary
 	min_depth = min (min_depth, depth);
-	max_depth = max (max_depth, depth);*/
+	max_depth = max (max_depth, depth);
 
 	num_light_indices = 0;
 
@@ -93,12 +98,14 @@ float4 compute_pixel (read_only image2d_t colormap, read_only image2d_t depthbuf
 	}
 
 
-	barrier (CLK_LOCAL_MEM_FENCE);
+	barrier (CLK_LOCAL_MEM_FENCE);*/
 
-	for (int i = 0; i < num_light_indices; i++)
+//	for (int i = 0; i < num_light_indices; i++)
+	for (int i = 0; i < num_lights; i++)
 	{
 		struct Light light;
-		light = lights[light_indices[i]];
+//		light = lights[light_indices[i]];
+		light = lights[i];
 		float3 lightDir = light.position.xyz - pos.xyz;
 
 		float dist = fast_length (lightDir);
@@ -106,9 +113,8 @@ float4 compute_pixel (read_only image2d_t colormap, read_only image2d_t depthbuf
 
 		float attenuation;
 		attenuation = native_recip (mad (light.attenuation.z,
-		      		       dist * dist,
-		     		       mad (light.attenuation.y,
-					    dist, light.attenuation.x)));
+			    dist * dist, mad (light.attenuation.y,
+			    	   	      dist, light.attenuation.x)));
 		if (attenuation < 0.001)
 		   continue;
 
@@ -139,14 +145,17 @@ float4 compute_pixel (read_only image2d_t colormap, read_only image2d_t depthbuf
 			 	  - light.position.xyz),
 			 	  normal));
 
-		specular += attenuation * light.specular.xyz
-			    * native_powr (r, light.specular.w);
+		if (light.specular.w != 0.0)
+		{
+			specular += attenuation * light.specular.xyz
+				     * native_powr (r, light.specular.w);
+		}
 	}
 
 	diffuse *= shadow;
 	specular *= shadow;
 
-	diffuse += 0.1;
+	diffuse += 0.05;
 
 	float4 pixel = read_imagef (colormap, sampler, (int2) (x, y));
 
@@ -199,15 +208,16 @@ kernel void composition (write_only image2d_t screen,
 		       	 	        normalmap2, specularmap2,
 					shadow, offset, x, y,
 					num_lights, lights, info);
-		pixel.xyz = mix (pixel2.xyz, pixel.xyz, pixel.w);
-		if (pixel.w < 0.99)
+		if (pixel2.w < 0.99)
 		{
-			pixel2.xyz = compute_pixel (colormap3, depthbuffer3,
+			float3 pixel3;
+			pixel3 = compute_pixel (colormap3, depthbuffer3,
 			       	 	        normalmap3, specularmap3,
 						shadow, offset, x, y,
 						num_lights, lights, info).xyz;
-			pixel.xyz = mix (pixel2.xyz, pixel.xyz, pixel2.w);
+			pixel2.xyz = mix (pixel2.xyz, pixel3, pixel2.w);
 		}
+		pixel.xyz = mix (pixel.xyz, pixel2.xyz, pixel.w);
 	}
 
 	write_imagef (screen, (int2) (x, y), pixel);

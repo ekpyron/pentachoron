@@ -33,6 +33,7 @@ public:
 	 Mesh &operator= (Mesh &&mesh);
 	 Mesh &operator= (const Mesh&) = delete;
 	 void Render (const gl::Program &program, bool shadowpass) const;
+	 bool IsOpaque (void) const;
 private:
 	 bool Load (void*, const Material *mat);
 	 Scene &parent;
