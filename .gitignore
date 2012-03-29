@@ -9,10 +9,8 @@ Makefile.in
 /missing
 /config.sub
 /ltmain.sh
-/build
-/build-w32
-/build-w64
 /data/fonts
 /data/materials
 /data/models
 /data/textures
+/build*
