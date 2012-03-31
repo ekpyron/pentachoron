@@ -32,7 +32,7 @@ public:
 	 void Apply (void);
 	 Blur &operator= (const Blur&) = delete;
 	 Blur &operator= (Blur &&blur);
-private:
+//private:
 	 const cl::Memory *memory;
 	 cl::Memory weights;
 	 int num_weights;
@@ -52,7 +52,7 @@ public:
 	 bool Init (void);
 
 	 Blur CreateBlur (cl::Memory &memory, float sigma);
-private:
+//private:
 	 void ApplyBlur (const cl::Memory *memory, const cl::Memory &weights,
 									 int num_weights);
 	 cl::CommandQueue queue;

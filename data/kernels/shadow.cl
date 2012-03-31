@@ -38,13 +38,10 @@ float3 getpos (uint x, uint y, read_only image2d_t depthbuffer,
 	return pos.xyz;
 }
 
-kernel void genshadow (write_only image2d_t shadowmask,
-       	    	       read_only image2d_t depthbuffer,
-	      	       read_only image2d_t shadowmap,
-		       struct ViewInfo info)
+float compute_shadow (int x, int y, read_only image2d_t depthbuffer,
+      		      read_only image2d_t shadowmap, struct ViewInfo info)
 {
-	int x = get_global_id (0),
-	    y = get_global_id (1);
+
 	float4 pos;
 	pos.xyz = getpos (x, y, depthbuffer, info);
 	pos.w = 1.0;
@@ -60,9 +57,7 @@ kernel void genshadow (write_only image2d_t shadowmask,
 	if (lspos.w < 0 || lspos.x < 0 || lspos.y < 0
 	    || lspos.x > 1 || lspos.y > 1)
 	{
-	    write_imagef (shadowmask, (int2) (x, y),
-	    		  (float4) (0.0, 0.0, 0.0, 0.0));
-	    return;
+	    return 0.0;
 	}
 
 	float shadowdepth;
@@ -72,12 +67,29 @@ kernel void genshadow (write_only image2d_t shadowmask,
 
 	if (shadowdepth >= lspos.z)
 	{
-		write_imagef (shadowmask, (int2) (x, y),
-	    		      (float4) (1.0, 0.0, 0.0, 0.0));
+		return 1.0;
 	}
 	else
 	{
-		write_imagef (shadowmask, (int2) (x, y),
-			      (float4) (0.0, 0.0, 0.0, 0.0));
+		return 0.0;
 	}
+}
+
+kernel void genshadow (write_only image2d_t shadowmask,
+       	    	       read_only image2d_t depthbuffer,
+       	    	       read_only image2d_t depthbuffer2,
+       	    	       read_only image2d_t depthbuffer3,
+	      	       read_only image2d_t shadowmap,
+		       struct ViewInfo info)
+{
+	int x = get_global_id (0),
+	    y = get_global_id (1);
+
+	float4 shadow;
+
+	shadow.x = compute_shadow (x, y, depthbuffer, shadowmap, info);
+	shadow.y = compute_shadow (x, y, depthbuffer2, shadowmap, info);
+	shadow.z = compute_shadow (x, y, depthbuffer3, shadowmap, info);
+
+	write_imagef (shadowmask, (int2) (x, y), shadow);
 }

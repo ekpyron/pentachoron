@@ -251,7 +251,7 @@ void Interface::EditShadows (int what)
 	}
 }
 
-#define NUM_RENDERMODES 17
+#define NUM_RENDERMODES 15
 
 void Interface::ToggleRendermode (int what)
 {
@@ -289,9 +289,7 @@ void Interface::PrintRendermode (void)
 		"depth buffer [0]",
 		"depth buffer [1]",
 		"depth buffer [2]",
-		"shadow mask [0]",
-		"shadow mask [1]",
-		"shadow mask [2]",
+		"shadow mask",
 		"shadow projection"
 	};
 

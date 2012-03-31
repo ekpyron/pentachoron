@@ -73,9 +73,7 @@ bool Composition::Init (void)
 	composition.SetArg (10, specularmem[0]);
 	composition.SetArg (11, specularmem[1]);
 	composition.SetArg (12, specularmem[2]);
-	composition.SetArg (13, renderer->shadowpass.shadowmem[0]);
-	composition.SetArg (14, renderer->shadowpass.shadowmem[1]);
-	composition.SetArg (15, renderer->shadowpass.shadowmem[2]);
+	composition.SetArg (13, renderer->shadowpass.shadowmem);
 
 	return true;
 }
@@ -95,9 +93,7 @@ void Composition::Frame (float timefactor)
 																	renderer->gbuffer.depthmem[0],
 																	renderer->gbuffer.depthmem[1],
 																	renderer->gbuffer.depthmem[2],
-																	renderer->shadowpass.shadowmem[0],
-																	renderer->shadowpass.shadowmem[1],
-																	renderer->shadowpass.shadowmem[2] };
+																	renderer->shadowpass.shadowmem };
 	ViewInfo info;
 
 	cl_uint num_lights = renderer->lights.size ();
@@ -107,9 +103,9 @@ void Composition::Frame (float timefactor)
 		 (glm::inverse (renderer->camera.GetViewMatrix ()));
 	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
 
-	composition.SetArg (16, sizeof (cl_uint), &num_lights);
-	composition.SetArg (17, renderer->lightmem);
-	composition.SetArg (18, sizeof (ViewInfo), &info);
+	composition.SetArg (14, sizeof (cl_uint), &num_lights);
+	composition.SetArg (15, renderer->lightmem);
+	composition.SetArg (16, sizeof (ViewInfo), &info);
 
 	const size_t work_dim[] = { renderer->gbuffer.width,
 															renderer->gbuffer.height };
@@ -119,5 +115,5 @@ void Composition::Frame (float timefactor)
 	queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
 															local_dim, 0, NULL, NULL);
 	queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
-	queue.Flush ();
+	queue.Finish ();
 }

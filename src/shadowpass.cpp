@@ -45,18 +45,15 @@ bool ShadowPass::Init (void)
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_RECTANGLE, 0, shadowmap.shadowmap);
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
-	for (auto i = 0; i < GBuffer::layers; i++)
-	{
-		shadowmask[i].Image2D (GL_TEXTURE_2D, 0, GL_R8,
-													 renderer->gbuffer.width,
-													 renderer->gbuffer.height,
-													 0, GL_RED, GL_UNSIGNED_BYTE,
-													 NULL);
-		shadowmem[i] = renderer->clctx.CreateFromGLTexture2D
-			 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, shadowmask[i]);
+	shadowmask.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8,
+											renderer->gbuffer.width,
+											renderer->gbuffer.height,
+											0, GL_RED, GL_UNSIGNED_BYTE,
+											NULL);
+	shadowmem = renderer->clctx.CreateFromGLTexture2D
+		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, shadowmask);
 
-		blur[i] = renderer->filters.CreateBlur (shadowmem[i], 4.0f);
-	}
+	blur = renderer->filters.CreateBlur (shadowmem, 4.0f);
 
 	return true;
 }
@@ -69,10 +66,7 @@ void ShadowPass::FrameFinish (void)
 {
 	if (soft_shadows)
 	{
-		for (auto i = 0; i < GBuffer::layers; i++)
-		{
-			blur[i].Apply ();
-		}
+		blur.Apply ();
 	}
 }
 
@@ -96,8 +90,7 @@ void ShadowPass::Render (const Shadow &shadow)
 	} ViewInfo;
 	ViewInfo info;
 	std::vector<cl::Memory> mem = {
-		shadowmem[0], shadowmem[1], shadowmem[2],
-		shadowmapmem, renderer->gbuffer.depthmem[0],
+		shadowmem, shadowmapmem, renderer->gbuffer.depthmem[0],
 		renderer->gbuffer.depthmem[1],
 		renderer->gbuffer.depthmem[2]
 	};
@@ -117,17 +110,17 @@ void ShadowPass::Render (const Shadow &shadow)
 															renderer->gbuffer.height };
 	const size_t local_dim[] = { 16, 16 };
 
-	genshadow.SetArg (2, shadowmapmem);
-	genshadow.SetArg (3, sizeof (ViewInfo), &info);
+	genshadow.SetArg (0, shadowmem);
+	genshadow.SetArg (1, renderer->gbuffer.depthmem[0]);
+	genshadow.SetArg (2, renderer->gbuffer.depthmem[1]);
+	genshadow.SetArg (3, renderer->gbuffer.depthmem[2]);
+	genshadow.SetArg (4, shadowmapmem);
+	genshadow.SetArg (5, sizeof (ViewInfo), &info);
 
-	for (auto i = 0; i < GBuffer::layers; i++)
-	{
-		genshadow.SetArg (0, shadowmem[i]);
-		genshadow.SetArg (1, renderer->gbuffer.depthmem[i]);
-		
-		queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
-		queue.EnqueueNDRangeKernel (genshadow, 2, NULL, work_dim,
-																local_dim, 0, NULL, NULL);
-		queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
-	}
+	
+	queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
+	queue.EnqueueNDRangeKernel (genshadow, 2, NULL, work_dim,
+															local_dim, 0, NULL, NULL);
+
+	queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
 }

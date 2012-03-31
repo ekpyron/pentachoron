@@ -39,7 +39,7 @@ bool Filters::Init (void)
 	storage = renderer->clctx.CreateBuffer (CL_MEM_READ_WRITE,
 																					renderer->gbuffer.width
 																					* renderer->gbuffer.height
-																					* sizeof (cl_float),
+																					* sizeof (cl_float) * 4,
 																					NULL);
 
 	queue = renderer->clctx.CreateCommandQueue (0);
@@ -68,7 +68,6 @@ Blur Filters::CreateBlur (cl::Memory &memory, float sigma)
 void Filters::ApplyBlur (const cl::Memory *memory, const cl::Memory &weights,
 												 int num_weights)
 {
-
 	hblur.SetArg (0, *memory);
 	hblur.SetArg (1, storage);
 	hblur.SetArg (2, weights);
@@ -86,7 +85,7 @@ void Filters::ApplyBlur (const cl::Memory *memory, const cl::Memory &weights,
 	queue.EnqueueNDRangeKernel (hblur, 2, NULL, work_dim, NULL, 0, NULL, NULL);
 	queue.EnqueueNDRangeKernel (vblur, 2, NULL, work_dim, NULL, 0, NULL, NULL);
 	queue.EnqueueReleaseGLObjects ({ *memory }, 0, NULL, NULL);
-	queue.Flush ();
+	queue.Finish ();
 }
 
 Blur::Blur (void) : parent (NULL)

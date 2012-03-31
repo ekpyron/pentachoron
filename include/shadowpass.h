@@ -38,9 +38,9 @@ public:
 	 void SetSoftShadows (bool value);
 	 bool GetSoftShadows (void);
 
-	 gl::Texture shadowmask[GBuffer::layers];
+	 gl::Texture shadowmask;
 	 ShadowMap shadowmap;
-	 cl::Memory shadowmem[GBuffer::layers];
+	 cl::Memory shadowmem;
 private:
 	 cl::CommandQueue queue;
 	 cl::Program program;
@@ -48,7 +48,7 @@ private:
 	 cl::Memory shadowmapmem;
 
 	 bool soft_shadows;
-	 Blur blur[GBuffer::layers];
+	 Blur blur;
 	 Renderer *renderer;
 };
 
