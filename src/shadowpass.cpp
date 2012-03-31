@@ -28,74 +28,43 @@ ShadowPass::~ShadowPass (void)
 
 bool ShadowPass::Init (void)
 {
-	std::vector<std::string> sources =
-		 { MakePath ("shaders", "getpos.txt"),
-			 MakePath ("shaders", "shadowpass.txt") };
-	std::vector<gl::Shader> objs;
+	std::string src;
+	if (!ReadFile (MakePath ("kernels", "shadow.cl"), src))
+		 return false;
+
+	program = renderer->clctx.CreateProgramWithSource (src);
+	program.Build ("-cl-fast-relaxed-math -cl-mad-enable -cl-no-signed-zeros");
+	genshadow = program.CreateKernel ("genshadow");
+
+	queue = renderer->clctx.CreateCommandQueue (0);
 
 	if (!shadowmap.Init ())
 		 return false;
 
-	for (std::string &filename : sources)
-	{
-		std::string src;
-		if (!ReadFile (filename, src))
-			 return false;
-		objs.emplace_back (GL_FRAGMENT_SHADER);
-		objs.back ().Source (src);
-		if (!objs.back ().Compile ())
-		{
-			(*logstream) << "Cannot compile " << filename << ":" << std::endl
-									 << objs.back ().GetInfoLog () << std::endl;
-			 return false;
-		}
-		fprogram.Attach (objs.back ());
-	}
-
-	fprogram.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-	if (!fprogram.Link ())
-	{
-		(*logstream) << "Cannot link the lightpass shader:" << std::endl
-								 << fprogram.GetInfoLog () << std::endl;
-		return false;
-	}
-
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
-
 	shadowmask.Image2D (GL_TEXTURE_2D, 0, GL_R8,
 											renderer->gbuffer.width,
 											renderer->gbuffer.height,
 											0, GL_RED, GL_UNSIGNED_BYTE,
 											NULL);
 
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-												 shadowmask, 0);
-
-	pipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
-														 renderer->windowgrid.vprogram);
-	pipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, fprogram);
-	
-	fprogram["viewport"] = glm::uvec2 (renderer->gbuffer.width,
-																		 renderer->gbuffer.height);
-
-	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
+	shadowmapmem = renderer->clctx.CreateFromGLTexture2D
+		 (CL_MEM_READ_ONLY, GL_TEXTURE_RECTANGLE, 0, shadowmap.shadowmap);
 
 	shadowmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, renderer->shadowpass.shadowmask);
+		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, shadowmask);
 
 	blur = renderer->filters.CreateBlur (shadowmem, 4.0f);
+
+	genshadow.SetArg (0, shadowmem);
+	genshadow.SetArg (1, renderer->gbuffer.depthmem[0]);
+	genshadow.SetArg (2, shadowmapmem);
 
 	return true;
 }
 
 void ShadowPass::FrameInit (void)
 {
-	framebuffer.Bind (GL_FRAMEBUFFER);
-	gl::ClearBufferfv (GL_COLOR, 0, (float[]) {1.0f, 1.0f, 1.0f, 1.0f} );
-
-	framebuffer.DrawBuffers ( { GL_COLOR_ATTACHMENT0 } );
-
-	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 }
 
 void ShadowPass::FrameFinish (void)
@@ -118,35 +87,35 @@ bool ShadowPass::GetSoftShadows (void)
 
 void ShadowPass::Render (const Shadow &shadow)
 {
+	typedef struct ViewInfo
+	{
+		 glm::vec4 projinfo;
+		 glm::mat4 vmatinv;
+		 glm::mat4 shadowmat;
+	} ViewInfo;
+	ViewInfo info;
+	std::vector<cl::Memory> mem = {
+		shadowmem, shadowmapmem, renderer->gbuffer.depthmem[0]
+	};
+
 	shadowmap.Render (renderer->geometry, shadow);
 
-	fprogram["projinfo"] = renderer->camera.GetProjInfo ();
-	fprogram["vmatinv"] = glm::inverse (renderer->camera.GetViewMatrix ());
-	fprogram["shadow.mat"] = glm::mat4 (glm::vec4 (0.5, 0.0, 0.0, 0.0),
-																			glm::vec4 (0.0, 0.5, 0.0, 0.0),
-																			glm::vec4 (0.0, 0.0, 0.5, 0.0),
-																			glm::vec4 (0.5, 0.5, 0.5, 1.0))
-		 * shadowmap.projmat * shadowmap.vmat;
+	info.projinfo = renderer->camera.GetProjInfo ();
+	info.vmatinv = glm::transpose (glm::inverse
+																 (renderer->camera.GetViewMatrix ()));
+	info.shadowmat = glm::transpose (glm::mat4 (glm::vec4 (0.5, 0.0, 0.0, 0.0),
+																							glm::vec4 (0.0, 0.5, 0.0, 0.0),
+																							glm::vec4 (0.0, 0.0, 0.5, 0.0),
+																							glm::vec4 (0.5, 0.5, 0.5, 1.0))
+																	 * shadowmap.projmat * shadowmap.vmat);
 
-	framebuffer.Bind (GL_FRAMEBUFFER);
-	gl::Viewport (0, 0, renderer->gbuffer.width, renderer->gbuffer.height);
+	genshadow.SetArg (3, sizeof (ViewInfo), &info);
 
-	gl::Disable (GL_DEPTH_TEST);
-
-	gl::BlendEquation (GL_FUNC_REVERSE_SUBTRACT);
-	gl::BlendFunc (GL_ONE, GL_ONE);
-	gl::Enable (GL_BLEND);
-
-	renderer->windowgrid.sampler.Bind (0);
-	shadowmap.shadowmap.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-	renderer->windowgrid.sampler.Bind (1);
-	renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE1, GL_TEXTURE_RECTANGLE);
-
-	pipeline.Bind ();
-	renderer->windowgrid.Render ();
-
-	gl::Disable (GL_BLEND);
-
-	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
-	GL_CHECK_ERROR;
+	const size_t work_dim[] = { renderer->gbuffer.width,
+															renderer->gbuffer.height };
+	const size_t local_dim[] = { 16, 16 };
+	queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
+	queue.EnqueueNDRangeKernel (genshadow, 2, NULL, work_dim,
+															local_dim, 0, NULL, NULL);
+	queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
 }

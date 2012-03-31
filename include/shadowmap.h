@@ -40,6 +40,7 @@ private:
 	 glm::mat4 vmat;
 	 glm::mat4 projmat;
 	 gl::Program program;
+	 gl::Renderbuffer depthbuffer;
 	 gl::Framebuffer framebuffer;
 
 	 Renderer *renderer;

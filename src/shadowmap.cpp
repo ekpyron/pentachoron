@@ -70,12 +70,15 @@ bool ShadowMap::Init (void)
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
-	shadowmap.Image2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height,
-										 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	shadowmap.Image2D (GL_TEXTURE_RECTANGLE, 0, GL_R32F, width, height,
+										 0, GL_RED, GL_FLOAT, NULL);
 
-	framebuffer.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+	depthbuffer.Storage (GL_DEPTH_COMPONENT32, width, height);
+
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE,
 												 shadowmap, 0);
-	framebuffer.DrawBuffers ({});
+	framebuffer.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
+	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 	return true;
 }
 
@@ -90,23 +93,23 @@ void ShadowMap::Render (const Geometry &geometry, const Shadow &shadow)
 	renderer->culling.SetProjMatrix (projmat);
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
+
+	program.Use ();
+
+	gl::CullFace (GL_FRONT);
+	gl::DepthMask (GL_TRUE);
+
+	gl::ClearBufferfv (GL_COLOR, 0, (float[]) {1.0f, 1.0f, 1.0f, 1.0f});
+	gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
 	gl::Viewport (0, 0, width, height);
 
 	gl::Enable (GL_DEPTH_TEST);
 
 	GL_CHECK_ERROR;
 
-	program.Use ();
-
-	gl::CullFace (GL_FRONT);
-	gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	gl::DepthMask (GL_TRUE);
-	gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
-
 	geometry.Render (program, vmat, true);
 
 	gl::DepthMask (GL_FALSE);
-	gl::ColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	gl::CullFace (GL_BACK);
 
 	gl::Program::UseNone ();

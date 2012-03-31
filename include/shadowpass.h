@@ -41,11 +41,13 @@ public:
 	 ShadowMap shadowmap;
 	 cl::Memory shadowmem;
 private:
+	 cl::CommandQueue queue;
+	 cl::Program program;
+	 cl::Kernel genshadow;
+	 cl::Memory shadowmapmem;
+
 	 bool soft_shadows;
-	 gl::Program fprogram;
 	 Blur blur;
-	 gl::ProgramPipeline pipeline;
-	 gl::Framebuffer framebuffer;
 	 Renderer *renderer;
 };
 

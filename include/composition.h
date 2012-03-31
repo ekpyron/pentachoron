@@ -39,7 +39,6 @@ private:
 	 cl::Memory colormem[GBuffer::layers];
 	 cl::Memory normalmem[GBuffer::layers];
 	 cl::Memory specularmem[GBuffer::layers];
-	 cl::Memory depthmem[GBuffer::layers];
 	 Renderer *renderer;
 };
 

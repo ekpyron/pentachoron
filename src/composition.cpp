@@ -56,10 +56,6 @@ bool Composition::Init (void)
 		specularmem[i] = renderer->clctx.CreateFromGLTexture2D
 			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
 				renderer->gbuffer.specularbuffer[i]);
-
-		depthmem[i] = renderer->clctx.CreateFromGLTexture2D
-			 (CL_MEM_READ_ONLY, GL_TEXTURE_RECTANGLE, 0,
-				renderer->gbuffer.depthtexture[i]);
 	}
 
 	queue = renderer->clctx.CreateCommandQueue (0);
@@ -68,9 +64,9 @@ bool Composition::Init (void)
 	composition.SetArg (1, colormem[0]);
 	composition.SetArg (2, colormem[1]);
 	composition.SetArg (3, colormem[2]);
-	composition.SetArg (4, depthmem[0]);
-	composition.SetArg (5, depthmem[1]);
-	composition.SetArg (6, depthmem[2]);
+	composition.SetArg (4, renderer->gbuffer.depthmem[0]);
+	composition.SetArg (5, renderer->gbuffer.depthmem[1]);
+	composition.SetArg (6, renderer->gbuffer.depthmem[2]);
 	composition.SetArg (7, normalmem[0]);
 	composition.SetArg (8, normalmem[1]);
 	composition.SetArg (9, normalmem[2]);
@@ -92,9 +88,12 @@ void Composition::Frame (float timefactor)
 	} ViewInfo;
 	std::vector<cl::Memory> mem = { screenmem, colormem[0], colormem[1],
 																	colormem[2],  normalmem[0], normalmem[1],
-																	normalmem[2], specularmem[0], specularmem[1],
-																	specularmem[2], depthmem[0], depthmem[1],
-																	depthmem[2], renderer->shadowpass.shadowmem };
+																	normalmem[2], specularmem[0],
+																	specularmem[1], specularmem[2],
+																	renderer->gbuffer.depthmem[0],
+																	renderer->gbuffer.depthmem[1],
+																	renderer->gbuffer.depthmem[2],
+																	renderer->shadowpass.shadowmem };
 	ViewInfo info;
 
 	cl_uint num_lights = renderer->lights.size ();

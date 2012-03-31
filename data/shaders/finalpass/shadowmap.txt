@@ -1,6 +1,6 @@
 #version 420 core
 layout(location = 0) out vec4 color;
-layout(binding = 0) uniform sampler2D texture;
+layout(binding = 0) uniform samplerRect tex;
 uniform uvec2 viewport;
 
 void main (void)
@@ -8,11 +8,13 @@ void main (void)
 	vec2 coord;
 	float depth;
 	coord = gl_FragCoord.xy / viewport;
+	coord.x *= 4096;	
+	coord.y *= 4096;
 
 	float far = 50.0;
 	float near = 0.1;
 
-	depth = texture2D (texture, coord).r;
+	depth = texture (tex, coord).r;
 	depth = (2.0 * near) / (far + near - depth * (far - near));
 	color = depth * vec4 (1, 1, 1, 1);
 }

@@ -94,6 +94,10 @@ bool GBuffer::Init (void)
 		
 		framebuffer[i].DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
 					 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
+
+		depthmem[i] = renderer->clctx.CreateFromGLTexture2D
+			 (CL_MEM_READ_ONLY, GL_TEXTURE_RECTANGLE, 0,
+				renderer->gbuffer.depthtexture[i]);
 	}
 
 	return true;

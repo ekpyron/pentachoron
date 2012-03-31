@@ -42,6 +42,7 @@ public:
 
 	 gl::Framebuffer framebuffer[layers];
 
+	 cl::Memory depthmem[layers];
 private:
 	 gl::Program program;
 
