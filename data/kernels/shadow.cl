@@ -76,9 +76,10 @@ float compute_shadow (int x, int y, read_only image2d_t depthbuffer,
 }
 
 kernel void genshadow (write_only image2d_t shadowmask,
-       	    	       read_only image2d_t depthbuffer,
+       	    	       read_only image2d_t depthbuffer1,
        	    	       read_only image2d_t depthbuffer2,
        	    	       read_only image2d_t depthbuffer3,
+       	    	       read_only image2d_t depthbuffer4,
 	      	       read_only image2d_t shadowmap,
 		       struct ViewInfo info)
 {
@@ -87,9 +88,10 @@ kernel void genshadow (write_only image2d_t shadowmask,
 
 	float4 shadow;
 
-	shadow.x = compute_shadow (x, y, depthbuffer, shadowmap, info);
+	shadow.x = compute_shadow (x, y, depthbuffer1, shadowmap, info);
 	shadow.y = compute_shadow (x, y, depthbuffer2, shadowmap, info);
 	shadow.z = compute_shadow (x, y, depthbuffer3, shadowmap, info);
+	shadow.w = compute_shadow (x, y, depthbuffer4, shadowmap, info);
 
 	write_imagef (shadowmask, (int2) (x, y), shadow);
 }

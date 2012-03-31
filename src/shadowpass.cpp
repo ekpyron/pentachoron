@@ -91,8 +91,8 @@ void ShadowPass::Render (const Shadow &shadow)
 	ViewInfo info;
 	std::vector<cl::Memory> mem = {
 		shadowmem, shadowmapmem, renderer->gbuffer.depthmem[0],
-		renderer->gbuffer.depthmem[1],
-		renderer->gbuffer.depthmem[2]
+		renderer->gbuffer.depthmem[1], renderer->gbuffer.depthmem[2],
+		renderer->gbuffer.depthmem[3]
 	};
 
 	shadowmap.Render (renderer->geometry, shadow);
@@ -114,8 +114,9 @@ void ShadowPass::Render (const Shadow &shadow)
 	genshadow.SetArg (1, renderer->gbuffer.depthmem[0]);
 	genshadow.SetArg (2, renderer->gbuffer.depthmem[1]);
 	genshadow.SetArg (3, renderer->gbuffer.depthmem[2]);
-	genshadow.SetArg (4, shadowmapmem);
-	genshadow.SetArg (5, sizeof (ViewInfo), &info);
+	genshadow.SetArg (4, renderer->gbuffer.depthmem[3]);
+	genshadow.SetArg (5, shadowmapmem);
+	genshadow.SetArg (6, sizeof (ViewInfo), &info);
 
 	
 	queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);

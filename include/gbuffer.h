@@ -30,7 +30,7 @@ public:
 	 bool Init (void);
 	 void Render (const Geometry &geometry);
 
-	 static const unsigned int layers = 3;
+	 static const unsigned int layers = 4;
 
 	 gl::Texture colorbuffer[layers];
 	 gl::Texture normalbuffer[layers];

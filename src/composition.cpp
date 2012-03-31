@@ -64,16 +64,20 @@ bool Composition::Init (void)
 	composition.SetArg (1, colormem[0]);
 	composition.SetArg (2, colormem[1]);
 	composition.SetArg (3, colormem[2]);
-	composition.SetArg (4, renderer->gbuffer.depthmem[0]);
-	composition.SetArg (5, renderer->gbuffer.depthmem[1]);
-	composition.SetArg (6, renderer->gbuffer.depthmem[2]);
-	composition.SetArg (7, normalmem[0]);
-	composition.SetArg (8, normalmem[1]);
-	composition.SetArg (9, normalmem[2]);
-	composition.SetArg (10, specularmem[0]);
-	composition.SetArg (11, specularmem[1]);
-	composition.SetArg (12, specularmem[2]);
-	composition.SetArg (13, renderer->shadowpass.shadowmem);
+	composition.SetArg (4, colormem[3]);
+	composition.SetArg (5, renderer->gbuffer.depthmem[0]);
+	composition.SetArg (6, renderer->gbuffer.depthmem[1]);
+	composition.SetArg (7, renderer->gbuffer.depthmem[2]);
+	composition.SetArg (8, renderer->gbuffer.depthmem[3]);
+	composition.SetArg (9, normalmem[0]);
+	composition.SetArg (10, normalmem[1]);
+	composition.SetArg (11, normalmem[2]);
+	composition.SetArg (12, normalmem[3]);
+	composition.SetArg (13, specularmem[0]);
+	composition.SetArg (14, specularmem[1]);
+	composition.SetArg (15, specularmem[2]);
+	composition.SetArg (16, specularmem[3]);
+	composition.SetArg (17, renderer->shadowpass.shadowmem);
 
 	return true;
 }
@@ -87,12 +91,14 @@ void Composition::Frame (float timefactor)
 		 glm::vec4 eye;
 	} ViewInfo;
 	std::vector<cl::Memory> mem = { screenmem, colormem[0], colormem[1],
-																	colormem[2],  normalmem[0], normalmem[1],
-																	normalmem[2], specularmem[0],
-																	specularmem[1], specularmem[2],
+																	colormem[2], colormem[3], normalmem[0],
+																	normalmem[1], normalmem[2], normalmem[3],
+																	specularmem[0], specularmem[1],
+																	specularmem[2], specularmem[3],
 																	renderer->gbuffer.depthmem[0],
 																	renderer->gbuffer.depthmem[1],
 																	renderer->gbuffer.depthmem[2],
+																	renderer->gbuffer.depthmem[3],
 																	renderer->shadowpass.shadowmem };
 	ViewInfo info;
 
@@ -103,9 +109,9 @@ void Composition::Frame (float timefactor)
 		 (glm::inverse (renderer->camera.GetViewMatrix ()));
 	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
 
-	composition.SetArg (14, sizeof (cl_uint), &num_lights);
-	composition.SetArg (15, renderer->lightmem);
-	composition.SetArg (16, sizeof (ViewInfo), &info);
+	composition.SetArg (18, sizeof (cl_uint), &num_lights);
+	composition.SetArg (19, renderer->lightmem);
+	composition.SetArg (20, sizeof (ViewInfo), &info);
 
 	const size_t work_dim[] = { renderer->gbuffer.width,
 															renderer->gbuffer.height };
@@ -115,5 +121,4 @@ void Composition::Frame (float timefactor)
 	queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
 															local_dim, 0, NULL, NULL);
 	queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
-	queue.Finish ();
 }
