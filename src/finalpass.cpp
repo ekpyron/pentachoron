@@ -166,10 +166,20 @@ void FinalPass::Render (void)
 		break;
 	case 13:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->shadowpass.shadowmask.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->shadowpass.shadowmask[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[5].Bind ();
 		break;
 	case 14:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->shadowpass.shadowmask[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[5].Bind ();
+		break;
+	case 15:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->shadowpass.shadowmask[2].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[5].Bind ();
+		break;
+	case 16:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->shadowpass.shadowmap.shadowmap.Bind (GL_TEXTURE0,
 																									 GL_TEXTURE_RECTANGLE);

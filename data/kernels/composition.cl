@@ -65,13 +65,16 @@ float4 compute_pixel (read_only image2d_t colormap,
        		      read_only image2d_t depthbuffer,
 		      read_only image2d_t normalmap,
 		      read_only image2d_t specularmap,
-		      float shadow, uint offset, uint x, uint y,
+		      read_only image2d_t shadowmask,
+		      uint offset, uint x, uint y,
 		      unsigned int num_lights, global struct Light *lights,
 		      struct ViewInfo info)
 {
 	float4 pos = getpos (x, y, depthbuffer, info);
 	float3 diffuse = (float3) (0, 0, 0);
 	float3 specular = (float3) (0, 0, 0);
+	float shadow = read_imagef (shadowmask, sampler, (int2) (x, y)).x;
+
 /*	local ushort light_indices[256];
 	local uint num_light_indices;
 
@@ -185,6 +188,8 @@ kernel void composition (write_only image2d_t screen,
 			 read_only image2d_t specularmap2,
 			 read_only image2d_t specularmap3,
 			 read_only image2d_t shadowmask,
+			 read_only image2d_t shadowmask2,
+			 read_only image2d_t shadowmask3,
 			 unsigned int num_lights,
 			 global struct Light *lights,
 			 struct ViewInfo info)
@@ -194,26 +199,25 @@ kernel void composition (write_only image2d_t screen,
 	uint x = mad24 (get_group_id (0), get_local_size (0), lx),
 	    y = mad24 (get_group_id (1), get_local_size (1), ly);
 	uint offset = mad24 (ly, get_local_size (1), lx);
-	float shadow = read_imagef (shadowmask, sampler, (int2) (x, y)).x;
 
 	float4 pixel;
 
 	pixel = compute_pixel (colormap, depthbuffer, normalmap,
-	      		       specularmap, shadow, offset,
+	      		       specularmap, shadowmask, offset,
 			       x, y, num_lights, lights, info);
 	if (pixel.w < 0.99)
 	{
 		float4 pixel2;
 		pixel2 = compute_pixel (colormap2, depthbuffer2,
 		       	 	        normalmap2, specularmap2,
-					shadow, offset, x, y,
+					shadowmask2, offset, x, y,
 					num_lights, lights, info);
 		if (pixel2.w < 0.99)
 		{
 			float3 pixel3;
 			pixel3 = compute_pixel (colormap3, depthbuffer3,
 			       	 	        normalmap3, specularmap3,
-						shadow, offset, x, y,
+						shadowmask3, offset, x, y,
 						num_lights, lights, info).xyz;
 			pixel2.xyz = mix (pixel2.xyz, pixel3, pixel2.w);
 		}

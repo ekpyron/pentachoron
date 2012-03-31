@@ -21,6 +21,7 @@
 #include "shadow.h"
 #include "shadowmap.h"
 #include "filters.h"
+#include "gbuffer.h"
 
 class Renderer;
 
@@ -37,9 +38,9 @@ public:
 	 void SetSoftShadows (bool value);
 	 bool GetSoftShadows (void);
 
-	 gl::Texture shadowmask;
+	 gl::Texture shadowmask[GBuffer::layers];
 	 ShadowMap shadowmap;
-	 cl::Memory shadowmem;
+	 cl::Memory shadowmem[GBuffer::layers];
 private:
 	 cl::CommandQueue queue;
 	 cl::Program program;
@@ -47,7 +48,7 @@ private:
 	 cl::Memory shadowmapmem;
 
 	 bool soft_shadows;
-	 Blur blur;
+	 Blur blur[GBuffer::layers];
 	 Renderer *renderer;
 };
 
