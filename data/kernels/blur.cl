@@ -14,14 +14,13 @@ kernel void hblur (read_only image2d_t in, write_only global float4 *out,
 	for (int dx = -radius + 1; dx < radius; dx++)
 	{
 		int2 coord;
-		float4 weight;
-		weight.x = weight.y = weight.z = weight.w = weights[abs (dx)];
 		coord = (int2) (x + dx, y);
 		if (coord.x >= 0 && coord.x < get_image_width (in))
-		   value = mad (read_imagef (in, sampler, coord),
-		      	        weight, value);
+		   value = mad (weights[abs (dx)],
+		   	        read_imagef (in, sampler, coord),
+		      	        value);
 		else
-		   value += weight;
+		   value += weights[abs (dx)] * (float4) (1.0, 1.0, 1.0, 1.0);
 	}
 
 	out[get_image_width (in) * y + x] = value;
@@ -40,15 +39,14 @@ kernel void vblur (read_only global float4 *in,
 
 	for (int dy = -radius + 1; dy < radius; dy++)
 	{
-		float4 weight;
-		weight.x = weight.y = weight.z = weight.w = weights[abs (dy)];
 		if (y+dy >= 0 && y+dy < get_image_height (out))
 		{
-		   value = mad (in[(y + dy) * get_image_width (out) + x],
-		   	        weight, value);
+		   value = mad (weights[abs (dy)],
+		   	        in[(y + dy) * get_image_width (out) + x],
+		   	        value);
 		}
 		else
-		   value += weight;
+		   value += weights[abs (dy)] * (float4) (1.0, 1.0, 1.0, 1.0);
 	}
 
 	write_imagef (out, (int2) (x, y), value);
