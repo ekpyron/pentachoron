@@ -42,8 +42,8 @@ int main (int argc, char *argv[])
 {
 	std::ofstream logfile;
 #ifdef _WIN32
-	freopen ("CON", "a", stdout);
-	freopen ("CON", "a", stderr);
+	freopen ("stdout.txt", "a", stdout);
+	freopen ("stderr.txt", "a", stderr);
 #endif
 	try {
 		logstream = &std::cerr;

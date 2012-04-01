@@ -42,74 +42,75 @@ void Culling::SetModelViewMatrix (const glm::mat4 &mat)
 bool Culling::IsVisible (const glm::vec3 &center, float radius) const
 {
 	glm::mat4 mvpmat;
-	glm::vec4 left, right, bottom, top, near, far;
+	glm::vec4 left_plane, right_plane, bottom_plane,
+		 top_plane, near_plane, far_plane;
 	float distance;
 
 	mvpmat = projmat * mvmat;
 
-	left.x = mvpmat[0].w + mvpmat[0].x;
-	left.y = mvpmat[1].w + mvpmat[1].x;
-	left.z = mvpmat[2].w + mvpmat[2].x;
-	left.w = mvpmat[3].w + mvpmat[3].x;
-	left /= glm::length (glm::vec3 (left));
+	left_plane.x = mvpmat[0].w + mvpmat[0].x;
+	left_plane.y = mvpmat[1].w + mvpmat[1].x;
+	left_plane.z = mvpmat[2].w + mvpmat[2].x;
+	left_plane.w = mvpmat[3].w + mvpmat[3].x;
+	left_plane /= glm::length (glm::vec3 (left_plane));
 
-	distance = left.x * center.x + left.y * center.y
-		 + left.z * center.z + left.w;
+	distance = left_plane.x * center.x + left_plane.y * center.y
+		 + left_plane.z * center.z + left_plane.w;
 	if (distance <= -radius)
 		 return false;
 
-	right.x = mvpmat[0].w - mvpmat[0].x;
-	right.y = mvpmat[1].w - mvpmat[1].x;
-	right.z = mvpmat[2].w - mvpmat[2].x;
-	right.w = mvpmat[3].w - mvpmat[3].x;
-	right /= glm::length (glm::vec3 (right));
+	right_plane.x = mvpmat[0].w - mvpmat[0].x;
+	right_plane.y = mvpmat[1].w - mvpmat[1].x;
+	right_plane.z = mvpmat[2].w - mvpmat[2].x;
+	right_plane.w = mvpmat[3].w - mvpmat[3].x;
+	right_plane /= glm::length (glm::vec3 (right_plane));
 
-	distance = right.x * center.x + right.y * center.y
-		 + right.z * center.z + right.w;
+	distance = right_plane.x * center.x + right_plane.y * center.y
+		 + right_plane.z * center.z + right_plane.w;
 	if (distance <= -radius)
 		 return false;
 
-	bottom.x = mvpmat[0].w + mvpmat[0].y;
-	bottom.y = mvpmat[1].w + mvpmat[1].y;
-	bottom.z = mvpmat[2].w + mvpmat[2].y;
-	bottom.w = mvpmat[3].w + mvpmat[3].y;
-	bottom /= glm::length (glm::vec3 (bottom));
+	bottom_plane.x = mvpmat[0].w + mvpmat[0].y;
+	bottom_plane.y = mvpmat[1].w + mvpmat[1].y;
+	bottom_plane.z = mvpmat[2].w + mvpmat[2].y;
+	bottom_plane.w = mvpmat[3].w + mvpmat[3].y;
+	bottom_plane /= glm::length (glm::vec3 (bottom_plane));
 
-	distance = bottom.x * center.x + bottom.y * center.y
-		 + bottom.z * center.z + bottom.w;
+	distance = bottom_plane.x * center.x + bottom_plane.y * center.y
+		 + bottom_plane.z * center.z + bottom_plane.w;
 	if (distance <= -radius)
 		 return false;
 
-	top.x = mvpmat[0].w - mvpmat[0].y;
-	top.y = mvpmat[1].w - mvpmat[1].y;
-	top.z = mvpmat[2].w - mvpmat[2].y;
-	top.w = mvpmat[3].w - mvpmat[3].y;
-	top /= glm::length (glm::vec3 (top));
+	top_plane.x = mvpmat[0].w - mvpmat[0].y;
+	top_plane.y = mvpmat[1].w - mvpmat[1].y;
+	top_plane.z = mvpmat[2].w - mvpmat[2].y;
+	top_plane.w = mvpmat[3].w - mvpmat[3].y;
+	top_plane /= glm::length (glm::vec3 (top_plane));
 
-	distance = top.x * center.x + top.y * center.y
-		 + top.z * center.z + top.w;
+	distance = top_plane.x * center.x + top_plane.y * center.y
+		 + top_plane.z * center.z + top_plane.w;
 	if (distance <= -radius)
 		 return false;
 
-	near.x = mvpmat[0].w + mvpmat[0].z;
-	near.y = mvpmat[1].w + mvpmat[1].z;
-	near.z = mvpmat[2].w + mvpmat[2].z;
-	near.w = mvpmat[3].w + mvpmat[3].z;
-	near /= glm::length (glm::vec3 (near));
+	near_plane.x = mvpmat[0].w + mvpmat[0].z;
+	near_plane.y = mvpmat[1].w + mvpmat[1].z;
+	near_plane.z = mvpmat[2].w + mvpmat[2].z;
+	near_plane.w = mvpmat[3].w + mvpmat[3].z;
+	near_plane /= glm::length (glm::vec3 (near_plane));
 
-	distance = near.x * center.x + near.y * center.y
-		 + near.z * center.z + near.w;
+	distance = near_plane.x * center.x + near_plane.y * center.y
+		 + near_plane.z * center.z + near_plane.w;
 	if (distance <= -radius)
 		 return false;
 
-	far.x = mvpmat[0].w - mvpmat[0].z;
-	far.y = mvpmat[1].w - mvpmat[1].z;
-	far.z = mvpmat[2].w - mvpmat[2].z;
-	far.w = mvpmat[3].w - mvpmat[3].z;
-	far /= glm::length (glm::vec3 (far));
+	far_plane.x = mvpmat[0].w - mvpmat[0].z;
+	far_plane.y = mvpmat[1].w - mvpmat[1].z;
+	far_plane.z = mvpmat[2].w - mvpmat[2].z;
+	far_plane.w = mvpmat[3].w - mvpmat[3].z;
+	far_plane /= glm::length (glm::vec3 (far_plane));
 	
-	distance = far.x * center.x + far.y * center.y
-		 + far.z * center.z + far.w;
+	distance = far_plane.x * center.x + far_plane.y * center.y
+		 + far_plane.z * center.z + far_plane.w;
 	if (distance <= -radius)
 		 return false;
 
