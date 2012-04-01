@@ -54,6 +54,7 @@ private:
 	 Composition composition;
 	 Culling culling;
 	 gl::Program opacityprogram;
+	 cl::CommandQueue queue;
 
 	 std::vector<Shadow> shadows;
 

@@ -55,7 +55,6 @@ public:
 //private:
 	 void ApplyBlur (const cl::Memory *memory, const cl::Memory &weights,
 									 int num_weights);
-	 cl::CommandQueue queue;
 	 cl::Program clblur;
 	 cl::Kernel hblur, vblur;
 	 cl::Memory storage;

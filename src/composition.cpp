@@ -58,8 +58,6 @@ bool Composition::Init (void)
 				renderer->gbuffer.specularbuffer[i]);
 	}
 
-	queue = renderer->clctx.CreateCommandQueue (0);
-
 	composition.SetArg (0, screenmem);
 	composition.SetArg (1, colormem[0]);
 	composition.SetArg (2, colormem[1]);
@@ -117,8 +115,8 @@ void Composition::Frame (float timefactor)
 															renderer->gbuffer.height };
 	const size_t local_dim[] = { 16, 16 };
 
-	queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
-	queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
-															local_dim, 0, NULL, NULL);
-	queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
+	renderer->queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
+	renderer->queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
+																				local_dim, 0, NULL, NULL);
+	renderer->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
 }

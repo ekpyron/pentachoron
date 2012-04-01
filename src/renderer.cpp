@@ -35,6 +35,8 @@ bool Renderer::Init (void)
 
 	(*logstream) << "Initialize Interface..." << std::endl;
 
+	queue = clctx.CreateCommandQueue (0);
+
 	if (!interface.Init ())
 		 return false;
 

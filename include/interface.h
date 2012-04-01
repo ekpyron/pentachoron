@@ -105,8 +105,6 @@ private:
 	 gl::Freetype freetype;
 	 gl::Font font;
 
-	 cl::CommandQueue queue;
-
 	 bool showInterface;
 	 unsigned int menu, submenu;
 

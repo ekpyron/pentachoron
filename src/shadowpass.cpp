@@ -36,8 +36,6 @@ bool ShadowPass::Init (void)
 	program.Build ("-cl-fast-relaxed-math -cl-mad-enable -cl-no-signed-zeros");
 	genshadow = program.CreateKernel ("genshadow");
 
-	queue = renderer->clctx.CreateCommandQueue (0);
-
 	if (!shadowmap.Init ())
 		 return false;
 
@@ -120,9 +118,9 @@ void ShadowPass::Render (const Shadow &shadow)
 	genshadow.SetArg (6, sizeof (ViewInfo), &info);
 
 	
-	queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
-	queue.EnqueueNDRangeKernel (genshadow, 2, NULL, work_dim,
-															local_dim, 0, NULL, NULL);
+	renderer->queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
+	renderer->queue.EnqueueNDRangeKernel (genshadow, 2, NULL, work_dim,
+																				local_dim, 0, NULL, NULL);
 
-	queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
+	renderer->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
 }

@@ -42,7 +42,6 @@ public:
 	 ShadowMap shadowmap;
 	 cl::Memory shadowmem;
 private:
-	 cl::CommandQueue queue;
 	 cl::Program program;
 	 cl::Kernel genshadow;
 	 cl::Memory shadowmapmem;

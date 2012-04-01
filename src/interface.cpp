@@ -180,7 +180,7 @@ void Interface::AddLight (int what)
 
 		renderer->lightmem = renderer->clctx.CreateBuffer
 			 (CL_MEM_READ_ONLY,	sizeof (Light) * renderer->lights.size (), NULL);
-		queue.EnqueueWriteBuffer
+		renderer->queue.EnqueueWriteBuffer
 			 (renderer->lightmem, CL_TRUE, 0,
 				sizeof (Light) * renderer->lights.size (),
 				&renderer->lights[0], 0, NULL, NULL);
@@ -421,7 +421,7 @@ void Interface::ToggleSoftShadow (int what)
 void Interface::MoveLightX (int what)
 {
 	renderer->lights[active_light].position.x += what * timefactor;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].position.x)
 			- intptr_t (&renderer->lights[0]),
@@ -432,7 +432,7 @@ void Interface::MoveLightX (int what)
 void Interface::MoveLightY (int what)
 {
 	renderer->lights[active_light].position.y += what * timefactor;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].position.y)
 			- intptr_t (&renderer->lights[0]),
@@ -444,7 +444,7 @@ void Interface::MoveLightY (int what)
 void Interface::MoveLightZ (int what)
 {
 	renderer->lights[active_light].position.z += what * timefactor;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].position.z)
 			- intptr_t (&renderer->lights[0]),
@@ -457,7 +457,7 @@ void Interface::MoveLightZ (int what)
 void Interface::MoveLightDirX (int what)
 {
 	renderer->lights[active_light].direction.x += what * timefactor;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].direction.x)
 			- intptr_t (&renderer->lights[0]),
@@ -469,7 +469,7 @@ void Interface::MoveLightDirX (int what)
 void Interface::MoveLightDirY (int what)
 {
 	renderer->lights[active_light].direction.y += what * timefactor;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].direction.y)
 			- intptr_t (&renderer->lights[0]),
@@ -481,7 +481,7 @@ void Interface::MoveLightDirY (int what)
 void Interface::MoveLightDirZ (int what)
 {
 	renderer->lights[active_light].direction.z += what * timefactor;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].direction.z)
 			- intptr_t (&renderer->lights[0]),
@@ -497,7 +497,7 @@ void Interface::EditDiffuseR (int what)
 		 renderer->lights[active_light].color.r = 0;
 	else if (renderer->lights[active_light].color.r > 1)
 		 renderer->lights[active_light].color.r = 1;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].color.r)
 			- intptr_t (&renderer->lights[0]),
@@ -513,7 +513,7 @@ void Interface::EditDiffuseG (int what)
 		 renderer->lights[active_light].color.g = 0;
 	else if (renderer->lights[active_light].color.g > 1)
 		 renderer->lights[active_light].color.g = 1;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].color.g)
 			- intptr_t (&renderer->lights[0]),
@@ -529,7 +529,7 @@ void Interface::EditDiffuseB (int what)
 		 renderer->lights[active_light].color.b = 0;
 	else if (renderer->lights[active_light].color.b > 1)
 		 renderer->lights[active_light].color.b = 1;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].color.b)
 			- intptr_t (&renderer->lights[0]),
@@ -545,7 +545,7 @@ void Interface::EditSpecularR (int what)
 		 renderer->lights[active_light].specular.color.r = 0;
 	else if (renderer->lights[active_light].specular.color.r > 1)
 		 renderer->lights[active_light].specular.color.r = 1;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].specular.color.r)
 			- intptr_t (&renderer->lights[0]),
@@ -561,7 +561,7 @@ void Interface::EditSpecularG (int what)
 		 renderer->lights[active_light].specular.color.g = 0;
 	else if (renderer->lights[active_light].specular.color.g > 1)
 		 renderer->lights[active_light].specular.color.g = 1;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].specular.color.g)
 			- intptr_t (&renderer->lights[0]),
@@ -577,7 +577,7 @@ void Interface::EditSpecularB (int what)
 		 renderer->lights[active_light].specular.color.b = 0;
 	else if (renderer->lights[active_light].specular.color.b > 1)
 		 renderer->lights[active_light].specular.color.b = 1;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].specular.color.b)
 			- intptr_t (&renderer->lights[0]),
@@ -591,7 +591,7 @@ void Interface::EditSpotAngle (int what)
 	renderer->lights[active_light].spot.angle += what * timefactor;
 	renderer->lights[active_light].spot.cosine
 		 = cosf (renderer->lights[active_light].spot.angle);
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].spot.cosine)
 			- intptr_t (&renderer->lights[0]),
@@ -603,7 +603,7 @@ void Interface::EditSpotAngle (int what)
 void Interface::EditSpotExponent (int what)
 {
 	renderer->lights[active_light].spot.exponent += what * timefactor;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].spot.exponent)
 			- intptr_t (&renderer->lights[0]),
@@ -617,7 +617,7 @@ void Interface::EditConstantAttenuation (int what)
 	renderer->lights[active_light].attenuation.x += what * timefactor * 0.1;
 	if (renderer->lights[active_light].attenuation.x < 0)
 		 renderer->lights[active_light].attenuation.x = 0;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].attenuation.x)
 			- intptr_t (&renderer->lights[0]),
@@ -631,7 +631,7 @@ void Interface::EditLinearAttenuation (int what)
 	renderer->lights[active_light].attenuation.y += what * timefactor * 0.1;
 	if (renderer->lights[active_light].attenuation.y < 0)
 		 renderer->lights[active_light].attenuation.y = 0;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].attenuation.y)
 			- intptr_t (&renderer->lights[0]),
@@ -645,7 +645,7 @@ void Interface::EditQuadraticAttenuation (int what)
 	renderer->lights[active_light].attenuation.z += what * timefactor * 0.1;
 	if (renderer->lights[active_light].attenuation.z < 0)
 		 renderer->lights[active_light].attenuation.z = 0;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].attenuation.z)
 			- intptr_t (&renderer->lights[0]),
@@ -658,7 +658,7 @@ void Interface::EditShininess (int what)
 {
 	renderer->lights[active_light].specular.shininess
 		 += what * timefactor * 10.0;
-	queue.EnqueueWriteBuffer
+	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
 			intptr_t (&renderer->lights[active_light].specular.shininess)
 			- intptr_t (&renderer->lights[0]),
@@ -799,8 +799,6 @@ bool Interface::Init (void)
 																			.as<std::string> () )))
 		 return false;
 
-	queue = renderer->clctx.CreateCommandQueue (0);
-
 	return true;
 }
 
@@ -923,6 +921,4 @@ void Interface::Frame (float tf)
 	{
 		renderer->camera.center += glm::vec3 (0, 4, 0) * timefactor;
 	}
-
-	queue.Finish ();
 }

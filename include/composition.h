@@ -32,7 +32,6 @@ public:
 
 	 gl::Texture screen;
 private:
-	 cl::CommandQueue queue;
 	 cl::Program program;
 	 cl::Kernel composition;
 	 cl::Memory screenmem;
