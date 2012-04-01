@@ -204,9 +204,9 @@ bool Mesh::Load (void *m, const Material *mat)
 	return true;
 }
 
-bool Mesh::IsOpaque (void) const
+bool Mesh::IsTransparent (void) const
 {
-	return material->IsOpaque ();
+	return material->IsTransparent ();
 }
 
 void Mesh::OcclusionQuery (void)

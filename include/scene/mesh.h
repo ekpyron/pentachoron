@@ -34,7 +34,7 @@ public:
 	 Mesh &operator= (const Mesh&) = delete;
 	 void OcclusionQuery (void);
 	 void Render (const gl::Program &program, bool shadowpass) const;
-	 bool IsOpaque (void) const;
+	 bool IsTransparent (void) const;
 private:
 	 bool Load (void*, const Material *mat);
 	 Scene &parent;

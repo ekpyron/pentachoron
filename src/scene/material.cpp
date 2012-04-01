@@ -24,7 +24,7 @@ GLenum TranslateFormat (const std::string &str);
 
 Material::Material (void)
 	: diffuse_enabled (false), normalmap_enabled (false),
-		specularmap_enabled (false), opaque (false)
+		specularmap_enabled (false), transparent (false)
 {
 }
 
@@ -35,12 +35,12 @@ Material::Material (Material &&material)
 		normalmap_enabled (material.normalmap_enabled),
 		specularmap (std::move (material.specularmap)),
 		specularmap_enabled (material.specularmap_enabled),
-		opaque (material.opaque)
+		transparent (material.transparent)
 {
 	material.diffuse_enabled = false;
 	material.normalmap_enabled = false;
 	material.specularmap_enabled = false;
-	material.opaque = false;
+	material.transparent = false;
 }
 
 Material::~Material (void)
@@ -58,8 +58,8 @@ Material &Material::operator= (Material &&material)
 	specularmap = std::move (material.specularmap);
 	specularmap_enabled = material.specularmap_enabled;
 	material.specularmap_enabled = false;
-	opaque = material.opaque;
-	material.opaque = false;
+	transparent = material.transparent;
+	material.transparent = false;
 }
 
 bool LoadTex (gl::Texture &texture, bool &result,
@@ -119,12 +119,12 @@ bool Material::Load (const std::string &name)
 		return false;
 	}
 
-	if (desc["opaque"])
-		 opaque = desc["opaque"].as<bool> ();
+	if (desc["transparent"])
+		 transparent = desc["transparent"].as<bool> ();
 
 	if (!LoadTex (diffuse, diffuse_enabled,
 								desc["textures"]["diffuse"],
-								opaque ? GL_COMPRESSED_RGBA_BPTC_UNORM_ARB
+								transparent ? GL_COMPRESSED_RGBA_BPTC_UNORM_ARB
 								: GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB))
 		 return false;
 	if (!LoadTex (normalmap, normalmap_enabled,
@@ -139,9 +139,9 @@ bool Material::Load (const std::string &name)
 	return true;
 }
 
-bool Material::IsOpaque (void) const
+bool Material::IsTransparent (void) const
 {
-	return opaque;
+	return transparent;
 }
 
 void Material::Use (const gl::Program &program) const
