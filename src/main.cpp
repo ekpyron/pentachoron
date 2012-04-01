@@ -22,10 +22,18 @@
 
 std::unique_ptr<Renderer> renderer;
 YAML::Node config;
+bool running;
 
 void GLFWCALL resizecb (int w, int h)
 {
 	renderer->Resize (w, h);
+}
+
+
+int GLFWCALL closecb (void)
+{
+	running = false;
+	return GL_FALSE;
 }
 
 void GLFWCALL keycb (int key, int action)
@@ -122,10 +130,12 @@ int main (int argc, char *argv[])
 
 		glfwSetWindowSizeCallback (resizecb);
 		glfwSetKeyCallback (keycb);
+		glfwSetWindowCloseCallback (closecb);
 		glfwGetWindowSize (&w, &h);
 		resizecb (w, h);
 
-		while (glfwGetWindowParam (GLFW_OPENED) == GL_TRUE)
+		running = true;
+		while (running && glfwGetWindowParam (GLFW_OPENED) == GL_TRUE)
 		{
 			renderer->Frame ();
 			glfwSwapBuffers ();

@@ -268,11 +268,13 @@ void Interface::ToggleRendermode (int what)
 	}
 }
 
+extern bool running;
+
 void Interface::Exit (int what)
 {
 	if (!what)
 	{
-		glfwCloseWindow ();
+		running = false;
 	}
 }
 
