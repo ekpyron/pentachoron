@@ -32,6 +32,7 @@ public:
 	 ~Mesh (void);
 	 Mesh &operator= (Mesh &&mesh);
 	 Mesh &operator= (const Mesh&) = delete;
+	 void OcclusionQuery (void);
 	 void Render (const gl::Program &program, bool shadowpass) const;
 	 bool IsOpaque (void) const;
 private:
@@ -51,6 +52,11 @@ private:
 	 GLuint vertexcount;
 	 std::vector<gl::Buffer> buffers;
 	 gl::Buffer indices;
+	 struct
+	 {
+			glm::vec3 min, max;
+	 } bbox;
+	 gl::Query query;
 };
 
 #endif /* !defined MESH_H */

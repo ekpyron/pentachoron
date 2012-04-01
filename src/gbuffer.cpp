@@ -132,8 +132,8 @@ void GBuffer::Render (const Geometry &geometry)
 		}
 
 		geometry.Render (program, renderer->camera.GetViewMatrix ());
-		gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	}
+	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	gl::DepthMask (GL_FALSE);
 	gl::Program::UseNone ();
 	

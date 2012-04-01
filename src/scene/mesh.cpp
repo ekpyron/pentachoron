@@ -107,7 +107,11 @@ bool Mesh::Load (void *m, const Material *mat)
 	trianglecount = mesh->mNumFaces;
 	vertexcount = mesh->mNumVertices;
 
+	bbox.min = glm::vec3 (FLT_MAX, FLT_MAX, FLT_MAX);
+	bbox.max = glm::vec3 (-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
 	// calculate the center of the bounding sphere
+	// calculate the bounding box
 	{
 		float factor = 1.0f / float (vertexcount);
 		bsphere.center = glm::vec3 (0, 0, 0);
@@ -116,6 +120,18 @@ bool Mesh::Load (void *m, const Material *mat)
 			glm::vec3 vertex (mesh->mVertices[i].x, mesh->mVertices[i].y,
 												mesh->mVertices[i].z);
 			bsphere.center += factor * vertex;
+			if (vertex.x < bbox.min.x)
+				 bbox.min.x = vertex.x;
+			if (vertex.y < bbox.min.y)
+				 bbox.min.y = vertex.y;
+			if (vertex.z < bbox.min.z)
+				 bbox.min.z = vertex.z;
+			if (vertex.x > bbox.max.x)
+				 bbox.max.x = vertex.x;
+			if (vertex.y > bbox.max.y)
+				 bbox.max.y = vertex.y;
+			if (vertex.z > bbox.max.z)
+				 bbox.max.z = vertex.z;
 		}
 	}
 	// calculate the radius of the bounding sphere
@@ -191,6 +207,18 @@ bool Mesh::Load (void *m, const Material *mat)
 bool Mesh::IsOpaque (void) const
 {
 	return material->IsOpaque ();
+}
+
+void Mesh::OcclusionQuery (void)
+{
+	query.Begin (GL_SAMPLES_PASSED);
+
+	gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	gl::DepthMask (GL_FALSE);
+
+	gl::ColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	gl::Query::End (GL_SAMPLES_PASSED);
 }
 
 void Mesh::Render (const gl::Program &program, bool shadowpass) const

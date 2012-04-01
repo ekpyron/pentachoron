@@ -48,12 +48,19 @@ bool ShadowPass::Init (void)
 	shadowmask.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8,
 											renderer->gbuffer.width,
 											renderer->gbuffer.height,
-											0, GL_RED, GL_UNSIGNED_BYTE,
+											0, GL_RGBA, GL_UNSIGNED_BYTE,
 											NULL);
 	shadowmem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, shadowmask);
 
 	blur = renderer->filters.CreateBlur (shadowmem, 4.0f);
+
+	genshadow.SetArg (0, shadowmem);
+	genshadow.SetArg (1, renderer->gbuffer.depthmem[0]);
+	genshadow.SetArg (2, renderer->gbuffer.depthmem[1]);
+	genshadow.SetArg (3, renderer->gbuffer.depthmem[2]);
+	genshadow.SetArg (4, renderer->gbuffer.depthmem[3]);
+	genshadow.SetArg (5, shadowmapmem);
 
 	return true;
 }
@@ -110,12 +117,6 @@ void ShadowPass::Render (const Shadow &shadow)
 															renderer->gbuffer.height };
 	const size_t local_dim[] = { 16, 16 };
 
-	genshadow.SetArg (0, shadowmem);
-	genshadow.SetArg (1, renderer->gbuffer.depthmem[0]);
-	genshadow.SetArg (2, renderer->gbuffer.depthmem[1]);
-	genshadow.SetArg (3, renderer->gbuffer.depthmem[2]);
-	genshadow.SetArg (4, renderer->gbuffer.depthmem[3]);
-	genshadow.SetArg (5, shadowmapmem);
 	genshadow.SetArg (6, sizeof (ViewInfo), &info);
 
 	
