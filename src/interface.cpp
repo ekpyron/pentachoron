@@ -254,7 +254,7 @@ void Interface::EditShadows (int what)
 	}
 }
 
-#define NUM_RENDERMODES 19
+#define NUM_RENDERMODES 18
 
 void Interface::ToggleRendermode (int what)
 {
@@ -298,7 +298,6 @@ void Interface::PrintRendermode (void)
 		"depth buffer [1]",
 		"depth buffer [2]",
 		"depth buffer [3]",
-		"shadow mask",
 		"shadow projection"
 	};
 
@@ -419,8 +418,8 @@ void Interface::MoveShadowZ (int what)
 void Interface::ToggleSoftShadow (int what)
 {
 	bool value;
-	value = renderer->shadowpass.GetSoftShadows ();
-	renderer->shadowpass.SetSoftShadows (!value);
+	value = renderer->shadowmap.GetSoftShadows ();
+	renderer->shadowmap.SetSoftShadows (!value);
 }
 
 void Interface::MoveLightX (int what)
@@ -699,7 +698,7 @@ void Interface::PrintShadowZ (void)
 
 void Interface::PrintSoftShadow (void)
 {
-	if (renderer->shadowpass.GetSoftShadows ())
+	if (renderer->shadowmap.GetSoftShadows ())
 		 font.Print ("yes");
 	else
 		 font.Print ("no");

@@ -23,7 +23,7 @@
 #include "finalpass.h"
 #include "windowgrid.h"
 #include "camera.h"
-#include "shadowpass.h"
+#include "shadowmap.h"
 #include "filters.h"
 #include "interface.h"
 #include "composition.h"
@@ -47,7 +47,7 @@ private:
 
 	 Geometry geometry;
 	 GBuffer gbuffer;
-	 ShadowPass shadowpass;
+	 ShadowMap shadowmap;
 	 FinalPass finalpass;
 	 WindowGrid windowgrid;
 	 Filters filters;

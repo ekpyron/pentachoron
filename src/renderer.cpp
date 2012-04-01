@@ -17,7 +17,7 @@
 #include "renderer.h"
 
 Renderer::Renderer (void)
-	: geometry (this), shadowpass (this),
+	: geometry (this), shadowmap (this),
 		finalpass (this), gbuffer (this), filters (this),
 		interface (this), composition (this)
 {
@@ -56,8 +56,8 @@ bool Renderer::Init (void)
 	if (!filters.Init ())
 		 return false;
 
-	(*logstream) << "Initialize Shadow Pass..." << std::endl;
-	if (!shadowpass.Init ())
+	(*logstream) << "Initialize Shadow Map..." << std::endl;
+	if (!shadowmap.Init ())
 		 return false;
 
 	interface.AddLight (0);
@@ -106,12 +106,10 @@ void Renderer::Frame (void)
 	culling.Frame ();
 	gbuffer.Render (geometry);
 
-	shadowpass.FrameInit ();
 	for (Shadow &shadow : shadows)
 	{
-		shadowpass.Render (shadow);
+		shadowmap.Render (geometry, shadow);
 	}
-	shadowpass.FrameFinish ();
 
 	composition.Frame (timefactor);
 

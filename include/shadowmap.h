@@ -21,6 +21,7 @@
 #include "scene/scene.h"
 #include "geometry.h"
 #include "shadow.h"
+#include "filters.h"
 
 class Renderer;
 
@@ -34,14 +35,22 @@ public:
 	 GLuint GetWidth (void) const;
 	 GLuint GetHeight (void) const;
 
+	 bool GetSoftShadows (void) const;
+	 void SetSoftShadows (bool s);
+
 	 gl::Texture shadowmap;
-private:
-	 GLuint width, height;
+	 cl::Memory shadowmapmem;
 	 glm::mat4 vmat;
 	 glm::mat4 projmat;
+private:
+	 GLuint width, height;
 	 gl::Program program;
 	 gl::Renderbuffer depthbuffer;
 	 gl::Framebuffer framebuffer;
+
+	 bool soft_shadows;
+
+	 Blur blur;
 
 	 Renderer *renderer;
 	 friend class ShadowPass;

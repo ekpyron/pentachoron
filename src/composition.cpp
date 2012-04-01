@@ -75,7 +75,7 @@ bool Composition::Init (void)
 	composition.SetArg (14, specularmem[1]);
 	composition.SetArg (15, specularmem[2]);
 	composition.SetArg (16, specularmem[3]);
-	composition.SetArg (17, renderer->shadowpass.shadowmem);
+	composition.SetArg (17, renderer->shadowmap.shadowmapmem);
 
 	return true;
 }
@@ -86,6 +86,7 @@ void Composition::Frame (float timefactor)
 	{
 		 glm::vec4 projinfo;
 		 glm::mat4 vmatinv;
+		 glm::mat4 shadowmat;
 		 glm::vec4 eye;
 	} ViewInfo;
 	std::vector<cl::Memory> mem = { screenmem, colormem[0], colormem[1],
@@ -97,7 +98,7 @@ void Composition::Frame (float timefactor)
 																	renderer->gbuffer.depthmem[1],
 																	renderer->gbuffer.depthmem[2],
 																	renderer->gbuffer.depthmem[3],
-																	renderer->shadowpass.shadowmem };
+																	renderer->shadowmap.shadowmapmem };
 	ViewInfo info;
 
 	cl_uint num_lights = renderer->lights.size ();
@@ -105,6 +106,12 @@ void Composition::Frame (float timefactor)
 	info.projinfo = renderer->camera.GetProjInfo ();
 	info.vmatinv = glm::transpose
 		 (glm::inverse (renderer->camera.GetViewMatrix ()));
+	info.shadowmat = glm::transpose (glm::mat4 (glm::vec4 (0.5, 0.0, 0.0, 0.0),
+																							glm::vec4 (0.0, 0.5, 0.0, 0.0),
+																							glm::vec4 (0.0, 0.0, 0.5, 0.0),
+																							glm::vec4 (0.5, 0.5, 0.5, 1.0))
+																	 * renderer->shadowmap.projmat
+																	 * renderer->shadowmap.vmat);
 	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
 
 	composition.SetArg (18, sizeof (cl_uint), &num_lights);

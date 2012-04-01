@@ -35,10 +35,12 @@ public:
 //private:
 	 const cl::Memory *memory;
 	 cl::Memory weights;
-	 int num_weights;
+	 GLuint num_weights;
+	 GLuint width, height;
 	 Filters *parent;
-	 Blur (const cl::Memory *memory, cl::Memory weights,
-				 int num_weights, Filters *p);
+	 cl::Memory storage;
+	 Blur (const cl::Memory *memory, cl::Memory storage, cl::Memory weights,
+				 GLuint num_weights, GLuint width, GLuint height, Filters *p);
 	 friend class Filters;
 };
 
@@ -51,13 +53,14 @@ public:
 	 Filters &operator= (const Filters&) = delete;
 	 bool Init (void);
 
-	 Blur CreateBlur (cl::Memory &memory, float sigma);
+	 Blur CreateBlur (cl::Memory &memory, GLuint width, GLuint height,
+										float sigma);
 //private:
-	 void ApplyBlur (const cl::Memory *memory, const cl::Memory &weights,
-									 int num_weights);
+	 void ApplyBlur (const cl::Memory *memory, const cl::Memory &storage,
+									 const cl::Memory &weights, GLuint num_weights,
+									 GLuint width, GLuint height);
 	 cl::Program clblur;
 	 cl::Kernel hblur, vblur;
-	 cl::Memory storage;
 	 Renderer *renderer;
 	 friend class Blur;
 };
