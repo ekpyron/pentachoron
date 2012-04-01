@@ -83,12 +83,16 @@ private:
 		* \return Whether the Font was loaded successfully.
 		*/
 	 bool Load (Freetype *freetype, const std::string &name);
-	 /** internal Freetype FT_Face object
-		*/
-	 FT_Face face;
 	 glm::vec2 pos;
 	 glm::vec3 color;
-	 gl::Texture texture;
+	 struct
+	 {
+			gl::Texture texture;
+			float left, top, advance;
+			GLuint width, height;
+			GLuint texwidth, texheight;
+	 } glyph[128];
+	 GLuint lineheight;
 	 Freetype *parent;
 	 friend class Freetype;
 };
