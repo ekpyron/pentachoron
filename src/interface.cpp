@@ -204,6 +204,9 @@ void Interface::RemoveShadow (int what)
 {
 	if (!what)
 	{
+		if (renderer->shadows.size () < 2)
+			 return;
+
 		renderer->shadows.erase (renderer->shadows.begin () + active_shadow);
 		if (active_shadow >= renderer->shadows.size ())
 			 active_light = 0;

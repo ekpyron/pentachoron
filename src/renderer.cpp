@@ -61,6 +61,7 @@ bool Renderer::Init (void)
 		 return false;
 
 	interface.AddLight (0);
+	interface.AddShadow (0);
 
 	(*logstream) << "Initialize Composition..." << std::endl;
 	if (!composition.Init ())

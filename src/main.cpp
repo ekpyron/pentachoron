@@ -130,16 +130,31 @@ int main (int argc, char *argv[])
 			renderer->Frame ();
 			glfwSwapBuffers ();
 		}
+		
+		(*logstream) << "Main loop returned."	<< std::endl;
 
 		renderer.reset ();
+		
+		(*logstream) << "Renderer class was freed." << std::endl;
 
 		glfwTerminate ();
-
-		return 0;
+		
+		(*logstream) << "Exiting." << std::endl;
+		
+		exit (0);
 	} catch (std::exception &e) {
 		(*logstream) << "Exception: " << e.what () << std::endl;
 		renderer.reset ();
+		(*logstream) << "Renderer class was freed." << std::endl;
 		glfwTerminate ();
-		return -1;
+		(*logstream) << "Exiting." << std::endl;
+		exit (-1);
+	} catch (...) {
+		(*logstream) << "Unknown exception." << std::endl;
+		renderer.reset ();
+		(*logstream) << "Renderer class was freed." << std::endl;
+		glfwTerminate ();
+		(*logstream) << "Exiting." << std::endl;
+		exit (-1);
 	}
 }
