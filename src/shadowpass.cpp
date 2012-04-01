@@ -92,6 +92,11 @@ void ShadowPass::Render (const Shadow &shadow)
 		 glm::vec4 projinfo;
 		 glm::mat4 vmatinv;
 		 glm::mat4 shadowmat;
+		 struct
+		 {
+				GLfloat min_variance;
+				GLfloat padding[3];
+		 };
 	} ViewInfo;
 	ViewInfo info;
 	std::vector<cl::Memory> mem = {
@@ -110,6 +115,7 @@ void ShadowPass::Render (const Shadow &shadow)
 																							glm::vec4 (0.0, 0.0, 0.5, 0.0),
 																							glm::vec4 (0.5, 0.5, 0.5, 1.0))
 																	 * shadowmap.projmat * shadowmap.vmat);
+	info.min_variance = 0.003;
 
 	const size_t work_dim[] = { renderer->gbuffer.width,
 															renderer->gbuffer.height };

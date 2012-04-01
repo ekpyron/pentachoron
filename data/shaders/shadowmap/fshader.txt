@@ -1,8 +1,12 @@
 #version 420 core
 
-layout(location = 0) out float depth;
+layout(location = 0) out vec2 moments;
 
 void main (void)
 {
-	depth = gl_FragCoord.z;
+	float dx, dy;
+	moments.x = gl_FragCoord.z;
+	dx = dFdx (moments.x);
+	dy = dFdy (moments.x);
+	moments.y = moments.x * moments.x + 0.25 * (dx * dx + dy * dy);
 }

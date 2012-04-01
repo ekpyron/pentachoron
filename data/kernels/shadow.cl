@@ -8,6 +8,7 @@ struct ViewInfo
 	float4 projinfo;
 	float4 vmatinv[4];
 	float4 shadowmat[4];
+	float min_variance;
 };
 
 float3 getpos (uint x, uint y, read_only image2d_t depthbuffer,
@@ -60,19 +61,16 @@ float compute_shadow (int x, int y, read_only image2d_t depthbuffer,
 	    return 0.0;
 	}
 
-	float shadowdepth;
-	shadowdepth = read_imagef (shadowmap, samplerB, lspos.xy).x;
+	float2 moments;
+	moments = read_imagef (shadowmap, samplerB, lspos.xy).xy;
 
-	lspos.z -= 0.001;
+	if (lspos.z <= moments.x)
+	   return 1;
 
-	if (shadowdepth >= lspos.z)
-	{
-		return 1.0;
-	}
-	else
-	{
-		return 0.0;
-	}
+	float variance = moments.y - (moments.x * moments.x);
+	variance = max (variance, info.min_variance);
+	float d = lspos.z - moments.x;
+	return variance / (variance + d * d);
 }
 
 kernel void genshadow (write_only image2d_t shadowmask,

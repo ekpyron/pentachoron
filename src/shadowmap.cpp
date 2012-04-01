@@ -70,8 +70,8 @@ bool ShadowMap::Init (void)
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
-	shadowmap.Image2D (GL_TEXTURE_RECTANGLE, 0, GL_R32F, width, height,
-										 0, GL_RED, GL_FLOAT, NULL);
+	shadowmap.Image2D (GL_TEXTURE_RECTANGLE, 0, GL_RG32F, width, height,
+										 0, GL_RG, GL_FLOAT, NULL);
 
 	depthbuffer.Storage (GL_DEPTH_COMPONENT32, width, height);
 
