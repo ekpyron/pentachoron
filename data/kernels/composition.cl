@@ -37,7 +37,7 @@ float3 reflect (float3 I, float3 N)
 }
 
 float4 getpos (uint x, uint y, read_only image2d_t depthbuffer,
-               struct ViewInfo info)
+               struct ViewInfo *info)
 {
 	float depth = read_imagef (depthbuffer, sampler, (int2) (x, y)).x;
 	float4 pos;
@@ -48,17 +48,17 @@ float4 getpos (uint x, uint y, read_only image2d_t depthbuffer,
 	pos.xyz = mad (pos.xyz, 2, -1);
 
 	float4 p;
-	p.x = pos.x * info.projinfo.x;
-	p.y = pos.y * info.projinfo.y;
+	p.x = pos.x * info->projinfo.x;
+	p.y = pos.y * info->projinfo.y;
 	p.z = -pos.w;
-	p.w = native_divide (pos.z * (info.projinfo.z - info.projinfo.w)
-	      		     + pos.w * (info.projinfo.z + info.projinfo.w),
-			     2 * info.projinfo.z * info.projinfo.w);
+	p.w = native_divide (pos.z * (info->projinfo.z - info->projinfo.w)
+	      		     + pos.w * (info->projinfo.z + info->projinfo.w),
+			     2 * info->projinfo.z * info->projinfo.w);
 
-	pos.x = dot (info.vmatinv[0], p);
-	pos.y = dot (info.vmatinv[1], p);
-	pos.z = dot (info.vmatinv[2], p);
-	pos.w = dot (info.vmatinv[3], p);
+	pos.x = dot (info->vmatinv[0], p);
+	pos.y = dot (info->vmatinv[1], p);
+	pos.z = dot (info->vmatinv[2], p);
+	pos.w = dot (info->vmatinv[3], p);
 	pos.xyz = native_divide (pos.xyz, pos.w);
 	pos.w = 1.0;
 
@@ -66,14 +66,14 @@ float4 getpos (uint x, uint y, read_only image2d_t depthbuffer,
 }
 
 float compute_shadow (int x, int y, float4 pos,
-      		      read_only image2d_t shadowmap, struct ViewInfo info)
+      		      read_only image2d_t shadowmap, struct ViewInfo *info)
 {
 	float4 lspos;
 
-	lspos.x = dot (info.shadowmat[0], pos);
-	lspos.y = dot (info.shadowmat[1], pos);
-	lspos.z = dot (info.shadowmat[2], pos);
-	lspos.w = dot (info.shadowmat[3], pos);
+	lspos.x = dot (info->shadowmat[0], pos);
+	lspos.y = dot (info->shadowmat[1], pos);
+	lspos.z = dot (info->shadowmat[2], pos);
+	lspos.w = dot (info->shadowmat[3], pos);
 	lspos.xyz = native_divide (lspos.xyz, lspos.w);
 
 	if (lspos.w < 0 || lspos.x < 0 || lspos.y < 0
@@ -89,9 +89,9 @@ float compute_shadow (int x, int y, float4 pos,
 	   return 1;
 
 	float variance = moments.y - (moments.x * moments.x);
-	variance = max (variance, 0.003);//info.min_variance);
+//	variance = max (variance, 0.003);//info.min_variance);
 	float d = lspos.z - moments.x;
-	return variance / (variance + d * d);
+	return native_divide (variance, variance + d * d);
 }
 
 float4 compute_pixel (read_only image2d_t colormap,
@@ -101,14 +101,11 @@ float4 compute_pixel (read_only image2d_t colormap,
 		      read_only image2d_t shadowmap,
 		      uint offset, uint x, uint y,
 		      unsigned int num_lights, global struct Light *lights,
-		      struct ViewInfo info)
+		      struct ViewInfo *info)
 {
 	float4 pos = getpos (x, y, depthbuffer, info);
 	float3 diffuse = (float3) (0, 0, 0);
 	float3 specular = (float3) (0, 0, 0);
-	float shadow;
-
-	shadow = compute_shadow (x, y, pos, shadowmap, info);
 
 /*	local ushort light_indices[256];
 	local uint num_light_indices;
@@ -178,7 +175,7 @@ float4 compute_pixel (read_only image2d_t colormap,
 		diffuse += attenuation * NdotL * light.color.xyz;
 
 		float r;
-		r = dot (fast_normalize (info.eye.xyz - pos.xyz),
+		r = dot (fast_normalize (info->eye.xyz - pos.xyz),
 		    	 reflect (fast_normalize (pos.xyz
 			 	  - light.position.xyz),
 			 	  normal));
@@ -189,6 +186,9 @@ float4 compute_pixel (read_only image2d_t colormap,
 				     * native_powr (r, light.specular.w);
 		}
 	}
+
+	float shadow;
+	shadow = compute_shadow (x, y, pos, shadowmap, info);
 
 	diffuse *= shadow;
 	specular *= shadow;
@@ -213,19 +213,15 @@ kernel void composition (write_only image2d_t screen,
 	      		 read_only image2d_t colormap1,
 	      		 read_only image2d_t colormap2,
 	      		 read_only image2d_t colormap3,
-	      		 read_only image2d_t colormap4,
 			 read_only image2d_t depthbuffer1,
 			 read_only image2d_t depthbuffer2,
 			 read_only image2d_t depthbuffer3,
-			 read_only image2d_t depthbuffer4,
 			 read_only image2d_t normalmap1,
 			 read_only image2d_t normalmap2,
 			 read_only image2d_t normalmap3,
-			 read_only image2d_t normalmap4,
 			 read_only image2d_t specularmap1,
 			 read_only image2d_t specularmap2,
 			 read_only image2d_t specularmap3,
-			 read_only image2d_t specularmap4,
 			 read_only image2d_t shadowmap,
 			 unsigned int num_lights,
 			 global struct Light *lights,
@@ -241,34 +237,21 @@ kernel void composition (write_only image2d_t screen,
 
 	pixel = compute_pixel (colormap1, depthbuffer1, normalmap1,
 	      		       specularmap1, shadowmap, offset,
-			       x, y, num_lights, lights, info);
+			       x, y, num_lights, lights, &info);
 	if (pixel.w < 0.99)
 	{
 		float4 pixel2;
 		pixel2 = compute_pixel (colormap2, depthbuffer2,
 		       	 	        normalmap2, specularmap2,
 					shadowmap, offset, x, y,
-					num_lights, lights, info);
+					num_lights, lights, &info);
 		if (pixel2.w < 0.99)
 		{
 			float4 pixel3;
 			pixel3 = compute_pixel (colormap3, depthbuffer3,
 			       	 	        normalmap3, specularmap3,
 						shadowmap, offset, x, y,
-						num_lights, lights, info);
-			if (pixel3.w < 0.99)
-			{
-				float4 pixel4;
-				pixel4 = compute_pixel (colormap4,
-				       	 	        depthbuffer4,
-			       	 	        	normalmap4,
-							specularmap4,
-							shadowmap, offset,
-							x, y, num_lights,
-							lights, info);
-				pixel3.xyz = mix (pixel3.xyz, pixel4.xyz,
-					     	  pixel3.w);
-			}
+						num_lights, lights, &info);
 			pixel2.xyz = mix (pixel2.xyz, pixel3.xyz, pixel2.w);
 		}
 		pixel.xyz = mix (pixel.xyz, pixel2.xyz, pixel.w);
