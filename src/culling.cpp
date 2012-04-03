@@ -34,9 +34,19 @@ void Culling::SetProjMatrix (const glm::mat4 &mat)
 	projmat = mat;
 }
 
+const glm::mat4 &Culling::GetProjMatrix (void)
+{
+	return projmat;
+}
+
 void Culling::SetModelViewMatrix (const glm::mat4 &mat)
 {
 	mvmat = mat;
+}
+
+const glm::mat4 &Culling::GetModelViewMatrix (void)
+{
+	return mvmat;
 }
 
 bool Culling::IsVisible (const glm::vec3 &center, float radius) const
@@ -57,7 +67,10 @@ bool Culling::IsVisible (const glm::vec3 &center, float radius) const
 	distance = left_plane.x * center.x + left_plane.y * center.y
 		 + left_plane.z * center.z + left_plane.w;
 	if (distance <= -radius)
-		 return false;
+	{
+		culled++;
+		return false;
+	}
 
 	right_plane.x = mvpmat[0].w - mvpmat[0].x;
 	right_plane.y = mvpmat[1].w - mvpmat[1].x;
@@ -68,7 +81,10 @@ bool Culling::IsVisible (const glm::vec3 &center, float radius) const
 	distance = right_plane.x * center.x + right_plane.y * center.y
 		 + right_plane.z * center.z + right_plane.w;
 	if (distance <= -radius)
-		 return false;
+	{
+		culled++;
+		return false;
+	}
 
 	bottom_plane.x = mvpmat[0].w + mvpmat[0].y;
 	bottom_plane.y = mvpmat[1].w + mvpmat[1].y;
@@ -79,7 +95,10 @@ bool Culling::IsVisible (const glm::vec3 &center, float radius) const
 	distance = bottom_plane.x * center.x + bottom_plane.y * center.y
 		 + bottom_plane.z * center.z + bottom_plane.w;
 	if (distance <= -radius)
-		 return false;
+	{
+		culled++;
+		return false;
+	}
 
 	top_plane.x = mvpmat[0].w - mvpmat[0].y;
 	top_plane.y = mvpmat[1].w - mvpmat[1].y;
@@ -90,7 +109,10 @@ bool Culling::IsVisible (const glm::vec3 &center, float radius) const
 	distance = top_plane.x * center.x + top_plane.y * center.y
 		 + top_plane.z * center.z + top_plane.w;
 	if (distance <= -radius)
-		 return false;
+	{
+		culled++;
+		return false;
+	}
 
 	near_plane.x = mvpmat[0].w + mvpmat[0].z;
 	near_plane.y = mvpmat[1].w + mvpmat[1].z;
@@ -101,7 +123,10 @@ bool Culling::IsVisible (const glm::vec3 &center, float radius) const
 	distance = near_plane.x * center.x + near_plane.y * center.y
 		 + near_plane.z * center.z + near_plane.w;
 	if (distance <= -radius)
-		 return false;
+	{
+		culled++;
+		return false;
+	}
 
 	far_plane.x = mvpmat[0].w - mvpmat[0].z;
 	far_plane.y = mvpmat[1].w - mvpmat[1].z;
@@ -112,7 +137,12 @@ bool Culling::IsVisible (const glm::vec3 &center, float radius) const
 	distance = far_plane.x * center.x + far_plane.y * center.y
 		 + far_plane.z * center.z + far_plane.w;
 	if (distance <= -radius)
-		 return false;
+	{
+		culled++;
+		return false;
+	}
 
 	return true;
 }
+
+GLuint Culling::culled = 0;

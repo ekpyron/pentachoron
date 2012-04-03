@@ -88,7 +88,8 @@ bool ShadowMap::Init (void)
 	return true;
 }
 
-void ShadowMap::Render (const Geometry &geometry, const Shadow &shadow)
+void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
+												const Shadow &shadow)
 {
 	vmat = glm::lookAt (glm::vec3 (shadow.position),
 											glm::vec3 (shadow.position + shadow.direction),
@@ -114,7 +115,8 @@ void ShadowMap::Render (const Geometry &geometry, const Shadow &shadow)
 
 	GL_CHECK_ERROR;
 
-	geometry.Render (program, vmat, true);
+	geometry.Render (Geometry::Pass::ShadowMap + shadowid,
+									 program, vmat, true);
 
 	gl::DepthMask (GL_FALSE);
 	gl::CullFace (GL_BACK);

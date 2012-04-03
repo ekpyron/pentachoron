@@ -30,10 +30,17 @@ public:
 	 Geometry (Renderer *parent);
 	 ~Geometry (void);
 	 bool Init (void);
-	 void Render (const gl::Program &program,
+	 void Render (GLuint pass, const gl::Program &program,
 								const glm::mat4 &viewmat,
-								bool shadowpass = false) const;
+								bool shadowpass = false);
 	 const Material &GetMaterial (const std::string &name);
+
+	 class Pass
+	 {
+		 public:
+		 static constexpr GLuint GBuffer = 0x00000000;
+		 static constexpr GLuint ShadowMap = 0x10000000;
+	 };
 
 private:
 	 Scene kitty;
@@ -42,8 +49,11 @@ private:
 	 gl::Sampler sampler;
 	 std::map<std::string, Material*> materials;
 
+	 gl::Program bboxprogram;
+
 	 friend class Scene;
 	 friend class Mesh;
+	 friend class GBuffer;
 	 Renderer *renderer;
 };
 

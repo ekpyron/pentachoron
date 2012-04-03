@@ -59,6 +59,42 @@ const Material &Geometry::GetMaterial (const std::string &name)
 
 bool Geometry::Init (void)
 {
+	{
+		gl::Shader vshader (GL_VERTEX_SHADER),
+			 fshader (GL_FRAGMENT_SHADER);
+		std::string src;
+		if (!ReadFile (MakePath ("shaders", "bbox", "vshader.txt"), src))
+			 return false;
+		vshader.Source (src);
+		if (!vshader.Compile ())
+		{
+			(*logstream) << "Cannot compile "
+									 << MakePath ("shaders", "bbox", "vshader.txt")
+									 << ":" << std::endl << vshader.GetInfoLog () << std::endl;
+			return false;
+		}
+
+		if (!ReadFile (MakePath ("shaders", "bbox", "fshader.txt"), src))
+			 return false;
+		fshader.Source (src);
+		if (!fshader.Compile ())
+		{
+			(*logstream) << "Cannot compile "
+									 << MakePath ("shaders", "bbox", "fshader.txt")
+									 << ":" << std::endl << fshader.GetInfoLog () << std::endl;
+			return false;
+		}
+
+		bboxprogram.Attach (vshader);
+		bboxprogram.Attach (fshader);
+		if (!bboxprogram.Link ())
+		{
+			(*logstream) << "Cannot link the bbox shader:" << std::endl
+									 << bboxprogram.GetInfoLog () << std::endl;
+			return false;
+		}		
+	}
+
 	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -74,8 +110,10 @@ bool Geometry::Init (void)
 	return true;
 }
 
-void Geometry::Render (const gl::Program &program, const glm::mat4 &viewmat,
-											 bool shadowpass) const
+void Geometry::Render (GLuint pass,
+											 const gl::Program &program,
+											 const glm::mat4 &viewmat,
+											 bool shadowpass)
 {
 	if (!shadowpass)
 	{
@@ -91,14 +129,16 @@ void Geometry::Render (const gl::Program &program, const glm::mat4 &viewmat,
 			glm::mat4 mvmat = glm::translate (viewmat,
 																				glm::vec3 (5 * x, 0, 8 * z));
 			program["mvmat"] = mvmat;
+			bboxprogram["mvmat"] = mvmat;
 			renderer->culling.SetModelViewMatrix (mvmat);
+			bboxprogram["projmat"] = renderer->culling.GetProjMatrix ();
 			if ((x&1) + (z&1) == 0)
 			{
-				kitty.Render (program, shadowpass);
+				kitty.Render (pass, program, shadowpass);
 			}
 			else
 			{
-				box.Render (program, shadowpass);
+				box.Render (pass, program, shadowpass);
 			}
 		}
 	}
@@ -106,5 +146,5 @@ void Geometry::Render (const gl::Program &program, const glm::mat4 &viewmat,
 	program["mvmat"] = viewmat;
 	renderer->culling.SetModelViewMatrix (viewmat);
 
-	grid.Render (program, shadowpass);
+	grid.Render (pass, program, shadowpass);
 }

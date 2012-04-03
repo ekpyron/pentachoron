@@ -32,9 +32,9 @@ public:
 	 ~Mesh (void);
 	 Mesh &operator= (Mesh &&mesh);
 	 Mesh &operator= (const Mesh&) = delete;
-	 void OcclusionQuery (void);
-	 void Render (const gl::Program &program, bool shadowpass) const;
+	 void Render (GLuint pass, const gl::Program &program, bool shadowpass);
 	 bool IsTransparent (void) const;
+	 static GLuint culled;
 private:
 	 bool Load (void*, const Material *mat);
 	 Scene &parent;
@@ -55,8 +55,11 @@ private:
 	 struct
 	 {
 			glm::vec3 min, max;
+			gl::Buffer buffer;
+			gl::Buffer indices;
+			gl::VertexArray array;
 	 } bbox;
-	 gl::Query query;
+	 std::map<GLuint, gl::Query> queries;
 };
 
 #endif /* !defined MESH_H */

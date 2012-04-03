@@ -32,7 +32,7 @@ public:
 	 Scene &operator= (Scene &&scene);
 	 Scene &operator= (const Scene&) = delete;
 	 bool Load (const std::string &filename);
-	 void Render (const gl::Program &program, bool shadowpass) const;
+	 void Render (GLuint pass, const gl::Program &program, bool shadowpass);
 private:
 	 std::vector<Material> materials;
 	 std::vector<Mesh> meshes;

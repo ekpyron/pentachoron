@@ -147,6 +147,40 @@ bool Mesh::Load (void *m, const Material *mat)
 		}
 	}
 
+	{
+		glm::vec3 bboxvertex[8];
+		bboxvertex[0] = glm::vec3 (bbox.min.x, bbox.min.y, bbox.min.z);
+		bboxvertex[1] = glm::vec3 (bbox.max.x, bbox.min.y, bbox.min.z);
+		bboxvertex[2] = glm::vec3 (bbox.max.x, bbox.max.y, bbox.min.z);
+		bboxvertex[3] = glm::vec3 (bbox.min.x, bbox.max.y, bbox.min.z);
+		bboxvertex[4] = glm::vec3 (bbox.min.x, bbox.min.y, bbox.max.z);
+		bboxvertex[5] = glm::vec3 (bbox.max.x, bbox.min.y, bbox.max.z);
+		bboxvertex[6] = glm::vec3 (bbox.max.x, bbox.max.y, bbox.max.z);
+		bboxvertex[7] = glm::vec3 (bbox.min.x, bbox.max.y, bbox.max.z);
+		bbox.buffer.Data (8 * sizeof (glm::vec3), &bboxvertex[0], GL_STATIC_DRAW);
+
+		glm::detail::tvec3<GLubyte> bboxindices[12];
+
+		bboxindices[0] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[1] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[2] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[3] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[4] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[5] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[6] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[7] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[8] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[9] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[10] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[11] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+
+		bbox.indices.Data (12 * sizeof (glm::detail::tvec3<GLubyte>),
+											 &bboxindices[0], GL_STATIC_DRAW);
+	}
+
+	bbox.array.VertexAttribOffset (bbox.buffer, 0, 3, GL_FLOAT,
+																 GL_FALSE, 0, 0);
+
 	buffers.emplace_back ();
 	buffers.back ().Data (vertexcount * sizeof (aiVector3D),
 												mesh->mVertices, GL_STATIC_DRAW);
@@ -209,23 +243,43 @@ bool Mesh::IsTransparent (void) const
 	return material->IsTransparent ();
 }
 
-void Mesh::OcclusionQuery (void)
+void Mesh::Render (GLuint pass,
+									 const gl::Program &program,
+									 bool shadowpass)
 {
-	query.Begin (GL_SAMPLES_PASSED);
+	GLuint result;
+	bool render_full = true;
 
-	gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	gl::DepthMask (GL_FALSE);
-
-	gl::ColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-	gl::Query::End (GL_SAMPLES_PASSED);
-}
-
-void Mesh::Render (const gl::Program &program, bool shadowpass) const
-{
 	if (!parent.parent->renderer->culling.IsVisible
 			(bsphere.center, bsphere.radius))
 		return;
+
+	auto query = queries.find (pass);
+	if (query == queries.end ())
+	{
+		auto ret = queries.insert (std::pair<GLuint, gl::Query>
+															 (pass, gl::Query ()));
+		if (ret.second == false)
+			 throw std::runtime_error ("Cannot insert element to map.");
+		query = ret.first;
+	}
+	else
+	{
+		if (query->second.IsValid ())
+		{
+			query->second.Get (GL_QUERY_RESULT_AVAILABLE, &result);
+			if (result == GL_TRUE)
+			{
+				query->second.Get (GL_QUERY_RESULT, &result);
+				if (result == 0)
+					 render_full = false;
+				}
+		}
+	}
+
+
+	query->second.Begin (GL_SAMPLES_PASSED);
+
 	if (!shadowpass)
 	{
 		material->Use (program);
@@ -236,6 +290,26 @@ void Mesh::Render (const gl::Program &program, bool shadowpass) const
 		shadowpassarray.Bind ();
 	}
 	indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
-	gl::DrawElements (GL_TRIANGLES, trianglecount * 3, GL_UNSIGNED_INT, NULL);
+
+	if (render_full)
+	{
+		gl::DrawElements (GL_TRIANGLES, trianglecount * 3,
+											GL_UNSIGNED_INT, NULL);
+	}
+	else
+	{
+		parent.parent->bboxprogram.Use ();
+		bbox.array.Bind ();
+		bbox.indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
+		gl::DrawElements (GL_TRIANGLES, 36,
+											GL_UNSIGNED_BYTE, NULL);
+		program.Use ();
+
+		culled++;
+	}
+
+	gl::Query::End (GL_SAMPLES_PASSED);
 	GL_CHECK_ERROR;
 }
+
+GLuint Mesh::culled = 0;

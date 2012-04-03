@@ -28,7 +28,7 @@ public:
 	 GBuffer (Renderer *parent);
 	 ~GBuffer (void);
 	 bool Init (void);
-	 void Render (const Geometry &geometry);
+	 void Render (Geometry &geometry);
 
 	 static const unsigned int layers = 3;
 

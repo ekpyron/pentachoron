@@ -103,7 +103,7 @@ bool GBuffer::Init (void)
 	return true;
 }
 
-void GBuffer::Render (const Geometry &geometry)
+void GBuffer::Render (Geometry &geometry)
 {
 	program["projmat"] = renderer->camera.GetProjMatrix ();
 	renderer->culling.SetProjMatrix (renderer->camera.GetProjMatrix ());
@@ -117,6 +117,7 @@ void GBuffer::Render (const Geometry &geometry)
 	for (auto i = 0; i < layers; i++)
 	{
 		program["first_pass"] = (i == 0);
+		geometry.bboxprogram["first_pass"] = (i == 0);
 		framebuffer[i].Bind (GL_FRAMEBUFFER);
 		gl::Viewport (0, 0, width, height);
 		
@@ -131,7 +132,8 @@ void GBuffer::Render (const Geometry &geometry)
 			depthtexture[i - 1].Bind (GL_TEXTURE3, GL_TEXTURE_RECTANGLE);
 		}
 
-		geometry.Render (program, renderer->camera.GetViewMatrix ());
+		geometry.Render (Geometry::Pass::GBuffer + i,
+										 program, renderer->camera.GetViewMatrix ());
 	}
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	gl::DepthMask (GL_FALSE);

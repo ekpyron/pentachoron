@@ -26,8 +26,11 @@ public:
 	 ~Culling (void);
 	 bool IsVisible (const glm::vec3 &center, float radius) const;
 	 void SetProjMatrix (const glm::mat4 &mat);
+	 const glm::mat4 &GetProjMatrix (void);
 	 void SetModelViewMatrix (const glm::mat4 &mat);
+	 const glm::mat4 &GetModelViewMatrix (void);
 	 void Frame (void);
+	 static GLuint culled;
 private:
 	 glm::mat4 projmat, mvmat;
 };

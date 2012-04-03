@@ -195,10 +195,10 @@ bool Scene::Load (const std::string &filename)
 	return true;
 }
 
-void Scene::Render (const gl::Program &program, bool shadowpass) const
+void Scene::Render (GLuint pass, const gl::Program &program, bool shadowpass)
 {
-	for (const Mesh &mesh : meshes)
+	for (Mesh &mesh : meshes)
 	{
-		mesh.Render (program, shadowpass);
+		mesh.Render (pass, program, shadowpass);
 	}
 }

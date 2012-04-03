@@ -31,7 +31,7 @@ public:
 	ShadowMap (Renderer *parent);
 	 ~ShadowMap (void);
 	 bool Init (void);
-	 void Render (const Geometry &geometry, const Shadow &shadow);
+	 void Render (GLuint shadowid, Geometry &geometry, const Shadow &shadow);
 	 GLuint GetWidth (void) const;
 	 GLuint GetHeight (void) const;
 

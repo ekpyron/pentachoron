@@ -94,6 +94,9 @@ void Renderer::Frame (void)
 	static float last_time = 0;
 	float timefactor;
 
+	Mesh::culled = 0;
+	Culling::culled = 0;
+
 	if (last_time == 0)
 		 last_time = glfwGetTime ();
 	else
@@ -106,9 +109,9 @@ void Renderer::Frame (void)
 	culling.Frame ();
 	gbuffer.Render (geometry);
 
-	for (Shadow &shadow : shadows)
+	for (GLuint i = 0; i < shadows.size (); i++)
 	{
-		shadowmap.Render (geometry, shadow);
+		shadowmap.Render (i, geometry, shadows[i]);
 	}
 
 	composition.Frame (timefactor);

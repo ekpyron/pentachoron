@@ -89,7 +89,7 @@ float compute_shadow (int x, int y, float4 pos,
 	   return 1;
 
 	float variance = moments.y - (moments.x * moments.x);
-//	variance = max (variance, 0.003);//info.min_variance);
+	variance = max (variance, 0.003);//info.min_variance);
 	float d = lspos.z - moments.x;
 	return native_divide (variance, variance + d * d);
 }
