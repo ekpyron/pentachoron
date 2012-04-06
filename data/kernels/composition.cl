@@ -36,33 +36,36 @@ float3 reflect (float3 I, float3 N)
 	return mad (-2.0 * dot (N, I), N, I);
 }
 
-float4 getpos (uint x, uint y, read_only image2d_t depthbuffer,
+bool getpos (float4 *pos, uint x, uint y, read_only image2d_t depthbuffer,
                struct ViewInfo *info)
 {
 	float depth = read_imagef (depthbuffer, sampler, (int2) (x, y)).x;
-	float4 pos;
-	pos.x = native_divide ((float)x, (float)get_image_width (depthbuffer));
-	pos.y = native_divide ((float)y, (float)get_image_height (depthbuffer));
-	pos.z = depth;
-	pos.w = 1;
-	pos.xyz = mad (pos.xyz, 2, -1);
+	if (depth == 1.0)
+	   return false;
+	pos->x = native_divide ((float)x,
+				(float)get_image_width (depthbuffer));
+	pos->y = native_divide ((float)y,
+	       	 	        (float)get_image_height (depthbuffer));
+	pos->z = depth;
+	pos->w = 1;
+	pos->xyz = mad (pos->xyz, 2, -1);
 
 	float4 p;
-	p.x = pos.x * info->projinfo.x;
-	p.y = pos.y * info->projinfo.y;
-	p.z = -pos.w;
-	p.w = native_divide (pos.z * (info->projinfo.z - info->projinfo.w)
-	      		     + pos.w * (info->projinfo.z + info->projinfo.w),
+	p.x = pos->x * info->projinfo.x;
+	p.y = pos->y * info->projinfo.y;
+	p.z = -pos->w;
+	p.w = native_divide (pos->z * (info->projinfo.z - info->projinfo.w)
+	      		     + pos->w * (info->projinfo.z + info->projinfo.w),
 			     2 * info->projinfo.z * info->projinfo.w);
 
-	pos.x = dot (info->vmatinv[0], p);
-	pos.y = dot (info->vmatinv[1], p);
-	pos.z = dot (info->vmatinv[2], p);
-	pos.w = dot (info->vmatinv[3], p);
-	pos.xyz = native_divide (pos.xyz, pos.w);
-	pos.w = 1.0;
+	pos->x = dot (info->vmatinv[0], p);
+	pos->y = dot (info->vmatinv[1], p);
+	pos->z = dot (info->vmatinv[2], p);
+	pos->w = dot (info->vmatinv[3], p);
+	pos->xyz = native_divide (pos->xyz, pos->w);
+	pos->w = 1.0;
 
-	return pos;
+	return true;
 }
 
 float compute_shadow (int x, int y, float4 pos,
@@ -103,7 +106,9 @@ float4 compute_pixel (read_only image2d_t colormap,
 		      unsigned int num_lights, global struct Light *lights,
 		      struct ViewInfo *info)
 {
-	float4 pos = getpos (x, y, depthbuffer, info);
+	float4 pos;
+	if (!getpos (&pos, x, y, depthbuffer, info))
+	   return (float4) (0.0, 0.0, 0.0, 1.0);
 	float3 diffuse = (float3) (0, 0, 0);
 	float3 specular = (float3) (0, 0, 0);
 
@@ -238,22 +243,21 @@ kernel void composition (write_only image2d_t screen,
 	uint offset = mad24 (ly, get_local_size (1), lx);
 
 	float4 pixel4, pixel3, pixel2, pixel;
-	pixel4 = compute_pixel (colormap4, depthbuffer4,
-		       	        normalmap4, specularmap4,
-			        shadowmap, offset, x, y,
-			        num_lights, lights, &info);
-	pixel3 = compute_pixel (colormap3, depthbuffer3,
-		       	 	normalmap3, specularmap3,
-				shadowmap, offset, x, y,
-				num_lights, lights, &info);
+	pixel = compute_pixel (colormap1, depthbuffer1, normalmap1,
+      	       	 	       specularmap1, shadowmap, offset,
+		 	       x, y, num_lights, lights, &info);
 	pixel2 = compute_pixel (colormap2, depthbuffer2,
 		       	 	normalmap2, specularmap2,
 				shadowmap, offset, x, y,
 				num_lights, lights, &info);
-	pixel = compute_pixel (colormap1, depthbuffer1, normalmap1,
-      	       	 	       specularmap1, shadowmap, offset,
-		 	       x, y, num_lights, lights, &info);
-
+	pixel3 = compute_pixel (colormap3, depthbuffer3,
+	             	 	normalmap3, specularmap3,
+				shadowmap, offset, x, y,
+				num_lights, lights, &info);
+	pixel4 = compute_pixel (colormap4, depthbuffer4,
+       	         	        normalmap4, specularmap4,
+	        		shadowmap, offset, x, y,
+	        		num_lights, lights, &info);
 	pixel = mix (pixel4, pixel, pixel4.w);
 	pixel = mix (pixel3, pixel, pixel3.w);
 	pixel = mix (pixel2, pixel, pixel2.w);
