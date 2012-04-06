@@ -74,6 +74,7 @@ private:
 	 friend class Filters;
 	 friend class Interface;
 	 friend class Composition;
+	 friend class Model;
 	 friend class Mesh;
 };
 

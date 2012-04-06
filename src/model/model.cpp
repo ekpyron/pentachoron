@@ -22,6 +22,8 @@
 #include <DefaultLogger.h>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
+#include "renderer.h"
 
 Model::Model (Geometry *p) : parent (p)
 {
@@ -174,7 +176,7 @@ bool Model::Load (const std::string &filename)
 		}
 		if (scene->mMeshes[mesh]->mPrimitiveTypes != aiPrimitiveType_TRIANGLE)
 		{
-			(*logstream) << "Mesh " << mesh << " in " << modelfile
+			(*logstream) << "Mesh " << (mesh+1) << " in " << modelfile
 									 << " has an invalid primitive type." << std::endl;
 			return false;
 		}
@@ -229,6 +231,13 @@ bool Model::Load (const std::string &filename)
 																 GL_FALSE, 0, 0);
 	bbox.array.EnableVertexAttrib (0);
 
+// TODO: Calculate a decent bounding sphere.
+//       This is a very rough approximation.
+	{
+		bsphere.center = 0.5f * (bbox.min + bbox.max);
+		bsphere.radius = glm::distance (bbox.min, bsphere.center);
+	}
+
 	Assimp::DefaultLogger::kill ();
 	return true;
 }
@@ -237,6 +246,10 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 										bool transparent)
 {
 	GLuint result = GL_TRUE;
+
+	if (!parent->renderer->culling.IsVisible
+			(bsphere.center, bsphere.radius))
+		return;
 
 	if (!shadowpass)
 	{

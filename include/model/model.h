@@ -48,6 +48,11 @@ private:
 			gl::Buffer indices;
 			gl::VertexArray array;
 	 } bbox;
+	 struct
+	 {
+			glm::vec3 center;
+			GLfloat radius;
+	 } bsphere;
 	 std::map<GLuint, gl::Query> queries;
 #ifdef DEBUG
 	 struct
