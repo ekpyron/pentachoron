@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "scene/scene.h"
+#include "model/model.h"
 #include "geometry.h"
 #include <assimp.hpp>
 #include <aiScene.h>
@@ -23,25 +23,25 @@
 #include <iostream>
 #include <fstream>
 
-Scene::Scene (Geometry *p) : parent (p)
+Model::Model (Geometry *p) : parent (p)
 {
 }
 
-Scene::Scene (Scene &&scene) : meshes (std::move (scene.meshes)),
-															 materials (std::move (scene.materials)),
-															 parent (scene.parent)
+Model::Model (Model &&model) : meshes (std::move (model.meshes)),
+															 materials (std::move (model.materials)),
+															 parent (model.parent)
 {
 }
 
-Scene::~Scene (void)
+Model::~Model (void)
 {
 }
 
-Scene &Scene::operator= (Scene &&scene)
+Model &Model::operator= (Model &&model)
 {
-	meshes = std::move (scene.meshes);
-	materials = std::move (scene.materials);
-	parent = scene.parent;
+	meshes = std::move (model.meshes);
+	materials = std::move (model.materials);
+	parent = model.parent;
 }
 
 /** @cond */
@@ -67,7 +67,7 @@ void LogStream::write (const char *msg)
 }
 /** @endcond */
 
-bool Scene::Load (const std::string &filename)
+bool Model::Load (const std::string &filename)
 {
 #ifdef DEBUG
 	debug.filename = filename;
@@ -84,7 +84,7 @@ bool Scene::Load (const std::string &filename)
 	desc = YAML::Load (file);
 	if (!desc.IsMap ())
 	{
-		(*logstream) << "The scene file " << filename
+		(*logstream) << "The model file " << filename
 								 << " has an invalid format." << std::endl;
 		return false;
 	}
@@ -156,6 +156,9 @@ bool Scene::Load (const std::string &filename)
 		return false;
 	}
 
+	bbox.min = glm::vec3 (FLT_MAX, FLT_MAX, FLT_MAX);
+	bbox.max = glm::vec3 (-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
 	for (const YAML::Node &node : desc["meshes"])
 	{
 		unsigned int mesh = node["number"].as<unsigned int> ();
@@ -177,7 +180,7 @@ bool Scene::Load (const std::string &filename)
 		}
 		meshes.emplace_back (*this);
 		if (!meshes.back ().Load (static_cast<void*> (scene->mMeshes[mesh]),
-															&material))
+															&material, bbox.min, bbox.max))
 		{
 			(*logstream) << "Mesh " << mesh << " in " << modelfile
 									 << " could not be loaded." << std::endl;
@@ -191,14 +194,107 @@ bool Scene::Load (const std::string &filename)
 		return false;
 	}
 
+	{
+		glm::vec3 bboxvertex[8];
+		bboxvertex[0] = glm::vec3 (bbox.min.x, bbox.min.y, bbox.min.z);
+		bboxvertex[1] = glm::vec3 (bbox.max.x, bbox.min.y, bbox.min.z);
+		bboxvertex[2] = glm::vec3 (bbox.max.x, bbox.max.y, bbox.min.z);
+		bboxvertex[3] = glm::vec3 (bbox.min.x, bbox.max.y, bbox.min.z);
+		bboxvertex[4] = glm::vec3 (bbox.min.x, bbox.min.y, bbox.max.z);
+		bboxvertex[5] = glm::vec3 (bbox.max.x, bbox.min.y, bbox.max.z);
+		bboxvertex[6] = glm::vec3 (bbox.max.x, bbox.max.y, bbox.max.z);
+		bboxvertex[7] = glm::vec3 (bbox.min.x, bbox.max.y, bbox.max.z);
+		bbox.buffer.Data (8 * sizeof (glm::vec3), &bboxvertex[0], GL_STATIC_DRAW);
+
+		glm::detail::tvec3<GLubyte> bboxindices[12];
+
+		bboxindices[0] = glm::detail::tvec3<GLubyte> (0, 1, 2);
+		bboxindices[1] = glm::detail::tvec3<GLubyte> (2, 3, 0);
+		bboxindices[2] = glm::detail::tvec3<GLubyte> (1, 5, 6);
+		bboxindices[3] = glm::detail::tvec3<GLubyte> (1, 6, 2);
+		bboxindices[4] = glm::detail::tvec3<GLubyte> (5, 4, 6);
+		bboxindices[5] = glm::detail::tvec3<GLubyte> (4, 7, 6);
+		bboxindices[6] = glm::detail::tvec3<GLubyte> (4, 0, 3);
+		bboxindices[7] = glm::detail::tvec3<GLubyte> (4, 3, 7);
+		bboxindices[8] = glm::detail::tvec3<GLubyte> (3, 2, 6);
+		bboxindices[9] = glm::detail::tvec3<GLubyte> (3, 6, 7);
+		bboxindices[10] = glm::detail::tvec3<GLubyte> (0, 4, 1);
+		bboxindices[11] = glm::detail::tvec3<GLubyte> (4, 5, 1);
+
+		bbox.indices.Data (12 * sizeof (glm::detail::tvec3<GLubyte>),
+											 &bboxindices[0], GL_STATIC_DRAW);
+	}
+
+	bbox.array.VertexAttribOffset (bbox.buffer, 0, 3, GL_FLOAT,
+																 GL_FALSE, 0, 0);
+	bbox.array.EnableVertexAttrib (0);
+
 	Assimp::DefaultLogger::kill ();
 	return true;
 }
 
-void Scene::Render (GLuint pass, const gl::Program &program, bool shadowpass)
+void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
+										bool transparent)
 {
-	for (Mesh &mesh : meshes)
+	GLuint result = GL_TRUE;
+
+	if (!shadowpass)
 	{
-		mesh.Render (pass, program, shadowpass);
+		auto query = queries.find (pass);
+		if (query == queries.end ())
+		{
+			auto ret = queries.insert (std::pair<GLuint, gl::Query>
+																 (pass, gl::Query ()));
+			if (ret.second == false)
+				 throw std::runtime_error ("Cannot insert element to map.");
+			query = ret.first;
+		}
+
+		if (query->second.IsValid ())
+		{
+			do
+			{
+				query->second.Get (GL_QUERY_RESULT_AVAILABLE, &result);
+			} while (result == GL_FALSE);
+			if (result == GL_TRUE)
+			{
+				query->second.Get (GL_QUERY_RESULT, &result);
+			}
+			else
+			{
+				(*logstream) << "Query result not yet available" << std::endl;
+			}
+		}
+
+		query->second.Begin (GL_ANY_SAMPLES_PASSED);
 	}
+
+	if (result == GL_TRUE)
+	{
+		for (Mesh &mesh : meshes)
+		{
+			if (transparent == mesh.IsTransparent ())
+				 mesh.Render (program, shadowpass);
+		}
+	}
+	else
+	{
+		gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		gl::DepthMask (GL_FALSE);
+		gl::Disable (GL_CULL_FACE);
+		parent->bboxprogram.Use ();
+		bbox.array.Bind ();
+		bbox.indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
+		gl::DrawElements (GL_TRIANGLES, 36,
+											GL_UNSIGNED_BYTE, NULL);
+		program.Use ();
+		gl::Enable (GL_CULL_FACE);
+		gl::DepthMask (GL_TRUE);
+		gl::ColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		culled++;
+	}
+	if (!shadowpass)
+		 gl::Query::End (GL_ANY_SAMPLES_PASSED);
 }
+
+GLuint Model::culled = 0;

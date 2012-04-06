@@ -14,31 +14,41 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef MODEL_H
+#define MODEL_H
 
 #include <common.h>
 #include "mesh.h"
 #include "material.h"
 class Geometry;
 
-class Scene
+class Model
 {
 public:
-	 Scene (Geometry *p);
-	 Scene (Scene &&scene);
-	 Scene (const Scene&) = delete;
-	 ~Scene (void);
-	 Scene &operator= (Scene &&scene);
-	 Scene &operator= (const Scene&) = delete;
+	 Model (Geometry *p);
+	 Model (Model &&model);
+	 Model (const Model&) = delete;
+	 ~Model (void);
+	 Model &operator= (Model &&model);
+	 Model &operator= (const Model&) = delete;
 	 bool Load (const std::string &filename);
-	 void Render (GLuint pass, const gl::Program &program, bool shadowpass);
+	 void Render (GLuint pass, const gl::Program &program, bool shadowpass,
+								bool transparent);
+	 static GLuint culled;
 private:
 	 std::vector<Material> materials;
 	 std::vector<Mesh> meshes;
 	 friend class Material;
 	 friend class Mesh;
 	 Geometry *parent;
+	 struct
+	 {
+			glm::vec3 min, max;
+			gl::Buffer buffer;
+			gl::Buffer indices;
+			gl::VertexArray array;
+	 } bbox;
+	 std::map<GLuint, gl::Query> queries;
 #ifdef DEBUG
 	 struct
 	 {
@@ -47,4 +57,4 @@ private:
 #endif /* DEBUG */
 };
 
-#endif /* !defined SCENE_H */
+#endif /* !defined MODEL_H */

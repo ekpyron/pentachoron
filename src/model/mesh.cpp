@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "scene/mesh.h"
+#include "model/mesh.h"
 #include <assimp.hpp>
 #include <aiScene.h>
 #include <iostream>
-#include "scene/scene.h"
+#include "model/model.h"
 #include "geometry.h"
 #include "renderer.h"
 
-Mesh::Mesh (Scene &scene) : trianglecount (0), vertexcount (0),
-														parent (scene), material (NULL),
+Mesh::Mesh (Model &model) : trianglecount (0), vertexcount (0),
+														parent (model), material (NULL),
 														bsphere ({ glm::vec3 (0, 0, 0), 0.0f })
 {
 }
@@ -67,7 +67,8 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 	mesh.bsphere.radius = 0.0f;
 }
 
-bool Mesh::Load (void *m, const Material *mat)
+bool Mesh::Load (void *m, const Material *mat,
+								 glm::vec3 &min, glm::vec3 &max)
 {
 	material = mat;
 	aiMesh *mesh = static_cast<aiMesh*> (m);
@@ -107,11 +108,8 @@ bool Mesh::Load (void *m, const Material *mat)
 	trianglecount = mesh->mNumFaces;
 	vertexcount = mesh->mNumVertices;
 
-	bbox.min = glm::vec3 (FLT_MAX, FLT_MAX, FLT_MAX);
-	bbox.max = glm::vec3 (-FLT_MAX, -FLT_MAX, -FLT_MAX);
-
 	// calculate the center of the bounding sphere
-	// calculate the bounding box
+	// and calculate the bounding box
 	{
 		float factor = 1.0f / float (vertexcount);
 		bsphere.center = glm::vec3 (0, 0, 0);
@@ -120,20 +118,21 @@ bool Mesh::Load (void *m, const Material *mat)
 			glm::vec3 vertex (mesh->mVertices[i].x, mesh->mVertices[i].y,
 												mesh->mVertices[i].z);
 			bsphere.center += factor * vertex;
-			if (vertex.x < bbox.min.x)
-				 bbox.min.x = vertex.x;
-			if (vertex.y < bbox.min.y)
-				 bbox.min.y = vertex.y;
-			if (vertex.z < bbox.min.z)
-				 bbox.min.z = vertex.z;
-			if (vertex.x > bbox.max.x)
-				 bbox.max.x = vertex.x;
-			if (vertex.y > bbox.max.y)
-				 bbox.max.y = vertex.y;
-			if (vertex.z > bbox.max.z)
-				 bbox.max.z = vertex.z;
+			if (vertex.x < min.x)
+				 min.x = vertex.x;
+			if (vertex.y < min.y)
+				 min.y = vertex.y;
+			if (vertex.z < min.z)
+				 min.z = vertex.z;
+			if (vertex.x > max.x)
+				 max.x = vertex.x;
+			if (vertex.y > max.y)
+				 max.y = vertex.y;
+			if (vertex.z > max.z)
+				 max.z = vertex.z;
 		}
 	}
+
 	// calculate the radius of the bounding sphere
 	{
 		bsphere.radius = 0;
@@ -146,40 +145,6 @@ bool Mesh::Load (void *m, const Material *mat)
 				 bsphere.radius = distance;
 		}
 	}
-
-	{
-		glm::vec3 bboxvertex[8];
-		bboxvertex[0] = glm::vec3 (bbox.min.x, bbox.min.y, bbox.min.z);
-		bboxvertex[1] = glm::vec3 (bbox.max.x, bbox.min.y, bbox.min.z);
-		bboxvertex[2] = glm::vec3 (bbox.max.x, bbox.max.y, bbox.min.z);
-		bboxvertex[3] = glm::vec3 (bbox.min.x, bbox.max.y, bbox.min.z);
-		bboxvertex[4] = glm::vec3 (bbox.min.x, bbox.min.y, bbox.max.z);
-		bboxvertex[5] = glm::vec3 (bbox.max.x, bbox.min.y, bbox.max.z);
-		bboxvertex[6] = glm::vec3 (bbox.max.x, bbox.max.y, bbox.max.z);
-		bboxvertex[7] = glm::vec3 (bbox.min.x, bbox.max.y, bbox.max.z);
-		bbox.buffer.Data (8 * sizeof (glm::vec3), &bboxvertex[0], GL_STATIC_DRAW);
-
-		glm::detail::tvec3<GLubyte> bboxindices[12];
-
-		bboxindices[0] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[1] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[2] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[3] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[4] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[5] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[6] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[7] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[8] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[9] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[10] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-		bboxindices[11] = glm::detail::tvec3<GLubyte> (0, 1, 2);
-
-		bbox.indices.Data (12 * sizeof (glm::detail::tvec3<GLubyte>),
-											 &bboxindices[0], GL_STATIC_DRAW);
-	}
-
-	bbox.array.VertexAttribOffset (bbox.buffer, 0, 3, GL_FLOAT,
-																 GL_FALSE, 0, 0);
 
 	buffers.emplace_back ();
 	buffers.back ().Data (vertexcount * sizeof (aiVector3D),
@@ -243,42 +208,12 @@ bool Mesh::IsTransparent (void) const
 	return material->IsTransparent ();
 }
 
-void Mesh::Render (GLuint pass,
-									 const gl::Program &program,
+void Mesh::Render (const gl::Program &program,
 									 bool shadowpass)
 {
-	GLuint result;
-	bool render_full = true;
-
 	if (!parent.parent->renderer->culling.IsVisible
 			(bsphere.center, bsphere.radius))
 		return;
-
-	auto query = queries.find (pass);
-	if (query == queries.end ())
-	{
-		auto ret = queries.insert (std::pair<GLuint, gl::Query>
-															 (pass, gl::Query ()));
-		if (ret.second == false)
-			 throw std::runtime_error ("Cannot insert element to map.");
-		query = ret.first;
-	}
-	else
-	{
-		if (query->second.IsValid ())
-		{
-			query->second.Get (GL_QUERY_RESULT_AVAILABLE, &result);
-			if (result == GL_TRUE)
-			{
-				query->second.Get (GL_QUERY_RESULT, &result);
-				if (result == 0)
-					 render_full = false;
-				}
-		}
-	}
-
-
-	query->second.Begin (GL_SAMPLES_PASSED);
 
 	if (!shadowpass)
 	{
@@ -290,26 +225,9 @@ void Mesh::Render (GLuint pass,
 		shadowpassarray.Bind ();
 	}
 	indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
+		
+	gl::DrawElements (GL_TRIANGLES, trianglecount * 3,
+										GL_UNSIGNED_INT, NULL);
 
-	if (render_full)
-	{
-		gl::DrawElements (GL_TRIANGLES, trianglecount * 3,
-											GL_UNSIGNED_INT, NULL);
-	}
-	else
-	{
-		parent.parent->bboxprogram.Use ();
-		bbox.array.Bind ();
-		bbox.indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
-		gl::DrawElements (GL_TRIANGLES, 36,
-											GL_UNSIGNED_BYTE, NULL);
-		program.Use ();
-
-		culled++;
-	}
-
-	gl::Query::End (GL_SAMPLES_PASSED);
 	GL_CHECK_ERROR;
 }
-
-GLuint Mesh::culled = 0;

@@ -94,7 +94,7 @@ void Renderer::Frame (void)
 	static float last_time = 0;
 	float timefactor;
 
-	Mesh::culled = 0;
+	Model::culled = 0;
 	Culling::culled = 0;
 
 	if (last_time == 0)

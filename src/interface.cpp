@@ -898,7 +898,7 @@ void Interface::Frame (float tf)
 	{
 		font.SetColor (glm::vec3 (1, 1, 1));
 		font.Print ("FPS: ", fps);
-		font.Print ("\nOcclusion culled: ", Mesh::culled);
+		font.Print ("\nOcclusion culled: ", Model::culled);
 		font.Print ("\nFrustum culled: ", Culling::culled);
 	}
 	glm::vec3 dir (sin (renderer->camera.angle), 0,

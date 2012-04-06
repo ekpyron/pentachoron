@@ -213,15 +213,19 @@ kernel void composition (write_only image2d_t screen,
 	      		 read_only image2d_t colormap1,
 	      		 read_only image2d_t colormap2,
 	      		 read_only image2d_t colormap3,
+	      		 read_only image2d_t colormap4,
 			 read_only image2d_t depthbuffer1,
 			 read_only image2d_t depthbuffer2,
 			 read_only image2d_t depthbuffer3,
+			 read_only image2d_t depthbuffer4,
 			 read_only image2d_t normalmap1,
 			 read_only image2d_t normalmap2,
 			 read_only image2d_t normalmap3,
+			 read_only image2d_t normalmap4,
 			 read_only image2d_t specularmap1,
 			 read_only image2d_t specularmap2,
 			 read_only image2d_t specularmap3,
+			 read_only image2d_t specularmap4,
 			 read_only image2d_t shadowmap,
 			 unsigned int num_lights,
 			 global struct Light *lights,
@@ -233,29 +237,26 @@ kernel void composition (write_only image2d_t screen,
 	    y = mad24 (get_group_id (1), get_local_size (1), ly);
 	uint offset = mad24 (ly, get_local_size (1), lx);
 
-	float4 pixel;
-
+	float4 pixel4, pixel3, pixel2, pixel;
+	pixel4 = compute_pixel (colormap4, depthbuffer4,
+		       	        normalmap4, specularmap4,
+			        shadowmap, offset, x, y,
+			        num_lights, lights, &info);
+	pixel3 = compute_pixel (colormap3, depthbuffer3,
+		       	 	normalmap3, specularmap3,
+				shadowmap, offset, x, y,
+				num_lights, lights, &info);
+	pixel2 = compute_pixel (colormap2, depthbuffer2,
+		       	 	normalmap2, specularmap2,
+				shadowmap, offset, x, y,
+				num_lights, lights, &info);
 	pixel = compute_pixel (colormap1, depthbuffer1, normalmap1,
-	      		       specularmap1, shadowmap, offset,
-			       x, y, num_lights, lights, &info);
-	if (pixel.w < 0.99)
-	{
-		float4 pixel2;
-		pixel2 = compute_pixel (colormap2, depthbuffer2,
-		       	 	        normalmap2, specularmap2,
-					shadowmap, offset, x, y,
-					num_lights, lights, &info);
-		if (pixel2.w < 0.99)
-		{
-			float4 pixel3;
-			pixel3 = compute_pixel (colormap3, depthbuffer3,
-			       	 	        normalmap3, specularmap3,
-						shadowmap, offset, x, y,
-						num_lights, lights, &info);
-			pixel2.xyz = mix (pixel2.xyz, pixel3.xyz, pixel2.w);
-		}
-		pixel.xyz = mix (pixel.xyz, pixel2.xyz, pixel.w);
-	}
+      	       	 	       specularmap1, shadowmap, offset,
+		 	       x, y, num_lights, lights, &info);
+
+	pixel = mix (pixel4, pixel, pixel4.w);
+	pixel = mix (pixel3, pixel, pixel3.w);
+	pixel = mix (pixel2, pixel, pixel2.w);
 
 	write_imagef (screen, (int2) (x, y), pixel);
 }

@@ -18,7 +18,7 @@
 #define SHADOWMAP_H
 
 #include <common.h>
-#include "scene/scene.h"
+#include "model/model.h"
 #include "geometry.h"
 #include "shadow.h"
 #include "filters.h"

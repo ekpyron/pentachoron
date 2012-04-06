@@ -90,7 +90,8 @@ bool GBuffer::Init (void)
 																 specularbuffer[i], 0);
 		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_RECTANGLE,
 															depthtexture[i], 0);
-		framebuffer[i].Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer[i]);
+		framebuffer[i].Renderbuffer (GL_DEPTH_ATTACHMENT,
+																 depthbuffer[(i>0)?(i-1):0]);
 		
 		framebuffer[i].DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
 					 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
@@ -116,8 +117,6 @@ void GBuffer::Render (Geometry &geometry)
 
 	for (auto i = 0; i < layers; i++)
 	{
-		program["first_pass"] = (i == 0);
-		geometry.bboxprogram["first_pass"] = (i == 0);
 		framebuffer[i].Bind (GL_FRAMEBUFFER);
 		gl::Viewport (0, 0, width, height);
 		
@@ -125,15 +124,24 @@ void GBuffer::Render (Geometry &geometry)
 		gl::ClearBufferfv (GL_COLOR, 1, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
 		gl::ClearBufferfv (GL_COLOR, 2, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
 		gl::ClearBufferfv (GL_COLOR, 3, (float[]) {1.0f, 0.0f, 0.0f, 0.0f} );
-		gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
+		if (i != 1)
+			 gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
 
-		if (i)
+		if (i < 2)
+		{
+			program["first_pass"] = true;
+			geometry.bboxprogram["first_pass"] = true;
+		}
+		else
 		{
 			depthtexture[i - 1].Bind (GL_TEXTURE3, GL_TEXTURE_RECTANGLE);
+			depthtexture[0].Bind (GL_TEXTURE4, GL_TEXTURE_RECTANGLE);
+			program["first_pass"] = false;
+			geometry.bboxprogram["first_pass"] = false;
 		}
-
-		geometry.Render (Geometry::Pass::GBuffer + i,
-										 program, renderer->camera.GetViewMatrix ());
+		geometry.Render (Geometry::Pass::GBuffer + i * 0x00010000,
+										 program, renderer->camera.GetViewMatrix (),
+										 false, i > 0);
 	}
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	gl::DepthMask (GL_FALSE);

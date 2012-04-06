@@ -18,8 +18,8 @@
 #define GEOMETRY_H
 
 #include <common.h>
-#include "scene/scene.h"
-#include "scene/material.h"
+#include "model/model.h"
+#include "model/material.h"
 #include <map>
 
 class Renderer;
@@ -32,7 +32,7 @@ public:
 	 bool Init (void);
 	 void Render (GLuint pass, const gl::Program &program,
 								const glm::mat4 &viewmat,
-								bool shadowpass = false);
+								bool shadowpass, bool transparent);
 	 const Material &GetMaterial (const std::string &name);
 
 	 class Pass
@@ -43,15 +43,15 @@ public:
 	 };
 
 private:
-	 Scene kitty;
-	 Scene box;
-	 Scene grid;
+	 Model kitty;
+	 Model box;
+	 Model grid;
 	 gl::Sampler sampler;
 	 std::map<std::string, Material*> materials;
 
 	 gl::Program bboxprogram;
 
-	 friend class Scene;
+	 friend class Model;
 	 friend class Mesh;
 	 friend class GBuffer;
 	 Renderer *renderer;

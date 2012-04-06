@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "scene/material.h"
+#include "model/material.h"
 #include <assimp.hpp>
 #include <aiScene.h>
 #include <oglimg/oglimg.h>

@@ -20,25 +20,25 @@
 #include <common.h>
 #include <oglp/oglp.h>
 
-class Scene;
+class Model;
 class Material;
 
 class Mesh
 {
 public:
-	 Mesh (Scene &scene);
+	 Mesh (Model &scene);
 	 Mesh (Mesh &&mesh);
 	 Mesh (const Mesh&) = delete;
 	 ~Mesh (void);
 	 Mesh &operator= (Mesh &&mesh);
 	 Mesh &operator= (const Mesh&) = delete;
-	 void Render (GLuint pass, const gl::Program &program, bool shadowpass);
+	 void Render (const gl::Program &program, bool shadowpass);
 	 bool IsTransparent (void) const;
 	 static GLuint culled;
 private:
-	 bool Load (void*, const Material *mat);
-	 Scene &parent;
-	 friend class Scene;
+	 bool Load (void*, const Material *mat, glm::vec3 &min, glm::vec3 &max);
+	 Model &parent;
+	 friend class Model;
 	 const Material *material;
 
 	 struct
@@ -52,14 +52,6 @@ private:
 	 GLuint vertexcount;
 	 std::vector<gl::Buffer> buffers;
 	 gl::Buffer indices;
-	 struct
-	 {
-			glm::vec3 min, max;
-			gl::Buffer buffer;
-			gl::Buffer indices;
-			gl::VertexArray array;
-	 } bbox;
-	 std::map<GLuint, gl::Query> queries;
 };
 
 #endif /* !defined MESH_H */

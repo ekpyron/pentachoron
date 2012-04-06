@@ -110,10 +110,10 @@ bool Geometry::Init (void)
 	return true;
 }
 
-void Geometry::Render (GLuint pass,
+void Geometry::Render (GLuint p,
 											 const gl::Program &program,
 											 const glm::mat4 &viewmat,
-											 bool shadowpass)
+											 bool shadowpass, bool transparent)
 {
 	if (!shadowpass)
 	{
@@ -122,6 +122,9 @@ void Geometry::Render (GLuint pass,
 		sampler.Bind (2);
 	}
 
+	GLuint pass = p;
+
+	int x = 0, z = 0;
 	for (int z = -3; z <= 3; z++)
 	{
 		for (int x = -3; x <= 3; x++)
@@ -134,17 +137,19 @@ void Geometry::Render (GLuint pass,
 			bboxprogram["projmat"] = renderer->culling.GetProjMatrix ();
 			if ((x&1) + (z&1) == 0)
 			{
-				kitty.Render (pass, program, shadowpass);
+				kitty.Render (pass, program, shadowpass, transparent);
 			}
 			else
 			{
-				box.Render (pass, program, shadowpass);
+				box.Render (pass, program, shadowpass, transparent);
 			}
+			pass++;
 		}
 	}
 
 	program["mvmat"] = viewmat;
+	bboxprogram["mvmat"] = viewmat;
 	renderer->culling.SetModelViewMatrix (viewmat);
 
-	grid.Render (pass, program, shadowpass);
+	grid.Render (pass, program, shadowpass, transparent);
 }

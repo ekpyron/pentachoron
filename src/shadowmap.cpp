@@ -115,8 +115,10 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 
 	GL_CHECK_ERROR;
 
-	geometry.Render (Geometry::Pass::ShadowMap + shadowid,
-									 program, vmat, true);
+	geometry.Render (Geometry::Pass::ShadowMap + shadowid * 0x00010000,
+									 program, vmat, true, false);
+	geometry.Render (Geometry::Pass::ShadowMap + shadowid * 0x00010000,
+									 program, vmat, true, true);
 
 	gl::DepthMask (GL_FALSE);
 	gl::CullFace (GL_BACK);
