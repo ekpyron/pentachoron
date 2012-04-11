@@ -36,17 +36,11 @@ float3 reflect (float3 I, float3 N)
 	return mad (-2.0 * dot (N, I), N, I);
 }
 
-bool getpos (float4 *pos, uint x, uint y, read_only image2d_t depthbuffer,
-               struct ViewInfo *info)
+float getpos (float4 *pos, struct ViewInfo *info)
 {
-	float depth = read_imagef (depthbuffer, sampler, (int2) (x, y)).x;
+	float depth = pos->z;
 	if (depth == 1.0)
-	   return false;
-	pos->x = native_divide ((float)x,
-				(float)get_image_width (depthbuffer));
-	pos->y = native_divide ((float)y,
-	       	 	        (float)get_image_height (depthbuffer));
-	pos->z = depth;
+	   return depth;
 	pos->w = 1;
 	pos->xyz = mad (pos->xyz, 2, -1);
 
@@ -65,7 +59,7 @@ bool getpos (float4 *pos, uint x, uint y, read_only image2d_t depthbuffer,
 	pos->xyz = native_divide (pos->xyz, pos->w);
 	pos->w = 1.0;
 
-	return true;
+	return depth;
 }
 
 float compute_shadow (int x, int y, float4 pos,
@@ -82,7 +76,7 @@ float compute_shadow (int x, int y, float4 pos,
 	if (lspos.w < 0 || lspos.x < 0 || lspos.y < 0
 	    || lspos.x > 1 || lspos.y > 1)
 	{
-	    return 0.0;
+	    return 1.0;
 	}
 
 	float2 moments;
@@ -92,60 +86,34 @@ float compute_shadow (int x, int y, float4 pos,
 	   return 1;
 
 	float variance = moments.y - (moments.x * moments.x);
-	variance = max (variance, 0.003);//info.min_variance);
+	variance = max (variance, 0.001);//info.min_variance);
 	float d = lspos.z - moments.x;
 	return native_divide (variance, variance + d * d);
 }
 
 float4 compute_pixel (read_only image2d_t colormap,
-       		      read_only image2d_t depthbuffer,
+       		      float4 p,
 		      read_only image2d_t normalmap,
 		      read_only image2d_t specularmap,
 		      read_only image2d_t shadowmap,
-		      uint offset, uint x, uint y,
-		      unsigned int num_lights, global struct Light *lights,
+		      uint lx, uint ly, uint x, uint y,
+		      global struct Light *lights,
+		      unsigned int num_light_indices,
+		      local ushort *light_indices,
 		      struct ViewInfo *info)
 {
-	float4 pos;
-	if (!getpos (&pos, x, y, depthbuffer, info))
+	float4 pos = p;
+	float depth = getpos (&pos, info);
+	if (depth == 1.0)
 	   return (float4) (0.0, 0.0, 0.0, 1.0);
 	float3 diffuse = (float3) (0, 0, 0);
 	float3 specular = (float3) (0, 0, 0);
+	uint offset = mad24 (ly, get_local_size (0), lx);
 
-/*	local ushort light_indices[256];
-	local uint num_light_indices;
-
-	local float min_depth, max_depth;
-
-	min_depth = FLT_MAX;
-	max_depth = FLT_MIN;
-
-	barrier (CLK_LOCAL_MEM_FENCE);
-
-	// TODO: maybe atomic operations are in fact necessary
-	min_depth = min (min_depth, depth);
-	max_depth = max (max_depth, depth);
-
-	num_light_indices = 0;
-
-	barrier (CLK_LOCAL_MEM_FENCE);
-
-	if (offset < num_lights)
-	{
-		// TODO: Actual light culling is needed here
-		ulong light = atom_inc (&num_light_indices);
-		light_indices[light] = offset;
-	}
-
-
-	barrier (CLK_LOCAL_MEM_FENCE);*/
-
-//	for (int i = 0; i < num_light_indices; i++)
-	for (int i = 0; i < num_lights; i++)
+	for (int i = 0; i < num_light_indices; i++)
 	{
 		struct Light light;
-//		light = lights[light_indices[i]];
-		light = lights[i];
+		light = lights[light_indices[i]];
 		float3 lightDir = light.position.xyz - pos.xyz;
 
 		float dist = fast_length (lightDir);
@@ -238,26 +206,125 @@ kernel void composition (write_only image2d_t screen,
 {
 	uint lx = get_local_id (0),
 	    ly = get_local_id (1);
-	uint x = mad24 (get_group_id (0), get_local_size (0), lx),
-	    y = mad24 (get_group_id (1), get_local_size (1), ly);
-	uint offset = mad24 (ly, get_local_size (1), lx);
+	uint gx = mul24 (get_group_id (0), get_local_size (0)),
+	     gy = mul24 (get_group_id (1), get_local_size (1));
+
+	uint x = gx + lx,
+	    y = gy + ly;
+	uint offset = mad24 (ly, get_local_size (0), lx);
+
+	local ushort light_indices[256];
+	float depths[4];
+	float4 pos;
+	local uint num_light_indices;
+	num_light_indices = 0;
+
+	local float4 boxmin, boxmax;
+
+	boxmin.z = FLT_MAX;
+	boxmax.z = FLT_MIN;
+
+	pos.x = native_divide ((float)x,
+	       		       (float)get_image_width (depthbuffer1));
+     	pos.y = native_divide ((float)y,
+	       		       (float)get_image_height (depthbuffer1));
+
+     	depths[0] = read_imagef (depthbuffer1, sampler,
+     	       	 	         (int2) (x, y)).x;
+        depths[1] = read_imagef (depthbuffer2, sampler,
+		     	       	 (int2) (x, y)).x;
+	depths[2] = read_imagef (depthbuffer3, sampler,
+		     	       	 (int2) (x, y)).x;
+	depths[3] = read_imagef (depthbuffer4, sampler,
+		     	       	 (int2) (x, y)).x;
+
+	barrier (CLK_LOCAL_MEM_FENCE);
+
+	// TODO: maybe atomic operations are in fact necessary
+	for (int i = 0; i < 4; i++)
+	{
+		boxmin.z = min (boxmin.z, depths[i]);
+		boxmax.z = max (boxmax.z, depths[i]);
+	}
+	
+	switch (offset)
+	{
+		case 0:
+		boxmin.x = native_divide ((float)gx,
+			       	  	  (float)get_image_width
+						 (depthbuffer1));
+		break;
+		case 1:
+		boxmin.y = native_divide ((float)gy,
+				       	  (float)get_image_width
+						 (depthbuffer1));
+		break;
+		case 2:
+		boxmax.x = native_divide ((float)(gx + get_local_size (0)),
+			       	  	  (float)get_image_width
+						 (depthbuffer1));
+		break;
+		case 3:
+		boxmax.y = native_divide ((float)(gy + get_local_size (1)),
+			       	  	  (float)get_image_width
+						 (depthbuffer1));
+		break;
+	}
+
+	barrier (CLK_LOCAL_MEM_FENCE);
+
+	if (offset == 0)
+	{
+		float4 p;
+		p = boxmin;
+		getpos (&p, &info);
+		boxmin = p;
+	}
+	else if (offset == 1)
+	{
+		float4 p;
+		p = boxmax;
+		getpos (&p, &info);
+		boxmax = p;
+	}
+
+	barrier (CLK_LOCAL_MEM_FENCE);
+
+	if (offset < num_lights)
+	{
+
+		// TODO: Actual light culling is needed here
+		uint light = atom_inc (&num_light_indices);
+		light_indices[light] = offset;
+	}
+
+
+	barrier (CLK_LOCAL_MEM_FENCE);
 
 	float4 pixel4, pixel3, pixel2, pixel;
-	pixel = compute_pixel (colormap1, depthbuffer1, normalmap1,
-      	       	 	       specularmap1, shadowmap, offset,
-		 	       x, y, num_lights, lights, &info);
-	pixel2 = compute_pixel (colormap2, depthbuffer2,
+	pos.z = depths[0];
+	pixel = compute_pixel (colormap1, pos, normalmap1,
+      	       	 	       specularmap1, shadowmap, lx, ly,
+		 	       x, y, lights, num_light_indices,
+			       light_indices, &info);
+	pos.z = depths[1];
+	pixel2 = compute_pixel (colormap2, pos,
 		       	 	normalmap2, specularmap2,
-				shadowmap, offset, x, y,
-				num_lights, lights, &info);
-	pixel3 = compute_pixel (colormap3, depthbuffer3,
+				shadowmap, lx, ly, x, y,
+				lights, num_light_indices,
+				light_indices, &info);
+	pos.z = depths[2];
+	pixel3 = compute_pixel (colormap3, pos,
 	             	 	normalmap3, specularmap3,
-				shadowmap, offset, x, y,
-				num_lights, lights, &info);
-	pixel4 = compute_pixel (colormap4, depthbuffer4,
+				shadowmap, lx, ly, x, y,
+				lights, num_light_indices,
+				light_indices, &info);
+	pos.z = depths[3];
+	pixel4 = compute_pixel (colormap4, pos,
        	         	        normalmap4, specularmap4,
-	        		shadowmap, offset, x, y,
-	        		num_lights, lights, &info);
+	        		shadowmap, lx, ly, x, y,
+	        		lights, num_light_indices,
+				light_indices, &info);
 	pixel = mix (pixel4, pixel, pixel4.w);
 	pixel = mix (pixel3, pixel, pixel3.w);
 	pixel = mix (pixel2, pixel, pixel2.w);

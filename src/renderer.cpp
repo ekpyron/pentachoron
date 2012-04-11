@@ -35,6 +35,8 @@ bool Renderer::Init (void)
 
 	(*logstream) << "Initialize Interface..." << std::endl;
 
+	gl::Hint (GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
+
 	queue = clctx.CreateCommandQueue (0);
 
 	if (!interface.Init ())
@@ -60,7 +62,43 @@ bool Renderer::Init (void)
 	if (!shadowmap.Init ())
 		 return false;
 
-	interface.AddLight (0);
+	srand (time (NULL));
+	for (int y = -5; y <= 5; y++)
+	{
+		for (int x = -5; x <= 5; x++)
+		{
+			Light light;
+			light.position = glm::vec4 (x * 4, 10, y * 4, 0);
+			light.direction = glm::vec4 (0, -1, 0, 0);
+			const glm::vec4 colors[] = {
+				glm::vec4 (0, 0, 1, 1),
+				glm::vec4 (0, 1, 0, 1),
+				glm::vec4 (1, 0, 0, 1),
+				glm::vec4 (0, 1, 1, 1),
+				glm::vec4 (1, 1, 0, 1),
+				glm::vec4 (1, 0, 1, 1),
+			};
+			
+			light.color = colors[rand () % 6];
+			light.spot.cosine = cosf (M_PI/6.0f);
+			light.spot.exponent = 64.0f;
+			light.spot.angle = M_PI/6.0f;
+			light.specular.color = glm::vec3 (light.color);
+			light.specular.shininess = 8.0f;
+			light.attenuation = glm::vec4 (0.0f, 0.0f, 0.007f, 0.0f);
+			lights.push_back (light);
+		}
+	}
+	lightmem = clctx.CreateBuffer
+		 (CL_MEM_READ_ONLY,	sizeof (Light) * lights.size (), NULL);
+	queue.EnqueueWriteBuffer
+		 (lightmem, CL_TRUE, 0,
+			sizeof (Light) * lights.size (),
+			&lights[0], 0, NULL, NULL);
+
+//	interface.AddLight (0);
+
+
 	interface.AddShadow (0);
 
 	(*logstream) << "Initialize Composition..." << std::endl;
