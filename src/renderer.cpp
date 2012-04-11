@@ -15,6 +15,7 @@
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "renderer.h"
+#include <ctime>
 
 Renderer::Renderer (void)
 	: geometry (this), shadowmap (this),
