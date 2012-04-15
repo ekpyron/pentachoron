@@ -130,7 +130,7 @@ void Geometry::Render (GLuint p,
 		for (int x = -3; x <= 3; x++)
 		{
 			glm::mat4 mvmat = glm::translate (viewmat,
-																				glm::vec3 (5 * x, 0, 8 * z));
+																				glm::vec3 (5 * x, -3, 8 * z));
 			program["mvmat"] = mvmat;
 			bboxprogram["mvmat"] = mvmat;
 			renderer->culling.SetModelViewMatrix (mvmat);

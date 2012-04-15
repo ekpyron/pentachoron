@@ -29,7 +29,7 @@ typedef struct _Light
 			float cosine;
 			float exponent;
 			float angle;
-			float padding;
+			float tangent;
 	 } spot;
 	 struct
 	 {

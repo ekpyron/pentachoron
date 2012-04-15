@@ -170,9 +170,10 @@ void Interface::AddLight (int what)
 		light.position = glm::vec4 (0, 10, 0, 0);
 		light.color = glm::vec4 (1, 1, 1, 0);
 		light.direction = glm::vec4 (0, -1, 0, 0);
-		light.spot.cosine = cosf (M_PI/4.0f);
 		light.spot.exponent = 2.0f;
 		light.spot.angle = M_PI/4.0f;
+		light.spot.cosine = cosf (light.spot.angle);
+		light.spot.tangent = tanf (light.spot.angle);
 		light.specular.color = glm::vec3 (1, 1, 1);
 		light.specular.shininess = 8.0f;
 		light.attenuation = glm::vec4 (0.0f, 0.0f, 0.007f, 0.0f);
@@ -194,8 +195,8 @@ void Interface::AddShadow (int what)
 		Shadow shadow;
 		shadow.position = glm::vec4 (0, 10, 0, 0);
 		shadow.direction = glm::vec4 (0, -1, 0, 0);
-		shadow.spot.cosine = cosf (M_PI/4.0f);
 		shadow.spot.angle = M_PI/4.0f;
+		shadow.spot.cosine = cosf (shadow.spot.angle);
 		renderer->shadows.push_back (shadow);
 	}
 }
@@ -461,36 +462,42 @@ void Interface::MoveLightZ (int what)
 void Interface::MoveLightDirX (int what)
 {
 	renderer->lights[active_light].direction.x += what * timefactor;
+	renderer->lights[active_light].direction
+		 = glm::normalize (renderer->lights[active_light].direction);
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].direction.x)
+			intptr_t (&renderer->lights[active_light].direction)
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].direction.x),
-			&renderer->lights[active_light].direction.x,
+			sizeof (renderer->lights[active_light].direction),
+			&renderer->lights[active_light].direction,
 			0, NULL, NULL);
 }
 
 void Interface::MoveLightDirY (int what)
 {
 	renderer->lights[active_light].direction.y += what * timefactor;
+	renderer->lights[active_light].direction
+		 = glm::normalize (renderer->lights[active_light].direction);
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].direction.y)
+			intptr_t (&renderer->lights[active_light].direction)
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].direction.y),
-			&renderer->lights[active_light].direction.y,
+			sizeof (renderer->lights[active_light].direction),
+			&renderer->lights[active_light].direction,
 			0, NULL, NULL);
 }
 
 void Interface::MoveLightDirZ (int what)
 {
 	renderer->lights[active_light].direction.z += what * timefactor;
+	renderer->lights[active_light].direction
+		 = glm::normalize (renderer->lights[active_light].direction);
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].direction.z)
+			intptr_t (&renderer->lights[active_light].direction)
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].direction.z),
-			&renderer->lights[active_light].direction.z,
+			sizeof (renderer->lights[active_light].direction),
+			&renderer->lights[active_light].direction,
 			0, NULL, NULL);
 }
 
@@ -595,12 +602,14 @@ void Interface::EditSpotAngle (int what)
 	renderer->lights[active_light].spot.angle += what * timefactor;
 	renderer->lights[active_light].spot.cosine
 		 = cosf (renderer->lights[active_light].spot.angle);
+	renderer->lights[active_light].spot.tangent
+		 = tanf (renderer->lights[active_light].spot.angle);
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].spot.cosine)
+			intptr_t (&renderer->lights[active_light].spot)
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].spot.cosine),
-			&renderer->lights[active_light].spot.cosine,
+			sizeof (renderer->lights[active_light].spot),
+			&renderer->lights[active_light].spot,
 			0, NULL, NULL);
 }
 

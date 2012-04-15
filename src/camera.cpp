@@ -43,6 +43,7 @@ void Camera::Resize (int w, int h)
 glm::vec3 Camera::GetEye (void) const
 {
 	glm::vec3 dir (sin (angle), 0, cos (angle));
+	dir = glm::normalize (dir);
 	return center - dir * 1.0f;
 }
 
