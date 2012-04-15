@@ -6,7 +6,7 @@ void main (void)
 {
 	float dx, dy;
 	moments.x = gl_FragCoord.z;
-	dx = dFdx (moments.x);
-	dy = dFdy (moments.x);
+	dx = dFdx (gl_FragCoord.z);
+	dy = dFdy (gl_FragCoord.z);
 	moments.y = moments.x * moments.x + 0.25 * (dx * dx + dy * dy);
 }

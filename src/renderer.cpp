@@ -87,7 +87,7 @@ bool Renderer::Init (void)
 			light.spot.tangent = tanf (light.spot.angle * 1.1);
 			light.specular.color = glm::vec3 (light.color);
 			light.specular.shininess = 8.0f;
-			light.attenuation = glm::vec4 (0.0f, 0.0f, 0.07f, 0.0f);
+			light.attenuation = glm::vec4 (0.0f, 0.0f, 0.07f, 10.0f);
 			lights.push_back (light);
 		}
 	}

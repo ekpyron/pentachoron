@@ -104,7 +104,6 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 
 	program.Use ();
 
-	gl::CullFace (GL_FRONT);
 	gl::DepthMask (GL_TRUE);
 
 	gl::ClearBufferfv (GL_COLOR, 0, (float[]) {1.0f, 1.0f, 1.0f, 1.0f});
@@ -121,7 +120,6 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 									 program, vmat, true, true);
 
 	gl::DepthMask (GL_FALSE);
-	gl::CullFace (GL_BACK);
 
 	gl::Program::UseNone ();
 	

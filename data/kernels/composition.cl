@@ -12,8 +12,25 @@ struct Light
 	      	     float4 position;
 		     float4 color;
 		     float4 direction;
+		     /*
+		      * spot.x: cosine
+		      * spot.y: exponent
+		      * spot.z: angle
+		      * spot.w: tangent
+		      */
 		     float4 spot;
+		     /*
+		      * spot2.x: inner_angle
+		      * spot2.y: inner_cosine
+		      */
+		     float4 spot2;
 		     float4 specular;
+		     /*
+		      * attenuation.x: constant
+		      * attenuation.y: linear
+		      * attenuation.z: quadratic
+		      * attenuation.w: max distance
+		      */
 		     float4 attenuation;
 	      };
 	      float4 data[6];
@@ -83,9 +100,10 @@ float compute_shadow (int x, int y, float4 pos,
 	   return 1;
 
 	float variance = moments.y - (moments.x * moments.x);
-	variance = max (variance, 0.001);//info.min_variance);
+	variance = max (variance, 0.00001);//info.min_variance);
 	float d = lspos.z - moments.x;
-	return native_divide (variance, variance + d * d);
+	float p = native_divide (variance, variance + d * d);
+	return smoothstep (0.1, 1.0, p);
 }
 
 float4 compute_pixel (read_only image2d_t colormap,
@@ -284,7 +302,7 @@ kernel void composition (write_only image2d_t screen,
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
-	if (boxmin_int != 4294967295) {
+	if (boxmin_int != 4294967295 || boxmax_int != 0) {
 
 	for (int pass = 0; pass < ((num_lights+255)>>8); pass++)
 	{
@@ -300,7 +318,7 @@ kernel void composition (write_only image2d_t screen,
 					dot (light.direction,
 					    light.direction));
 
-		if (lambda >= 0)
+		if (lambda >= 0 && lambda - radius < light.attenuation.w)
 		{
 
 			float r = mad (light.spot.w, lambda,

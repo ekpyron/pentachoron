@@ -30,6 +30,9 @@ typedef struct _Light
 			float exponent;
 			float angle;
 			float tangent;
+			float inner_angle;
+			float inner_cosine;
+			float padding[2];
 	 } spot;
 	 struct
 	 {
@@ -40,6 +43,7 @@ typedef struct _Light
 		* attenuation.x: constant attenuation
 		* attenuation.y: linear attenuation
 		* attenuation.z: quadratic attenuation
+		* attenuation.w: max distance
 		*/
 	 glm::vec4 attenuation;
 } Light;
