@@ -84,10 +84,12 @@ bool Renderer::Init (void)
 			light.spot.angle = M_PI/8.0f;
 			light.spot.cosine = cosf (light.spot.angle);
 			light.spot.exponent = 42.0f;
-			light.spot.tangent = tanf (light.spot.angle * 1.1);
+			light.spot.tangent = tanf (light.spot.angle * 1.2);
+			light.spot.inner_angle = light.spot.angle * 0.8;
+			light.spot.inner_cosine = cosf (light.spot.inner_angle);
 			light.specular.color = glm::vec3 (light.color);
 			light.specular.shininess = 8.0f;
-			light.attenuation = glm::vec4 (0.0f, 0.0f, 0.07f, 10.0f);
+			light.attenuation = glm::vec4 (0.0f, 0.0f, 0.07f, 50.0f);
 			lights.push_back (light);
 		}
 	}
@@ -98,7 +100,7 @@ bool Renderer::Init (void)
 			sizeof (Light) * lights.size (),
 			&lights[0], 0, NULL, NULL);
 
-//	interface.AddLight (0);
+	interface.AddLight (0);
 
 
 	interface.AddShadow (0);

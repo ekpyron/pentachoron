@@ -18,7 +18,7 @@
 
 Camera::Camera (void)
 	: center (0, 0, 0), angle (0), viewport (glm::ivec2 (0, 0)),
-		nearClipPlane (0.1f), farClipPlane (100.0f)
+		nearClipPlane (0.1f), farClipPlane (1000.0f)
 {
 }
 

@@ -147,6 +147,7 @@ float4 compute_pixel (read_only image2d_t colormap,
 			     	  -lightDir);
 		if (spotEffect < light.spot.x)
 		   continue;
+
 		spotEffect = native_powr (spotEffect, light.spot.y);
 
 		attenuation *= spotEffect;
@@ -276,7 +277,7 @@ kernel void composition (write_only image2d_t screen,
 	{
 		if (depths[i] < 1.0)
 		{
-			uint d = (uint) (depths[i] * 4294967296.0);
+			uint d = (uint) (depths[i] * 4294967295.0);
 			atomic_min (&boxmin_int, d);
 			atomic_max (&boxmax_int, d);
 		}
@@ -290,11 +291,11 @@ kernel void composition (write_only image2d_t screen,
 		float4 boxmin, boxmax;
 		boxmin.x = gxf;
 		boxmin.y = gyf;
-		boxmin.z = native_divide ((float)boxmin_int, 4294967296.0);
+		boxmin.z = native_divide ((float)boxmin_int, 4294967295.0);
 		getpos (&boxmin, &info);
 		boxmax.x = gxf;
 		boxmax.y = gyf;
-		boxmax.z = native_divide ((float)boxmax_int, 4294967296.0);
+		boxmax.z = native_divide ((float)boxmax_int, 4294967295.0);
 		getpos (&boxmax, &info);
 		radius = 0.5 * fast_distance (boxmin, boxmax);
 		sphere = 0.5 * (boxmin + boxmax);

@@ -134,6 +134,8 @@ int main (int argc, char *argv[])
 		glfwGetWindowSize (&w, &h);
 		resizecb (w, h);
 
+		glfwSwapInterval (0);
+
 		running = true;
 		while (running && glfwGetWindowParam (GLFW_OPENED) == GL_TRUE)
 		{

@@ -74,6 +74,7 @@ public:
 	 void EditConstantAttenuation (int what);
 	 void EditLinearAttenuation (int what);
 	 void EditQuadraticAttenuation (int what);
+	 void EditMaxDistance (int what);
 	 void EditShininess (int what);
 
 	 void PrintRendermode (void);
@@ -100,6 +101,7 @@ public:
 	 void PrintConstantAttenuation (void);
 	 void PrintLinearAttenuation (void);
 	 void PrintQuadraticAttenuation (void);
+	 void PrintMaxDistance (void);
 	 void PrintShininess (void);
 private:
 	 gl::Freetype freetype;

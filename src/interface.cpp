@@ -129,6 +129,8 @@ const std::vector<Menu> menus = {
 				&Interface::EditLinearAttenuation },
 			{ "Quadratic ", &Interface::PrintQuadraticAttenuation,
 				&Interface::EditQuadraticAttenuation },
+			{ "Max Distance ", &Interface::PrintMaxDistance,
+				&Interface::EditMaxDistance },
 			{ "Back", NULL, &Interface::EditLights }
 		}
 	},
@@ -176,7 +178,7 @@ void Interface::AddLight (int what)
 		light.spot.tangent = tanf (light.spot.angle);
 		light.specular.color = glm::vec3 (1, 1, 1);
 		light.specular.shininess = 8.0f;
-		light.attenuation = glm::vec4 (0.0f, 0.0f, 0.007f, 0.0f);
+		light.attenuation = glm::vec4 (0.0f, 0.0f, 0.007f, 50.0f);
 		renderer->lights.push_back (light);
 
 		renderer->lightmem = renderer->clctx.CreateBuffer
@@ -655,7 +657,7 @@ void Interface::EditLinearAttenuation (int what)
 
 void Interface::EditQuadraticAttenuation (int what)
 {
-	renderer->lights[active_light].attenuation.z += what * timefactor * 0.1;
+	renderer->lights[active_light].attenuation.z += what * timefactor * 0.001;
 	if (renderer->lights[active_light].attenuation.z < 0)
 		 renderer->lights[active_light].attenuation.z = 0;
 	renderer->queue.EnqueueWriteBuffer
@@ -664,6 +666,20 @@ void Interface::EditQuadraticAttenuation (int what)
 			- intptr_t (&renderer->lights[0]),
 			sizeof (renderer->lights[active_light].attenuation.z),
 			&renderer->lights[active_light].attenuation.z,
+			0, NULL, NULL);
+}
+
+void Interface::EditMaxDistance (int what)
+{
+	renderer->lights[active_light].attenuation.w += what * timefactor * 0.1;
+	if (renderer->lights[active_light].attenuation.w < 0)
+		 renderer->lights[active_light].attenuation.w = 0;
+	renderer->queue.EnqueueWriteBuffer
+		 (renderer->lightmem, CL_TRUE,
+			intptr_t (&renderer->lights[active_light].attenuation.w)
+			- intptr_t (&renderer->lights[0]),
+			sizeof (renderer->lights[active_light].attenuation.w),
+			&renderer->lights[active_light].attenuation.w,
 			0, NULL, NULL);
 }
 
@@ -795,7 +811,12 @@ void Interface::PrintLinearAttenuation (void)
 
 void Interface::PrintQuadraticAttenuation (void)
 {
-	font.Print (renderer->lights[active_light].attenuation.z);
+	font.Print (renderer->lights[active_light].attenuation.z * 100);
+}
+
+void Interface::PrintMaxDistance (void)
+{
+	font.Print (renderer->lights[active_light].attenuation.w);
 }
 
 void Interface::PrintShininess (void)
