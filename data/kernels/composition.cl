@@ -1,6 +1,3 @@
-#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
-#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics: enable
-
 const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE|CLK_FILTER_NEAREST
 			  |CLK_ADDRESS_CLAMP_TO_EDGE;
 const sampler_t samplerB = CLK_NORMALIZED_COORDS_TRUE|CLK_FILTER_LINEAR
@@ -208,10 +205,19 @@ kernel void composition (write_only image2d_t screen,
 	    ly = get_local_id (1);
 	uint gx = mul24 (get_group_id (0), get_local_size (0)),
 	     gy = mul24 (get_group_id (1), get_local_size (1));
+	local float gxf, gyf;
 
 	uint x = gx + lx,
 	    y = gy + ly;
 	uint offset = mad24 (ly, get_local_size (0), lx);
+
+
+	if (offset == 0)
+	   gxf = native_divide ((float)gx, 
+	       	 	        (float)get_image_width (depthbuffer1));
+	if (offset == 1)
+	   gyf = native_divide ((float)gy, 
+	       	 	        (float)get_image_width (depthbuffer1));
 
 	local ushort light_indices[256];
 	float depths[4];
@@ -219,15 +225,23 @@ kernel void composition (write_only image2d_t screen,
 	local uint num_light_indices;
 	num_light_indices = 0;
 
-	local float4 boxmin, boxmax;
-
-	boxmin.z = FLT_MAX;
-	boxmax.z = FLT_MIN;
-
 	pos.x = native_divide ((float)x,
 	       		       (float)get_image_width (depthbuffer1));
      	pos.y = native_divide ((float)y,
 	       		       (float)get_image_height (depthbuffer1));
+
+	local float4 boxmin, boxmax, sphere;
+	local float radius;
+	local uint boxmin_int, boxmax_int;
+//	local float minz, maxz;
+
+//	minz = 0;
+//	maxz = 1.0;
+
+	boxmin_int = 4294967295;
+	boxmax_int = 0;
+
+	barrier (CLK_LOCAL_MEM_FENCE);
 
      	depths[0] = read_imagef (depthbuffer1, sampler,
      	       	 	         (int2) (x, y)).x;
@@ -238,70 +252,80 @@ kernel void composition (write_only image2d_t screen,
 	depths[3] = read_imagef (depthbuffer4, sampler,
 		     	       	 (int2) (x, y)).x;
 
-	barrier (CLK_LOCAL_MEM_FENCE);
-
 	// TODO: maybe atomic operations are in fact necessary
 	for (int i = 0; i < 4; i++)
 	{
-		boxmin.z = min (boxmin.z, depths[i]);
-		boxmax.z = max (boxmax.z, depths[i]);
+//		minz = min (minz, depths[i]);
+//		maxz = max (maxz, depths[i]);
+		if (depths[i] < 1.0)
+		{
+			uint d = (ulong) (depths[i] * 4294967296.0);
+			atomic_min (&boxmin_int, d);
+			atomic_max (&boxmax_int, d);
+		}
 	}
 	
-	switch (offset)
-	{
-		case 0:
-		boxmin.x = native_divide ((float)gx,
-			       	  	  (float)get_image_width
-						 (depthbuffer1));
-		break;
-		case 1:
-		boxmin.y = native_divide ((float)gy,
-				       	  (float)get_image_width
-						 (depthbuffer1));
-		break;
-		case 2:
-		boxmax.x = native_divide ((float)(gx + get_local_size (0)),
-			       	  	  (float)get_image_width
-						 (depthbuffer1));
-		break;
-		case 3:
-		boxmax.y = native_divide ((float)(gy + get_local_size (1)),
-			       	  	  (float)get_image_width
-						 (depthbuffer1));
-		break;
-	}
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
 	if (offset == 0)
 	{
 		float4 p;
-		p = boxmin;
+		p.x = gxf;
+		p.y = gyf;
+		p.z = /*minz;*/native_divide ((float)boxmin_int, 4294967296.0);
 		getpos (&p, &info);
 		boxmin = p;
-	}
-	else if (offset == 1)
-	{
-		float4 p;
-		p = boxmax;
+		p.x = gxf;
+		p.y = gyf;
+		p.z = /*maxz;*/native_divide ((float)boxmax_int, 4294967296.0);
 		getpos (&p, &info);
 		boxmax = p;
+
+		radius = 0.5 * fast_distance (boxmin, boxmax);
+		sphere = 0.5 * (boxmin + boxmax);
 	}
+	
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
+	if (boxmin_int != 4294967295)
 	if (offset < num_lights)
 	{
+		struct Light light;
 
-		// TODO: Actual light culling is needed here
-		uint light = atom_inc (&num_light_indices);
-		light_indices[light] = offset;
+		float lambda;
+		light = lights[offset];
+		lambda = native_divide (dot (light.direction,
+		       	 	       	     sphere - light.position),
+					dot (light.direction,
+					    light.direction));
+
+		if (lambda >= 0)
+		{
+
+			float r = native_tan (light.spot.z) * lambda;
+
+			float d = fast_distance (mad (lambda, light.direction,
+			      	  		      light.position),
+						 sphere);
+
+			if (d <= r + radius)
+			{
+				uint index = atom_inc (&num_light_indices);
+				light_indices[index] = offset;
+			}
+		}
 	}
 
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
 	float4 pixel4, pixel3, pixel2, pixel;
+/*
+	float f = ((float) num_light_indices) / 32.0f;
+	pixel = f * ((float4) (1, 1, 1, 1));
+*/
 	pos.z = depths[0];
 	pixel = compute_pixel (colormap1, pos, normalmap1,
       	       	 	       specularmap1, shadowmap, lx, ly,
