@@ -19,6 +19,7 @@
 
 #include <common.h>
 #include <gbuffer.h>
+#include <filters.h>
 
 class Renderer;
 
@@ -31,10 +32,13 @@ public:
 	 void Frame (float timefactor);
 
 	 gl::Texture screen;
+	 gl::Texture glow;
 private:
+	 Blur blur;
 	 cl::Program program;
 	 cl::Kernel composition;
 	 cl::Memory screenmem;
+	 cl::Memory glowmem;
 	 cl::Memory colormem[GBuffer::layers];
 	 cl::Memory normalmem[GBuffer::layers];
 	 cl::Memory specularmem[GBuffer::layers];

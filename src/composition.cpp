@@ -36,13 +36,20 @@ bool Composition::Init (void)
 	program.Build ("-cl-fast-relaxed-math -cl-mad-enable -cl-no-signed-zeros");
 	composition = program.CreateKernel ("composition");
 
-	screen.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8,
+	screen.Image2D (GL_TEXTURE_RECTANGLE, 0, GL_RGBA8,
 									renderer->gbuffer.width,
 									renderer->gbuffer.height,
 									0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glow.Image2D (GL_TEXTURE_RECTANGLE, 0, GL_RGBA8,
+									renderer->gbuffer.width,
+									renderer->gbuffer.height,
+									0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+								
 
 	screenmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, screen);
+		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_RECTANGLE, 0, screen);
+	glowmem = renderer->clctx.CreateFromGLTexture2D
+		 (CL_MEM_READ_WRITE, GL_TEXTURE_RECTANGLE, 0, glow);
 	for (auto i = 0; i < GBuffer::layers; i++)
 	{
 		colormem[i] = renderer->clctx.CreateFromGLTexture2D
@@ -59,23 +66,27 @@ bool Composition::Init (void)
 	}
 
 	composition.SetArg (0, screenmem);
-	composition.SetArg (1, colormem[0]);
-	composition.SetArg (2, colormem[1]);
-	composition.SetArg (3, colormem[2]);
-	composition.SetArg (4, colormem[3]);
-	composition.SetArg (5, renderer->gbuffer.depthmem[0]);
-	composition.SetArg (6, renderer->gbuffer.depthmem[1]);
-	composition.SetArg (7, renderer->gbuffer.depthmem[2]);
-	composition.SetArg (8, renderer->gbuffer.depthmem[3]);
-	composition.SetArg (9, normalmem[0]);
-	composition.SetArg (10, normalmem[1]);
-	composition.SetArg (11, normalmem[2]);
-	composition.SetArg (12, normalmem[3]);
-	composition.SetArg (13, specularmem[0]);
-	composition.SetArg (14, specularmem[1]);
-	composition.SetArg (15, specularmem[2]);
-	composition.SetArg (16, specularmem[3]);
-	composition.SetArg (17, renderer->shadowmap.shadowmapmem);
+	composition.SetArg (1, glowmem);
+	composition.SetArg (2, colormem[0]);
+	composition.SetArg (3, colormem[1]);
+	composition.SetArg (4, colormem[2]);
+	composition.SetArg (5, colormem[3]);
+	composition.SetArg (6, renderer->gbuffer.depthmem[0]);
+	composition.SetArg (7, renderer->gbuffer.depthmem[1]);
+	composition.SetArg (8, renderer->gbuffer.depthmem[2]);
+	composition.SetArg (9, renderer->gbuffer.depthmem[3]);
+	composition.SetArg (10, normalmem[0]);
+	composition.SetArg (11, normalmem[1]);
+	composition.SetArg (12, normalmem[2]);
+	composition.SetArg (13, normalmem[3]);
+	composition.SetArg (14, specularmem[0]);
+	composition.SetArg (15, specularmem[1]);
+	composition.SetArg (16, specularmem[2]);
+	composition.SetArg (17, specularmem[3]);
+	composition.SetArg (18, renderer->shadowmap.shadowmapmem);
+
+	blur = renderer->filters.CreateBlur (glowmem, renderer->gbuffer.width,
+																			 renderer->gbuffer.height, 30);
 
 	return true;
 }
@@ -89,8 +100,8 @@ void Composition::Frame (float timefactor)
 		 glm::mat4 shadowmat;
 		 glm::vec4 eye;
 	} ViewInfo;
-	std::vector<cl::Memory> mem = { screenmem, colormem[0], colormem[1],
-																	colormem[2], colormem[3],
+	std::vector<cl::Memory> mem = { screenmem, glowmem, colormem[0],
+																	colormem[1], colormem[2], colormem[3],
 																	normalmem[0], normalmem[1],
 																	normalmem[2], normalmem[3],
 																	specularmem[0], specularmem[1],
@@ -115,9 +126,9 @@ void Composition::Frame (float timefactor)
 																	 * renderer->shadowmap.vmat);
 	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
 
-	composition.SetArg (18, sizeof (cl_uint), &num_lights);
-	composition.SetArg (19, renderer->lightmem);
-	composition.SetArg (20, sizeof (ViewInfo), &info);
+	composition.SetArg (19, sizeof (cl_uint), &num_lights);
+	composition.SetArg (20, renderer->lightmem);
+	composition.SetArg (21, sizeof (ViewInfo), &info);
 
 	const size_t work_dim[] = { renderer->gbuffer.width,
 															renderer->gbuffer.height };
@@ -127,4 +138,6 @@ void Composition::Frame (float timefactor)
 	renderer->queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
 																				local_dim, 0, NULL, NULL);
 	renderer->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
+
+	blur.Apply ();
 }

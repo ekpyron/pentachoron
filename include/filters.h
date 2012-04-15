@@ -54,7 +54,7 @@ public:
 	 bool Init (void);
 
 	 Blur CreateBlur (cl::Memory &memory, GLuint width, GLuint height,
-										float sigma);
+										GLuint size);
 //private:
 	 void ApplyBlur (const cl::Memory *memory, const cl::Memory &storage,
 									 const cl::Memory &weights, GLuint num_weights,

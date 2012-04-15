@@ -257,7 +257,7 @@ void Interface::EditShadows (int what)
 	}
 }
 
-#define NUM_RENDERMODES 18
+#define NUM_RENDERMODES 19
 
 void Interface::ToggleRendermode (int what)
 {
@@ -301,7 +301,8 @@ void Interface::PrintRendermode (void)
 		"depth buffer [1]",
 		"depth buffer [2]",
 		"depth buffer [3]",
-		"shadow projection"
+		"shadow projection",
+		"glow"
 	};
 
 	font.Print (rendermodes[renderer->finalpass.GetRenderMode ()]);

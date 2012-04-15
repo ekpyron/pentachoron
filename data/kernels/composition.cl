@@ -199,6 +199,7 @@ float4 compute_pixel (read_only image2d_t colormap,
 }
 
 kernel void composition (write_only image2d_t screen,
+       	    		 write_only image2d_t glowmap,
 	      		 read_only image2d_t colormap1,
 	      		 read_only image2d_t colormap2,
 	      		 read_only image2d_t colormap3,
@@ -377,6 +378,19 @@ kernel void composition (write_only image2d_t screen,
 	pixel = mix (pixel4, pixel, pixel4.w);
 	pixel = mix (pixel3, pixel, pixel3.w);
 	pixel = mix (pixel2, pixel, pixel2.w);
+
+	float luminance = 0.2126 * pixel.x + 0.7152 * pixel.y
+	      		  + 0.0722 * pixel.w;
+
+	float4 glow = (float4) (0.0, 0.0, 0.0, 0.0);
+
+	if (luminance > 0.5)
+	{
+		glow.xyz = pixel.xyz;
+		glow.w = luminance;
+	}
+
+	write_imagef (glowmap, (int2) (x, y), glow);
 
 	write_imagef (screen, (int2) (x, y), pixel);
 }

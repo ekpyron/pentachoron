@@ -39,36 +39,40 @@ bool Filters::Init (void)
 	return true;
 }
 
+long double Coeff (unsigned long n, unsigned long k)
+{
+	long double ret;
+	ret = 1.0 / powl (2.0, n);
+	for (unsigned long i = 0; i < k; i++)
+	{
+		ret *= (long double) (n - i);
+		ret /= (long double) (i+1);
+	}
+	return ret;
+}
+
 Blur Filters::CreateBlur (cl::Memory &memory, GLuint width,
-													GLuint height, float sigma)
+													GLuint height, GLuint size)
 {
 	cl::Memory weights;
 	cl::Memory storage;
 	std::vector<float> weights_data;
 
-	const float coeff[5] = { 0.2270270270, 0.1945945946, 0.1216216216,
-													 0.0540540541, 0.0162162162 };
+	// make size even
+	if (size & 1) size++;
 
-	for  (int i = 0; i < 5; i++)
+	for (int i = 0; i <= (size>>1); i++)
 	{
-		weights_data.push_back (coeff[i]);
-	}
-	 
-
-/*	for (int i = 0; i < ceil (2 * sigma); i++)
-	{
-		weights_data.push_back ((1.0f / (sqrtf (2.0f * M_PI * sigma * sigma)))
-														* expf (-(i * i) / (2.0f * sigma * sigma)));
+		weights_data.push_back (Coeff (size, (size>>1) - i));
 	}
 
-	const float Coefficients[11] = 
-		 { 0.14107424,
-			 0.132526984, 0.109868729, 0.080381679, 0.051898313, 0.029570767,
-			 0.014869116, 0.00659813, 0.002583865, 0.00089296, 0.000272337 };
-	for (int i = 0; i < 11; i++)
+	float test;
+	test = weights_data[0];
+
+	for (int i = 1; i < weights_data.size (); i++)
 	{
-		weights_data.push_back (Coefficients[i]);
-	}*/
+		test += weights_data[i] * 2.0f;
+	}
 
 	storage = renderer->clctx.CreateBuffer (CL_MEM_READ_WRITE,
 																					width * height

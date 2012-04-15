@@ -1,14 +1,14 @@
 #version 420 core
 layout(location = 0) out vec4 output;
-layout(binding = 0) uniform sampler2D colorbuffer;
+layout(binding = 0) uniform samplerRect colorbuffer;
+layout(binding = 1) uniform samplerRect glowbuffer;
 uniform uvec2 viewport;
 
 void main (void)
 {
-	vec2 coord = gl_FragCoord.xy / viewport;
-
-	vec4 color;
-	color = texture2D (colorbuffer, coord);
-
+	vec4 color, glow;
+	color = texture (colorbuffer, gl_FragCoord.xy);
+	glow = texture (glowbuffer, gl_FragCoord.xy);
+	color.xyz += glow.xyz;
 	output = color;
 }

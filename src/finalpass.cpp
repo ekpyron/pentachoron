@@ -101,7 +101,9 @@ void FinalPass::Render (void)
 	{
 	case 0:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->composition.screen.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->composition.screen.Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
+		renderer->windowgrid.sampler.Bind (1);
+		renderer->composition.glow.Bind (GL_TEXTURE1, GL_TEXTURE_RECTANGLE);
 		pipelines[0].Bind ();
 		break;
 	case 1:
@@ -189,6 +191,11 @@ void FinalPass::Render (void)
 		renderer->shadowmap.shadowmap.Bind (GL_TEXTURE0,
 																				GL_TEXTURE_RECTANGLE);
 		pipelines[4].Bind ();
+		break;
+	case 18:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->composition.glow.Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
+		pipelines[5].Bind ();
 		break;
 	default:
 		throw std::runtime_error ("Invalid render mode.");
