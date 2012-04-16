@@ -84,6 +84,9 @@ private:
 	 /** vertex buffer used for rendering text
 		*/
 	 gl::Buffer buffer;
+	 /** sampler object used for rendering text
+		*/
+	 gl::Sampler sampler;
 	 /** vertex array object used for rendering text
 		*/
 	 gl::VertexArray vertexarray;

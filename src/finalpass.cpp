@@ -31,7 +31,7 @@ bool FinalPass::Init (void)
 {
 	std::vector<const char *> fprogram_sources = {
 		"compose.txt", "normal.txt", "passthrough.txt", "diffuse.txt",
-		"shadowmap.txt", "monochrome.txt", "depth.txt"
+		"shadowmap.txt", "glow.txt", "depth.txt"
 	};
 	for (const char *&filename : fprogram_sources)
 	{
@@ -69,6 +69,11 @@ bool FinalPass::Init (void)
 		pipelines.back ().UseProgramStages (GL_FRAGMENT_SHADER_BIT, fprogram);
 	}
 
+	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 	return true;
 }
 
@@ -101,9 +106,9 @@ void FinalPass::Render (void)
 	{
 	case 0:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->composition.screen.Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
-		renderer->windowgrid.sampler.Bind (1);
-		renderer->composition.glow.Bind (GL_TEXTURE1, GL_TEXTURE_RECTANGLE);
+		renderer->composition.screen.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		sampler.Bind (1);
+		renderer->composition.glow.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 		pipelines[0].Bind ();
 		break;
 	case 1:
@@ -193,8 +198,8 @@ void FinalPass::Render (void)
 		pipelines[4].Bind ();
 		break;
 	case 18:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->composition.glow.Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
+		sampler.Bind (0);
+		renderer->composition.glow.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[5].Bind ();
 		break;
 	default:

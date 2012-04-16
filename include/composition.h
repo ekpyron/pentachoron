@@ -38,7 +38,8 @@ private:
 	 cl::Program program;
 	 cl::Kernel composition;
 	 cl::Memory screenmem;
-	 cl::Memory glowmem;
+	 cl::Memory glowmem_full;
+	 cl::Memory glowmem_downsampled;
 	 cl::Memory colormem[GBuffer::layers];
 	 cl::Memory normalmem[GBuffer::layers];
 	 cl::Memory specularmem[GBuffer::layers];

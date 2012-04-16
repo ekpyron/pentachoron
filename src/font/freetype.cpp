@@ -57,6 +57,11 @@ bool Freetype::Init (void)
 	vertexarray.VertexAttribOffset (buffer, 0, 2, GL_BYTE, GL_FALSE, 0, 0);
 	vertexarray.EnableVertexAttrib (0);
 
+	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 	GL_CHECK_ERROR;
 
 	return true;
@@ -82,6 +87,7 @@ void Freetype::Render (const glm::vec2 &texfactor,
 
 	vertexarray.Bind ();
 	pipeline.Bind ();
+	sampler.Bind (0);
 
 	gl::DrawArrays (GL_TRIANGLE_STRIP, 0, 4);
 	gl::DepthMask (GL_TRUE);

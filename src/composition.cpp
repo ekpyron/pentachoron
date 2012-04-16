@@ -36,20 +36,25 @@ bool Composition::Init (void)
 	program.Build ("-cl-fast-relaxed-math -cl-mad-enable -cl-no-signed-zeros");
 	composition = program.CreateKernel ("composition");
 
-	screen.Image2D (GL_TEXTURE_RECTANGLE, 0, GL_RGBA8,
+	screen.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8,
 									renderer->gbuffer.width,
 									renderer->gbuffer.height,
 									0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glow.Image2D (GL_TEXTURE_RECTANGLE, 0, GL_RGBA8,
+	glow.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8,
 									renderer->gbuffer.width,
 									renderer->gbuffer.height,
 									0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-								
+	glow.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
+	glow.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 1);
+	glow.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 1);
+	glow.GenerateMipmap (GL_TEXTURE_2D);
 
 	screenmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_RECTANGLE, 0, screen);
-	glowmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_WRITE, GL_TEXTURE_RECTANGLE, 0, glow);
+		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, screen);
+	glowmem_full = renderer->clctx.CreateFromGLTexture2D
+		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, glow);
+	glowmem_downsampled = renderer->clctx.CreateFromGLTexture2D
+		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 1, glow);
 	for (auto i = 0; i < GBuffer::layers; i++)
 	{
 		colormem[i] = renderer->clctx.CreateFromGLTexture2D
@@ -66,7 +71,7 @@ bool Composition::Init (void)
 	}
 
 	composition.SetArg (0, screenmem);
-	composition.SetArg (1, glowmem);
+	composition.SetArg (1, glowmem_full);
 	composition.SetArg (2, colormem[0]);
 	composition.SetArg (3, colormem[1]);
 	composition.SetArg (4, colormem[2]);
@@ -85,8 +90,9 @@ bool Composition::Init (void)
 	composition.SetArg (17, specularmem[3]);
 	composition.SetArg (18, renderer->shadowmap.shadowmapmem);
 
-	blur = renderer->filters.CreateBlur (glowmem, renderer->gbuffer.width,
-																			 renderer->gbuffer.height, 30);
+	blur = renderer->filters.CreateBlur (glowmem_downsampled,
+																			 renderer->gbuffer.width >> 1,
+																			 renderer->gbuffer.height >> 1, 30);
 
 	return true;
 }
@@ -100,7 +106,8 @@ void Composition::Frame (float timefactor)
 		 glm::mat4 shadowmat;
 		 glm::vec4 eye;
 	} ViewInfo;
-	std::vector<cl::Memory> mem = { screenmem, glowmem, colormem[0],
+	std::vector<cl::Memory> mem = { screenmem, glowmem_full,
+																	glowmem_downsampled, colormem[0],
 																	colormem[1], colormem[2], colormem[3],
 																	normalmem[0], normalmem[1],
 																	normalmem[2], normalmem[3],
@@ -138,6 +145,8 @@ void Composition::Frame (float timefactor)
 	renderer->queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
 																				local_dim, 0, NULL, NULL);
 	renderer->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
+
+	glow.GenerateMipmap (GL_TEXTURE_2D);
 
 	blur.Apply ();
 }
