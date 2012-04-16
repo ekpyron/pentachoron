@@ -44,9 +44,7 @@ bool Composition::Init (void)
 									renderer->gbuffer.width,
 									renderer->gbuffer.height,
 									0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glow.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
-	glow.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 1);
-	glow.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 1);
+	glow.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
 	glow.GenerateMipmap (GL_TEXTURE_2D);
 
 	screenmem = renderer->clctx.CreateFromGLTexture2D
@@ -54,7 +52,7 @@ bool Composition::Init (void)
 	glowmem_full = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, glow);
 	glowmem_downsampled = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 1, glow);
+		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 2, glow);
 	for (auto i = 0; i < GBuffer::layers; i++)
 	{
 		colormem[i] = renderer->clctx.CreateFromGLTexture2D
@@ -91,8 +89,8 @@ bool Composition::Init (void)
 	composition.SetArg (18, renderer->shadowmap.shadowmapmem);
 
 	blur = renderer->filters.CreateBlur (glowmem_downsampled,
-																			 renderer->gbuffer.width >> 1,
-																			 renderer->gbuffer.height >> 1, 30);
+																			 renderer->gbuffer.width >> 2,
+																			 renderer->gbuffer.height >> 2, 30);
 
 	return true;
 }

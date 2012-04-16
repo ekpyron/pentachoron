@@ -9,7 +9,7 @@ void main (void)
 	vec4 color, glow;
 	vec2 coord = gl_FragCoord.xy / viewport;
 	color = texture (colorbuffer, coord);
-	glow = texture (glowbuffer, coord, 1);
+	glow = texture (glowbuffer, coord, 2);
 	color.xyz += glow.xyz;
 	output = color;
 }

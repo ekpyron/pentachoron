@@ -8,6 +8,5 @@ void main (void)
 	vec2 coord;
 	coord = gl_FragCoord.xy / viewport;
 
-	color = texture (tex, coord, 1);
-//	color = texelFetch (tex, ivec2 (gl_FragCoord.xy), 1);
+	color = texture (tex, coord, 2);
 }
