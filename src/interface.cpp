@@ -877,10 +877,13 @@ void Interface::Frame (float tf)
 	timefactor = tf;
 
 	if (glfwGetKey (GLFW_KEY_LSHIFT))
-		 timefactor *= 10.0f;
+		 timefactor *= 5.0f;
 
 	if (glfwGetKey (GLFW_KEY_LCTRL))
-		 timefactor *= 50.0f;
+		 timefactor *= 10.0f;
+
+	if (glfwGetKey (GLFW_KEY_LALT))
+		 timefactor *= 20.0f;
 
 	if (glfwGetTime () - last_time >= 1.0)
 	{

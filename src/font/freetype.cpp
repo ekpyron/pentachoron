@@ -82,7 +82,7 @@ void Freetype::Render (const glm::vec2 &texfactor,
 	gl::Enable (GL_BLEND);
 	gl::BlendFunc (GL_ONE, GL_ONE);
 	gl::BlendEquation (GL_FUNC_ADD);
-	if (glfwGetKey (GLFW_KEY_LALT))
+	if (glfwGetKey (GLFW_KEY_RALT))
 		 gl::BlendEquation (GL_FUNC_REVERSE_SUBTRACT);
 
 	vertexarray.Bind ();
