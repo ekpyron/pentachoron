@@ -74,10 +74,12 @@ Blur Filters::CreateBlur (cl::Memory &memory, GLuint width,
 		test += weights_data[i] * 2.0f;
 	}
 
-	storage = renderer->clctx.CreateBuffer (CL_MEM_READ_WRITE,
-																					width * height
-																					* sizeof (cl_float) * 4,
-																					NULL);
+	storage = renderer->clctx.CreateImage2D (CL_MEM_READ_WRITE,
+																					 CL_RGBA,
+																					 CL_FLOAT,
+																					 width, height, 0,
+																					 NULL);
+																					 
 
 	weights = renderer->clctx.CreateBuffer (CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
 																					weights_data.size () * sizeof (float),

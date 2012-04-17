@@ -1,7 +1,7 @@
 const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE|CLK_FILTER_NEAREST
 			  |CLK_ADDRESS_CLAMP_TO_EDGE;
 
-kernel void hblur (read_only image2d_t in, write_only global float4 *out,
+kernel void hblur (read_only image2d_t in, write_only global image2d_t out,
        	    	   global float *weights, int radius)
 {
 	int x = mul24 (get_group_id (0), get_local_size (0))
@@ -20,10 +20,10 @@ kernel void hblur (read_only image2d_t in, write_only global float4 *out,
 		   	    * read_imagef (in, sampler, coord);
 	}
 
-	out[get_image_width (in) * y + x] = value;
+	write_imagef (out, (int2) (x, y), value);
 }
 
-kernel void vblur (read_only global float4 *in,
+kernel void vblur (read_only image2d_t in,
        	    	   write_only image2d_t out,
        	    	   global float *weights, int radius)
 {
@@ -36,11 +36,11 @@ kernel void vblur (read_only global float4 *in,
 
 	for (int dy = -radius + 1; dy < radius; dy++)
 	{
-		if (y+dy >= 0 && y+dy < get_image_height (out))
-		{
+		int2 coord;
+		coord = (int2) (x, y + dy);
+		if (coord.y >= 0 && coord.y < get_image_height (out))
 		   value += weights[abs (dy)]
-		   	    * in[(y + dy) * get_image_width (out) + x];
-		}
+		   	    * read_imagef (in, sampler, coord);
 	}
 
 	write_imagef (out, (int2) (x, y), value);
