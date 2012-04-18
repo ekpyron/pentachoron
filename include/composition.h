@@ -31,8 +31,7 @@ class Composition
 {
 public:
 	/** Constructor.
-	 * \param parent Specifies the Renderer class from which this Composition
-	 *               class was created.
+	 * \param parent Specifies the parent Renderer class.
 	 */
 	 Composition (Renderer *parent);
 	 /** Destructor.
@@ -50,11 +49,12 @@ public:
 	 void Frame (float timefactor);
 
 	 /** Screen texture.
-		* Stores the combined, lit pixel value to be displayed on screen.
+		* A texture storing the combined, lit pixel value to be
+		* displayed on screen.
 		*/
 	 gl::Texture screen;
 	 /** Glow map.
-		* Stores the parts of the screen that is supposed to glow.
+		* A texture storing the parts of the screen that is supposed to glow.
 		*/
 	 gl::Texture glow;
 private:
@@ -84,8 +84,8 @@ private:
 		* map (a specific mipmap level > 0).
 		*/
 	 cl::Memory glowmem_downsampled;
-	 /** Renderer.
-		* The Renderer this class is part of.
+	 /** Parent renderer.
+		* The Renderer this class belongs to.
 		*/
 	 Renderer *renderer;
 };

@@ -25,35 +25,103 @@
 
 class Renderer;
 
+/** Shadow map class.
+ * This class handles the creation of shadow maps.
+ */
 class ShadowMap
 {
 public:
+	/** Constructor.
+	 * \param parent Specifies the parent Renderer class.
+	 */
 	ShadowMap (Renderer *parent);
+	/** Destructor.
+	 */
 	 ~ShadowMap (void);
+	 /** Initialization.
+		* Initializes the shadow map class.
+		* \returns Whether the initialization was successful.
+		*/
 	 bool Init (void);
+	 /** Render the shadow map.
+		* Renders a shadow map for the given geometry.
+		* \param shadowid ID of the shadow that is rendered.
+		* \param geometry Geometry to be rendered to fill the shadow map.
+		* \param shadow Shadow parameters.
+		*/
 	 void Render (GLuint shadowid, Geometry &geometry, const Shadow &shadow);
+	 /** Get the shadow map's height.
+		* Obtains the height of the contained shadow map.
+		*/
 	 GLuint GetWidth (void) const;
+   /** Get the shadow map's width.
+		* Obtains the width of the contained shadow map.
+		*/
 	 GLuint GetHeight (void) const;
-
+	 /** Query soft shadows.
+		* Queries whether the shadow map should be blurred to create
+		* soft shadows.
+		* \return Whether soft shadows are active.
+		*/
 	 bool GetSoftShadows (void) const;
+	 /** Set soft shadows.
+		* Determines whether to blur the shadow map to create soft shadows.
+		* \param s Whether to activate soft shadows.
+		*/
 	 void SetSoftShadows (bool s);
-
+	 /** Shadow map.
+		* A texture containing the actual shadow map.
+		*/
 	 gl::Texture shadowmap;
+	 /** Shadow map (OpenCL memory object).
+		* OpenCL memory object referring to the shadow map texture
+		*/
 	 cl::Memory shadowmapmem;
+	 /** View matrix.
+		* The view matrix to render the scene from the perspective
+		* of the shadow caster.
+		*/
 	 glm::mat4 vmat;
+	 /** Projection matrix.
+		* The projection matrix to render the scene from the perspective
+		* of the shadow caster.y
+		*/
 	 glm::mat4 projmat;
 private:
-	 GLuint width, height;
+	 /** Shadow map width.
+		*/
+	 GLuint width;
+	 /** Shadow map height.
+		*/
+	 GLuint height;
+	 /** OpenGL shader.
+		* OpenGL shader program used to fill the shadow map.
+		*/
 	 gl::Program program;
+	 /** Depthbuffer.
+		* Renderbuffer used to store the depth buffer while
+		* rendering the geometry.
+		*/
 	 gl::Renderbuffer depthbuffer;
+	 /** Framebuffer.
+		* Framebuffer object used for rendering to the shadow
+		* map texture.
+		*/
 	 gl::Framebuffer framebuffer;
 
+	 /** Soft shadows.
+		* If true, the shadow map is blurred, if false, it is not.
+		*/
 	 bool soft_shadows;
 
+	 /** Blur filter.
+		* Blur filter used to blur the shadow map.
+		*/
 	 Blur blur;
-
+	 /** Parent renderer.
+		* The Renderer this class belongs to.
+		*/
 	 Renderer *renderer;
-	 friend class ShadowPass;
 };
 
 
