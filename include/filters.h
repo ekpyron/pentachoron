@@ -34,13 +34,14 @@ public:
 	 Blur &operator= (Blur &&blur);
 //private:
 	 const cl::Memory *memory;
-	 cl::Memory weights;
+	 cl::Memory weights, offsets;
 	 GLuint num_weights;
 	 GLuint width, height;
 	 Filters *parent;
 	 cl::Memory storage;
 	 Blur (const cl::Memory *memory, cl::Memory storage, cl::Memory weights,
-				 GLuint num_weights, GLuint width, GLuint height, Filters *p);
+				 cl::Memory offsets, GLuint num_weights, GLuint width,
+				 GLuint height, Filters *p);
 	 friend class Filters;
 };
 
@@ -57,8 +58,8 @@ public:
 										GLuint size);
 //private:
 	 void ApplyBlur (const cl::Memory *memory, const cl::Memory &storage,
-									 const cl::Memory &weights, GLuint num_weights,
-									 GLuint width, GLuint height);
+									 const cl::Memory &weights, const cl::Memory &offsets,
+									 GLuint num_weights, GLuint width, GLuint height);
 	 cl::Program clblur;
 	 cl::Kernel hblur, vblur;
 	 Renderer *renderer;

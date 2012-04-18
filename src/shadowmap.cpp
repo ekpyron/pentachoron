@@ -18,7 +18,7 @@
 #include "renderer.h"
 
 ShadowMap::ShadowMap (Renderer *parent)
-	: renderer (parent), soft_shadows (false)
+	: renderer (parent), soft_shadows (true)
 {
 }
 
@@ -70,7 +70,7 @@ bool ShadowMap::Init (void)
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
-	shadowmap.Image2D (GL_TEXTURE_RECTANGLE, 0, GL_RG32F, width, height,
+	shadowmap.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
 										 0, GL_RG, GL_UNSIGNED_BYTE, NULL);
 
 	shadowmapmem = renderer->clctx.CreateFromGLTexture2D
@@ -78,12 +78,12 @@ bool ShadowMap::Init (void)
 
 	depthbuffer.Storage (GL_DEPTH_COMPONENT32, width, height);
 
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE,
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 												 shadowmap, 0);
 	framebuffer.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
 	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
-	blur = renderer->filters.CreateBlur (shadowmapmem, width, height, 6);
+	blur = renderer->filters.CreateBlur (shadowmapmem, width, height, 8);
 
 	return true;
 }
@@ -124,7 +124,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	gl::Program::UseNone ();
 	
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
-	
+
 	if (soft_shadows)
 		 blur.Apply ();
 

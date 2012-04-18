@@ -18,7 +18,8 @@
 #include "renderer.h"
 
 Geometry::Geometry (Renderer *parent)
-	: renderer (parent), kitty (this), box (this), grid (this)
+	: renderer (parent), kitty (this), headglass (this),
+		box (this), grid (this)
 {
 }
 
@@ -104,6 +105,8 @@ bool Geometry::Init (void)
 			return false;
 	if (!kitty.Load ("kitty.yaml"))
 		 return false;
+	if (!headglass.Load ("headglass.yaml"))
+		 return false;
 	if (!box.Load ("box.yaml"))
 		 return false;
 
@@ -138,6 +141,7 @@ void Geometry::Render (GLuint p,
 			if ((x&1) + (z&1) == 0)
 			{
 				kitty.Render (pass, program, shadowpass, transparent);
+				headglass.Render (pass, program, shadowpass, transparent);
 			}
 			else
 			{

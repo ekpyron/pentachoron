@@ -55,23 +55,38 @@ Blur Filters::CreateBlur (cl::Memory &memory, GLuint width,
 													GLuint height, GLuint size)
 {
 	cl::Memory weights;
+	cl::Memory offsets;
 	cl::Memory storage;
 	std::vector<float> weights_data;
+	std::vector<float> offsets_data;
+	std::vector<float> linear_weights_data;
+	std::vector<float> linear_offsets_data;
 
-	// make size even
-	if (size & 1) size++;
+	// round up
+	size = (size + 3) & ~3;
 
 	for (int i = 0; i <= (size>>1); i++)
 	{
 		weights_data.push_back (Coeff (size, (size>>1) - i));
 	}
 
-	float test;
-	test = weights_data[0];
-
-	for (int i = 1; i < weights_data.size (); i++)
+	for (int i = 0; i <= (size>>1); i++)
 	{
-		test += weights_data[i] * 2.0f;
+		offsets_data.push_back (float (i));
+	}
+
+	linear_weights_data.push_back (weights_data[0]);
+	linear_offsets_data.push_back (offsets_data[0]);
+
+	for (int i = 1; i <= (size>>2); i++)
+	{
+		linear_weights_data.push_back (weights_data[i * 2 - 1] +
+																	 weights_data[i * 2]);
+		linear_offsets_data.push_back ((offsets_data[i * 2 - 1]
+																		* weights_data[i * 2 - 1]
+																		+ offsets_data[i * 2]
+																		* weights_data[i * 2])
+																	 / linear_weights_data[i]);
 	}
 
 	storage = renderer->clctx.CreateImage2D (CL_MEM_READ_WRITE,
@@ -82,27 +97,35 @@ Blur Filters::CreateBlur (cl::Memory &memory, GLuint width,
 																					 
 
 	weights = renderer->clctx.CreateBuffer (CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
-																					weights_data.size () * sizeof (float),
-																					&weights_data[0]);
+																					linear_weights_data.size ()
+																					* sizeof (float),
+																					&linear_weights_data[0]);
+	offsets = renderer->clctx.CreateBuffer (CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
+																					linear_offsets_data.size ()
+																					* sizeof (float),
+																					&linear_offsets_data[0]);
 
-	cl_int num_weights = weights_data.size ();
+	cl_int num_weights = linear_weights_data.size ();
 
-	return Blur (&memory, storage, weights, num_weights, width, height, this);
+	return Blur (&memory, storage, weights, offsets, num_weights,
+							 width, height, this);
 }
 
 void Filters::ApplyBlur (const cl::Memory *memory, const cl::Memory &storage,
-												 const cl::Memory &weights, GLuint num_weights,
-												 GLuint width, GLuint height)
+												 const cl::Memory &weights, const cl::Memory &offsets,
+												 GLuint num_weights, GLuint width, GLuint height)
 {
 	hblur.SetArg (0, *memory);
 	hblur.SetArg (1, storage);
 	hblur.SetArg (2, weights);
-	hblur.SetArg (3, sizeof (num_weights), &num_weights);
+	hblur.SetArg (3, offsets);
+	hblur.SetArg (4, sizeof (num_weights), &num_weights);
 
 	vblur.SetArg (0, storage);
 	vblur.SetArg (1, *memory);
 	vblur.SetArg (2, weights);
-	vblur.SetArg (3, sizeof (num_weights), &num_weights);
+	vblur.SetArg (3, offsets);
+	vblur.SetArg (4, sizeof (num_weights), &num_weights);
 
 	const size_t work_dim[] = { width, height};
 
@@ -119,9 +142,9 @@ Blur::Blur (void) : parent (NULL)
 }
 
 Blur::Blur (const cl::Memory *mem, cl::Memory s, cl::Memory w,
-						GLuint num, GLuint x, GLuint y, Filters *p)
-	: parent (p), memory (mem), storage (s), weights (w), num_weights (num),
-		width (x), height (y)
+						cl::Memory o, GLuint num, GLuint x, GLuint y, Filters *p)
+	: parent (p), memory (mem), storage (s), weights (w), 
+		offsets (o), num_weights (num), width (x), height (y)
 {
 }
 
@@ -129,7 +152,7 @@ Blur::Blur (Blur &&blur)
 	: num_weights (blur.num_weights), memory (blur.memory),
 		weights (std::move (blur.weights)), parent (blur.parent),
 		storage (std::move (blur.storage)), width (blur.width),
-		height (blur.height)
+		height (blur.height), offsets (std::move (blur.offsets))
 {
 	blur.num_weights = 0;
 	blur.width = 0;
@@ -146,6 +169,7 @@ Blur &Blur::operator= (Blur &&blur)
 	height = blur.height;
 	num_weights = blur.num_weights;
 	weights = std::move (blur.weights);
+	offsets = std::move (blur.offsets);
 	storage = std::move (blur.storage);
 	memory = blur.memory;
 	parent = blur.parent;
@@ -156,5 +180,6 @@ Blur &Blur::operator= (Blur &&blur)
 
 void Blur::Apply (void)
 {
-	parent->ApplyBlur (memory, storage, weights, num_weights, width, height);
+	parent->ApplyBlur (memory, storage, weights, offsets,
+										 num_weights, width, height);
 }

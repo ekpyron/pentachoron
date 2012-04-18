@@ -194,7 +194,7 @@ void FinalPass::Render (void)
 	case 17:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->shadowmap.shadowmap.Bind (GL_TEXTURE0,
-																				GL_TEXTURE_RECTANGLE);
+																				GL_TEXTURE_2D);
 		pipelines[4].Bind ();
 		break;
 	case 18:

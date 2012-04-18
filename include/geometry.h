@@ -44,6 +44,7 @@ public:
 
 private:
 	 Model kitty;
+	 Model headglass;
 	 Model box;
 	 Model grid;
 	 gl::Sampler sampler;
