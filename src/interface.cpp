@@ -233,6 +233,10 @@ void Interface::RemoveLight (int what)
 		renderer->lights.erase (renderer->lights.begin () + active_light);
 		if (active_light >= renderer->lights.size ())
 			 active_light = 0;
+		renderer->queue.EnqueueWriteBuffer
+			 (renderer->lightmem, CL_TRUE, 0,
+				sizeof (Light) * renderer->lights.size (),
+				&renderer->lights[0], 0, NULL, NULL);
 	}
 }
 
