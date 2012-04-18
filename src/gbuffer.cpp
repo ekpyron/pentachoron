@@ -99,6 +99,15 @@ bool GBuffer::Init (void)
 		depthmem[i] = renderer->clctx.CreateFromGLTexture2D
 			 (CL_MEM_READ_ONLY, GL_TEXTURE_RECTANGLE, 0,
 				renderer->gbuffer.depthtexture[i]);
+		colormem[i] = renderer->clctx.CreateFromGLTexture2D
+			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
+				renderer->gbuffer.colorbuffer[i]);
+		normalmem[i] = renderer->clctx.CreateFromGLTexture2D
+			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
+				renderer->gbuffer.normalbuffer[i]);
+		specularmem[i] = renderer->clctx.CreateFromGLTexture2D
+			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
+				renderer->gbuffer.specularbuffer[i]);
 	}
 
 	return true;

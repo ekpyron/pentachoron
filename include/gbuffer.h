@@ -33,8 +33,11 @@ public:
 	 static const unsigned int layers = 4;
 
 	 gl::Texture colorbuffer[layers];
+	 cl::Memory colormem[layers];
 	 gl::Texture normalbuffer[layers];
+	 cl::Memory normalmem[layers];
 	 gl::Texture specularbuffer[layers];
+	 cl::Memory specularmem[layers];
 	 gl::Texture depthtexture[layers];
 	 gl::Renderbuffer depthbuffer[layers];
 

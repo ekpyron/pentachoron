@@ -17,7 +17,7 @@
 #include "camera.h"
 
 Camera::Camera (void)
-	: center (0, 0, 0), angle (0), viewport (glm::ivec2 (0, 0)),
+	: center (0, 0, 0), horizontal_angle (0), viewport (glm::ivec2 (0, 0)),
 		nearClipPlane (0.1f), farClipPlane (1000.0f)
 {
 }
@@ -42,7 +42,7 @@ void Camera::Resize (int w, int h)
 
 glm::vec3 Camera::GetEye (void) const
 {
-	glm::vec3 dir (sin (angle), 0, cos (angle));
+	glm::vec3 dir (sin (horizontal_angle), 0, cos (horizontal_angle));
 	dir = glm::normalize (dir);
 	return center - dir * 1.0f;
 }

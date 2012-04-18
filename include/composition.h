@@ -23,26 +23,70 @@
 
 class Renderer;
 
+/** Composition class.
+ * This class handles the composition of the gbuffer data into
+ * a final color value and creates a glow map.
+ */
 class Composition
 {
 public:
+	/** Constructor.
+	 * \param parent Specifies the Renderer class from which this Composition
+	 *               class was created.
+	 */
 	 Composition (Renderer *parent);
+	 /** Destructor.
+		*/
 	 ~Composition (void);
+	 /** Initialization.
+		* Initializes the composition class.
+		* \returns Whether the initialization was successful.
+		*/
 	 bool Init (void);
+	 /** Per-frame subroutine.
+		* Handles all per-frame computations required for the composition.
+		* \param timefactor The fraction of seconds since the last frame.
+		*/
 	 void Frame (float timefactor);
 
+	 /** Screen texture.
+		* Stores the combined, lit pixel value to be displayed on screen.
+		*/
 	 gl::Texture screen;
+	 /** Glow map.
+		* Stores the parts of the screen that is supposed to glow.
+		*/
 	 gl::Texture glow;
 private:
+	 /** Glow blur.
+		* A Blur object for blurring the downsampled glow map.
+		*/
 	 Blur blur;
+	 /** OpenCL program.
+		* The OpenCL program containing the composition kernel.
+		*/
 	 cl::Program program;
+	 /** OpenCL kernel
+		* The OpenCL kernel that does the actual computations.
+		*/
 	 cl::Kernel composition;
+	 /** Screen texture (OpenCL memory object).
+		* OpenCL memory object referring to the screen texture.
+		*/
 	 cl::Memory screenmem;
+	 /** Glow map (full resolution; OpenCL memory object).
+		* OpenCL memory object referring to the glow map in
+		* full resolution (mipmap level 0).
+		*/
 	 cl::Memory glowmem_full;
+	 /** Glow map (downsampled; OpenCL memory object).
+		* OpenCL memory object referring to the downsampled glow
+		* map (a specific mipmap level > 0).
+		*/
 	 cl::Memory glowmem_downsampled;
-	 cl::Memory colormem[GBuffer::layers];
-	 cl::Memory normalmem[GBuffer::layers];
-	 cl::Memory specularmem[GBuffer::layers];
+	 /** Renderer.
+		* The Renderer this class is part of.
+		*/
 	 Renderer *renderer;
 };
 

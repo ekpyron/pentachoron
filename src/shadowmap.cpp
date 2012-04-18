@@ -94,7 +94,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	vmat = glm::lookAt (glm::vec3 (shadow.position),
 											glm::vec3 (shadow.position + shadow.direction),
 											glm::vec3 (1, 0, 0));
-	projmat = glm::perspective (2 * shadow.spot.angle * 180.0f / float (M_PI),
+	projmat = glm::perspective (2 * shadow.spot.angle * 180.0f / float (DRE_PI),
 															(float) width / (float) height,
 															3.0f, 500.0f);
 	program["projmat"] = projmat;
@@ -117,7 +117,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	geometry.Render (Geometry::Pass::ShadowMap + shadowid * 0x00010000,
 									 program, vmat, true, false);
 	geometry.Render (Geometry::Pass::ShadowMap + shadowid * 0x00010000,
-									 program, vmat, true, true);
+		program, vmat, true, true);
 
 	gl::DepthMask (GL_FALSE);
 

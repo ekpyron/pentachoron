@@ -20,8 +20,8 @@ struct Light
 		      */
 		     float4 spot;
 		     /*
-		      * spot2.x: inner_angle
-		      * spot2.y: inner_cosine
+		      * spot2.x: penumbra_angle
+		      * spot2.y: penumbra_cosine
 		      */
 		     float4 spot2;
 		     float4 specular;
@@ -141,14 +141,20 @@ float4 compute_pixel (read_only image2d_t colormap,
 		if (attenuation < 0.001)
 		   continue;
 
-		float spotEffect;
+		float spotEffect = 1.0;
+		float angle;
 		
-		spotEffect = dot (fast_normalize (light.direction.xyz),
-			     	  -lightDir);
-		if (spotEffect < light.spot.x)
+		angle = dot (fast_normalize (light.direction.xyz),
+			     -lightDir);
+		if (angle < light.spot.x)
 		   continue;
+		if (angle < light.spot2.y)
+		{
+		   spotEffect = (angle - light.spot.x)
+		   		/ (light.spot2.y - light.spot.x);
+		}
 
-		spotEffect = native_powr (spotEffect, light.spot.y);
+		spotEffect *= native_powr (angle, light.spot.y);
 
 		attenuation *= spotEffect;
 		if (attenuation < 0.001)

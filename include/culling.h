@@ -19,20 +19,65 @@
 
 #include <common.h>
 
+/** Culling class.
+ * This class handles frustum culling.
+ */
 class Culling
 {
 public:
+	 /** Constructor.
+		*/
 	 Culling (void);
+	 /** Destructor
+		*/
 	 ~Culling (void);
-	 bool IsVisible (const glm::vec3 &center, float radius) const;
+	 /** Visibility query.
+		* Checks whether a given bounding sphere intersects with the visible
+		* view frustum.
+		* \param center Center of the bounding sphere.
+		* \param radius Radius of the bounding sphere.
+		* \returns The visibility of the bounding sphere.
+		*/
+	 bool IsVisible (const glm::vec3 &center, float radius);
+	 /** Set the projection matrix.
+		* Sets the projection matrix used to do the culling calculations.
+		* \param mat The projection matrix to use.
+		*/
 	 void SetProjMatrix (const glm::mat4 &mat);
+	 /** Get the projection matrix.
+		* Obtainss the projection matrix currently used for
+		* the culling calculations.
+		* \returns The projection matrix currently in use by this class.
+		*/
 	 const glm::mat4 &GetProjMatrix (void);
+	 /** Set the model view matrix.
+		* Sets the model view matrix used to do the culling calculations.
+		* \param mat The model view matrix to use.
+		*/	 
 	 void SetModelViewMatrix (const glm::mat4 &mat);
+	 /** Get the model view matrix.
+		* Obtainss the model view matrix currently used for
+		* the culling calculations.
+		* \returns The model view matrix currently in use by this class.
+		*/
 	 const glm::mat4 &GetModelViewMatrix (void);
+	 /** Per-frame initialization.
+		* Initializes the culling class every frame.
+		*/
 	 void Frame (void);
-	 static GLuint culled;
+	 /** Object count.
+		* Counts the objects culled in this frame.
+		*/
+	 GLuint culled;
 private:
-	 glm::mat4 projmat, mvmat;
+	 /** Projection matrix.
+		* Stores the projection matrix used for culling.
+		*/
+	 glm::mat4 projmat;
+	 /** Model view matrix.
+		* Stores the model view matrix used for culling.
+		*/
+	 glm::mat4 mvmat;
 };
 
 #endif /* !defined CULLING_H */

@@ -19,31 +19,111 @@
 
 #include <common.h>
 
+/** Camera class.
+ * Handles the camera.
+ */
 class Camera
 {
 public:
+	/** Constructor.
+	 */
 	 Camera (void);
+	 /** Destructor.
+		*/
 	 ~Camera (void);
+	 /** Per-frame subroutine.
+		* All per-frame camera operations are done here.
+		* \param timefactor Fraction of seconds since the last frame.
+		*/
 	 void Frame (float timefactor);
+	 /** Handling window resize.
+		* Adjustments necessary after a window resize are made here.
+		* \param w New viewport width.
+		* \param h New viewport height
+		*/
 	 void Resize (int w, int h);
+	 /** Return eye vector.
+		* Returns the eye vector, pointing from the camera to the center
+		* of the scene.
+		* \returns The current eye vector.
+		*/
 	 glm::vec3 GetEye (void) const;
+	 /** Return view matrix.
+		* Returns the current view matrix.
+		* \returns The current view matrix.
+		*/
 	 glm::mat4x4 GetViewMatrix (void) const;
+	 /** Return projection matrix.
+		* Returns the current projection matrix.
+		* \returns The current projection matrix.
+		*/
 	 glm::mat4x4 GetProjMatrix (void) const;
+	 /** Return viewport dimensions.
+		* Returns the dimensions of the current viewport.
+		* \returns The viewport dimensions.
+		*/
 	 glm::uvec2 GetViewport (void) const;
+	 /** Return viewport width.
+		* Returns the width of the current viewport.
+		* \returns The width of the current viewport.
+		*/
 	 int GetViewportWidth (void) const;
+	 /** Return viewport height.
+		* Returns the height of the current viewport.
+		* \returns The height of the current viewport.
+		*/
 	 int GetViewportHeight (void) const;
+	 /** Return near clipping plane.
+		* Returns the distance of the near clipping plane.
+		* \returns The near clipping plane.
+		*/
 	 float GetNearClipPlane (void) const;
+	 /** Return far clipping plane.
+		* Returns the distance of the far clipping plane.
+		* \returns The far clipping plane.
+		*/
 	 float GetFarClipPlane (void) const;
+	 /** Return projection information.
+		* Returns a vector containing information about the current
+		* projection used to reconstruct eye coordinates
+		* from the per pixel depth.
+		* \returns A vector containing projection information.
+		*/
 	 glm::vec4 GetProjInfo (void) const;
 private:
+	 /** Viewport dimension.
+		* Stores the dimensions of the viewport.
+		*/
 	 glm::uvec2 viewport;
+	 /** Far clipping plane.
+		* Stores the distance of the far clipping plane.
+		*/
 	 float farClipPlane;
+	 /** Near clipping plane.
+		* Stores the distance of the near clipping plane.
+		*/
 	 float nearClipPlane;
+	 /** Projection matrix.
+		* Stores the projection matrix.
+		*/
 	 glm::mat4x4 projmat;
+	 /** View matrix.
+		* Stores the view matrix.
+		*/
 	 glm::mat4x4 vmat;
+	 /** Center of scene.
+		* Stores the center of the scene
+		*/
 	 glm::vec3 center;
-	 float angle;
-
+	 /** Horizontal view angle.
+		* Stores the horizontal camera rotation.
+		*/
+	 float horizontal_angle;
+	 /** Interface is a friend.
+		* Grants the Interface class access to the camera internals.
+		* This is a temporary measure and will probably be superseded
+		* by Set/Get functions.
+		*/
 	 friend class Interface;
 };
 

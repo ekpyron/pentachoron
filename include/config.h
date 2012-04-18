@@ -17,12 +17,21 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+/** Directory separator.
+ * The platform specific separator between directories in a path.
+ */
 #ifdef _WIN32
 #define DIR_SEPARATOR        '\\'
 #else
 #define DIR_SEPARATOR        '/'
 #endif
+/** Default config file.
+ * Defines the default config file name.
+ */
 #define DEFAULT_CONFIGFILE   "config.yaml"
+/** Debug output.
+ * Turns on debug output.
+ */
 #define DEBUG
 
 #endif /* !defined CONIG_H */

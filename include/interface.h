@@ -70,6 +70,7 @@ public:
 	 void EditSpecularG (int what);
 	 void EditSpecularB (int what);
 	 void EditSpotAngle (int what);
+	 void EditSpotPenumbraAngle (int what);
 	 void EditSpotExponent (int what);
 	 void EditConstantAttenuation (int what);
 	 void EditLinearAttenuation (int what);
@@ -97,6 +98,7 @@ public:
 	 void PrintSpecularG (void);
 	 void PrintSpecularB (void);
 	 void PrintSpotAngle (void);
+	 void PrintSpotPenumbraAngle (void);
 	 void PrintSpotExponent (void);
 	 void PrintConstantAttenuation (void);
 	 void PrintLinearAttenuation (void);

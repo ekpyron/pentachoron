@@ -53,44 +53,30 @@ bool Composition::Init (void)
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, glow);
 	glowmem_downsampled = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 2, glow);
-	for (auto i = 0; i < GBuffer::layers; i++)
-	{
-		colormem[i] = renderer->clctx.CreateFromGLTexture2D
-			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
-				renderer->gbuffer.colorbuffer[i]);
-
-		normalmem[i] = renderer->clctx.CreateFromGLTexture2D
-			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
-				renderer->gbuffer.normalbuffer[i]);
-	
-		specularmem[i] = renderer->clctx.CreateFromGLTexture2D
-			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
-				renderer->gbuffer.specularbuffer[i]);
-	}
 
 	composition.SetArg (0, screenmem);
 	composition.SetArg (1, glowmem_full);
-	composition.SetArg (2, colormem[0]);
-	composition.SetArg (3, colormem[1]);
-	composition.SetArg (4, colormem[2]);
-	composition.SetArg (5, colormem[3]);
+	composition.SetArg (2, renderer->gbuffer.colormem[0]);
+	composition.SetArg (3, renderer->gbuffer.colormem[1]);
+	composition.SetArg (4, renderer->gbuffer.colormem[2]);
+	composition.SetArg (5, renderer->gbuffer.colormem[3]);
 	composition.SetArg (6, renderer->gbuffer.depthmem[0]);
 	composition.SetArg (7, renderer->gbuffer.depthmem[1]);
 	composition.SetArg (8, renderer->gbuffer.depthmem[2]);
 	composition.SetArg (9, renderer->gbuffer.depthmem[3]);
-	composition.SetArg (10, normalmem[0]);
-	composition.SetArg (11, normalmem[1]);
-	composition.SetArg (12, normalmem[2]);
-	composition.SetArg (13, normalmem[3]);
-	composition.SetArg (14, specularmem[0]);
-	composition.SetArg (15, specularmem[1]);
-	composition.SetArg (16, specularmem[2]);
-	composition.SetArg (17, specularmem[3]);
+	composition.SetArg (10, renderer->gbuffer.normalmem[0]);
+	composition.SetArg (11, renderer->gbuffer.normalmem[1]);
+	composition.SetArg (12, renderer->gbuffer.normalmem[2]);
+	composition.SetArg (13, renderer->gbuffer.normalmem[3]);
+	composition.SetArg (14, renderer->gbuffer.specularmem[0]);
+	composition.SetArg (15, renderer->gbuffer.specularmem[1]);
+	composition.SetArg (16, renderer->gbuffer.specularmem[2]);
+	composition.SetArg (17, renderer->gbuffer.specularmem[3]);
 	composition.SetArg (18, renderer->shadowmap.shadowmapmem);
 
 	blur = renderer->filters.CreateBlur (glowmem_downsampled,
 																			 renderer->gbuffer.width >> 2,
-																			 renderer->gbuffer.height >> 2, 30);
+																			 renderer->gbuffer.height >> 2, 20);
 
 	return true;
 }
@@ -105,12 +91,19 @@ void Composition::Frame (float timefactor)
 		 glm::vec4 eye;
 	} ViewInfo;
 	std::vector<cl::Memory> mem = { screenmem, glowmem_full,
-																	glowmem_downsampled, colormem[0],
-																	colormem[1], colormem[2], colormem[3],
-																	normalmem[0], normalmem[1],
-																	normalmem[2], normalmem[3],
-																	specularmem[0], specularmem[1],
-																	specularmem[2], specularmem[3],
+																	glowmem_downsampled,
+																	renderer->gbuffer.colormem[0],
+																	renderer->gbuffer.colormem[1],
+																	renderer->gbuffer.colormem[2],
+																	renderer->gbuffer.colormem[3],
+																	renderer->gbuffer.normalmem[0],
+																	renderer->gbuffer.normalmem[1],
+																	renderer->gbuffer.normalmem[2],
+																	renderer->gbuffer.normalmem[3],
+																	renderer->gbuffer.specularmem[0],
+																	renderer->gbuffer.specularmem[1],
+																	renderer->gbuffer.specularmem[2],
+																	renderer->gbuffer.specularmem[3],
 																	renderer->gbuffer.depthmem[0],
 																	renderer->gbuffer.depthmem[1],
 																	renderer->gbuffer.depthmem[2],

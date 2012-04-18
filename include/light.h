@@ -30,8 +30,8 @@ typedef struct _Light
 			float exponent;
 			float angle;
 			float tangent;
-			float inner_angle;
-			float inner_cosine;
+			float penumbra_angle;
+			float penumbra_cosine;
 			float padding[2];
 	 } spot;
 	 struct

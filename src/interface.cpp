@@ -67,6 +67,8 @@ const std::vector<Menu> menus = {
 			{ "Edit Attenuation", NULL, &Interface::EditAttenuation },
 			{ "Spot Angle ", &Interface::PrintSpotAngle,
 				&Interface::EditSpotAngle },
+			{ "Spot Penumbra Angle ", &Interface::PrintSpotPenumbraAngle,
+				&Interface::EditSpotPenumbraAngle },
 			{ "Spot Exponent ", &Interface::PrintSpotExponent,
 				&Interface::EditSpotExponent },
 			{ "Remove", NULL, &Interface::RemoveLight },
@@ -173,9 +175,11 @@ void Interface::AddLight (int what)
 		light.color = glm::vec4 (1, 1, 1, 0);
 		light.direction = glm::vec4 (0, -1, 0, 0);
 		light.spot.exponent = 2.0f;
-		light.spot.angle = M_PI/4.0f;
+		light.spot.angle = DRE_PI/4.0f;
 		light.spot.cosine = cosf (light.spot.angle);
 		light.spot.tangent = tanf (light.spot.angle);
+		light.spot.penumbra_angle = light.spot.angle * 0.8f;
+		light.spot.penumbra_cosine = cosf (light.spot.penumbra_angle);
 		light.specular.color = glm::vec3 (1, 1, 1);
 		light.specular.shininess = 8.0f;
 		light.attenuation = glm::vec4 (0.0f, 0.0f, 0.007f, 50.0f);
@@ -197,7 +201,7 @@ void Interface::AddShadow (int what)
 		Shadow shadow;
 		shadow.position = glm::vec4 (0, 10, 0, 0);
 		shadow.direction = glm::vec4 (0, -1, 0, 0);
-		shadow.spot.angle = M_PI/4.0f;
+		shadow.spot.angle = DRE_PI/4.0f;
 		shadow.spot.cosine = cosf (shadow.spot.angle);
 		renderer->shadows.push_back (shadow);
 	}
@@ -616,6 +620,20 @@ void Interface::EditSpotAngle (int what)
 			0, NULL, NULL);
 }
 
+void Interface::EditSpotPenumbraAngle (int what)
+{
+	renderer->lights[active_light].spot.penumbra_angle += what * timefactor;
+	renderer->lights[active_light].spot.penumbra_cosine
+		 = cosf (renderer->lights[active_light].spot.penumbra_angle);
+	renderer->queue.EnqueueWriteBuffer
+		 (renderer->lightmem, CL_TRUE,
+			intptr_t (&renderer->lights[active_light].spot)
+			- intptr_t (&renderer->lights[0]),
+			sizeof (renderer->lights[active_light].spot),
+			&renderer->lights[active_light].spot,
+			0, NULL, NULL);
+}
+
 void Interface::EditSpotExponent (int what)
 {
 	renderer->lights[active_light].spot.exponent += what * timefactor;
@@ -792,7 +810,13 @@ void Interface::PrintSpecularB (void)
 
 void Interface::PrintSpotAngle (void)
 {
-	font.Print (renderer->lights[active_light].spot.angle * 180.0f / M_PI);
+	font.Print (renderer->lights[active_light].spot.angle * 180.0f / DRE_PI);
+}
+
+void Interface::PrintSpotPenumbraAngle (void)
+{
+	font.Print (renderer->lights[active_light].spot.penumbra_angle
+							* 180.0f / DRE_PI);
 }
 
 void Interface::PrintSpotExponent (void)
@@ -860,6 +884,12 @@ void Interface::OnKeyUp (int key)
 			break;
 		case GLFW_KEY_ENTER:
 			(this->*(menus[menu].entries[submenu].handler)) (0);
+			break;
+		case GLFW_KEY_ESC:
+			if (menu == MAIN_MENU)
+				 showInterface = false;
+			else
+				 MainMenu (0);
 			break;
 		}
 	}
@@ -933,17 +963,17 @@ void Interface::Frame (float tf)
 		font.SetColor (glm::vec3 (1, 1, 1));
 		font.Print ("FPS: ", fps);
 		font.Print ("\nOcclusion culled: ", Model::culled);
-		font.Print ("\nFrustum culled: ", Culling::culled);
+		font.Print ("\nFrustum culled: ", renderer->culling.culled);
 	}
-	glm::vec3 dir (sin (renderer->camera.angle), 0,
-								 cos (renderer->camera.angle));
+	glm::vec3 dir (sin (renderer->camera.horizontal_angle), 0,
+								 cos (renderer->camera.horizontal_angle));
 	if (glfwGetKey ('A'))
 	{
-		renderer->camera.angle += timefactor;
+		renderer->camera.horizontal_angle += timefactor;
 	}
 	if (glfwGetKey ('D'))
 	{
-		renderer->camera.angle -= timefactor;
+		renderer->camera.horizontal_angle -= timefactor;
 	}
 	if (glfwGetKey ('W'))
 	{

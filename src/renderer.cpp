@@ -62,7 +62,7 @@ bool Renderer::Init (void)
 	(*logstream) << "Initialize Shadow Map..." << std::endl;
 	if (!shadowmap.Init ())
 		 return false;
-
+/*
 	srand (time (NULL));
 	for (int y = -7; y <= 7; y++)
 	{
@@ -81,12 +81,12 @@ bool Renderer::Init (void)
 			};
 			
 			light.color = colors[rand () % 6];
-			light.spot.angle = M_PI/8.0f;
+			light.spot.angle = DRE_PI/8.0f;
 			light.spot.cosine = cosf (light.spot.angle);
 			light.spot.exponent = 42.0f;
 			light.spot.tangent = tanf (light.spot.angle * 1.2);
-			light.spot.inner_angle = light.spot.angle * 0.8;
-			light.spot.inner_cosine = cosf (light.spot.inner_angle);
+			light.spot.penumbra_angle = light.spot.angle * 0.8;
+			light.spot.penumbra_cosine = cosf (light.spot.penumbra_angle);
 			light.specular.color = glm::vec3 (light.color);
 			light.specular.shininess = 8.0f;
 			light.attenuation = glm::vec4 (0.0f, 0.0f, 0.07f, 50.0f);
@@ -99,7 +99,7 @@ bool Renderer::Init (void)
 		 (lightmem, CL_TRUE, 0,
 			sizeof (Light) * lights.size (),
 			&lights[0], 0, NULL, NULL);
-
+*/
 	interface.AddLight (0);
 
 
@@ -137,7 +137,6 @@ void Renderer::Frame (void)
 	float timefactor;
 
 	Model::culled = 0;
-	Culling::culled = 0;
 
 	if (last_time == 0)
 		 last_time = glfwGetTime ();

@@ -27,6 +27,7 @@ Culling::~Culling (void)
 void Culling::Frame (void)
 {
 	projmat = mvmat = glm::mat4 (1.0f);
+	culled = 0;
 }
 
 void Culling::SetProjMatrix (const glm::mat4 &mat)
@@ -49,7 +50,7 @@ const glm::mat4 &Culling::GetModelViewMatrix (void)
 	return mvmat;
 }
 
-bool Culling::IsVisible (const glm::vec3 &center, float radius) const
+bool Culling::IsVisible (const glm::vec3 &center, float radius)
 {
 	glm::mat4 mvpmat;
 	glm::vec4 left_plane, right_plane, bottom_plane,
@@ -144,5 +145,3 @@ bool Culling::IsVisible (const glm::vec3 &center, float radius) const
 
 	return true;
 }
-
-GLuint Culling::culled = 0;
