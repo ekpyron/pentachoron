@@ -62,7 +62,7 @@ bool Renderer::Init (void)
 	(*logstream) << "Initialize Shadow Map..." << std::endl;
 	if (!shadowmap.Init ())
 		 return false;
-/*
+
 	srand (time (NULL));
 	for (int y = -7; y <= 7; y++)
 	{
@@ -99,7 +99,7 @@ bool Renderer::Init (void)
 		 (lightmem, CL_TRUE, 0,
 			sizeof (Light) * lights.size (),
 			&lights[0], 0, NULL, NULL);
-*/
+
 	interface.AddLight (0);
 
 
