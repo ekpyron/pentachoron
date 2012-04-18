@@ -63,6 +63,8 @@ bool Renderer::Init (void)
 	if (!shadowmap.Init ())
 		 return false;
 
+	float max = -100;
+
 	srand (time (NULL));
 	for (int y = -7; y <= 7; y++)
 	{
@@ -70,6 +72,11 @@ bool Renderer::Init (void)
 		{
 			Light light;
 			light.position = glm::vec4 (x * 3, 3, y * 3, 0);
+			light.position.x += ((float (rand ()) / float (RAND_MAX)) - 0.5f) * 2.0f;
+			if (light.position.x > max)
+				 max = light.position.x;
+			light.position.y += ((float (rand ()) / float (RAND_MAX)) - 0.5f) * 1.0f;
+			light.position.z += ((float (rand ()) / float (RAND_MAX)) - 0.5f) * 2.0f;
 			light.direction = glm::vec4 (0, -1, 0, 0);
 			const glm::vec4 colors[] = {
 				glm::vec4 (0, 0, 1, 1),
@@ -81,9 +88,9 @@ bool Renderer::Init (void)
 			};
 			
 			light.color = colors[rand () % 6];
-			light.spot.angle = DRE_PI/8.0f;
+			light.spot.angle = DRE_PI / 6.0f;
 			light.spot.cosine = cosf (light.spot.angle);
-			light.spot.exponent = 42.0f;
+			light.spot.exponent = 30.0f;
 			light.spot.tangent = tanf (light.spot.angle * 1.2);
 			light.spot.penumbra_angle = light.spot.angle * 0.8;
 			light.spot.penumbra_cosine = cosf (light.spot.penumbra_angle);
@@ -101,8 +108,6 @@ bool Renderer::Init (void)
 			&lights[0], 0, NULL, NULL);
 
 	interface.AddLight (0);
-
-
 	interface.AddShadow (0);
 
 	(*logstream) << "Initialize Composition..." << std::endl;

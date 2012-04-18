@@ -47,6 +47,7 @@ public:
 	 void RemoveShadow (int what);
 
 	 void RemoveLight (int what);
+	 void RandomizeLights (int what);
 	 void NextLight (int what);
 	 void PreviousLight (int what);
 	 void EditLightPosition (int what);

@@ -72,6 +72,7 @@ const std::vector<Menu> menus = {
 			{ "Spot Exponent ", &Interface::PrintSpotExponent,
 				&Interface::EditSpotExponent },
 			{ "Remove", NULL, &Interface::RemoveLight },
+			{ "Randomize lights", NULL, &Interface::RandomizeLights },
 			{ "Back", NULL, &Interface::MainMenu }
 		}
 	},
@@ -172,7 +173,7 @@ void Interface::AddLight (int what)
 	{
 		Light light;
 		light.position = glm::vec4 (0, 10, 0, 0);
-		light.color = glm::vec4 (1, 1, 1, 0);
+		light.color = glm::vec4 (1, 1, 1, 1);
 		light.direction = glm::vec4 (0, -1, 0, 0);
 		light.spot.exponent = 2.0f;
 		light.spot.angle = DRE_PI/4.0f;
@@ -232,6 +233,40 @@ void Interface::RemoveLight (int what)
 		renderer->lights.erase (renderer->lights.begin () + active_light);
 		if (active_light >= renderer->lights.size ())
 			 active_light = 0;
+	}
+}
+
+void Interface::RandomizeLights (int what)
+{
+	if (!what)
+	{
+		srand (time (NULL));
+		for (Light &light : renderer->lights)
+		{
+			if (light.color == glm::vec4 (1, 1, 1, 1))
+				 continue;
+			light.position.x += ((float (rand ()) / float (RAND_MAX)) - 0.5f) * 2.0f;
+			light.position.z += ((float (rand ()) / float (RAND_MAX)) - 0.5f) * 2.0f;
+			if (light.position.x > 23.0f) light.position.x = 23.0f;
+			if (light.position.x < -23.0f) light.position.x = -23.0f;
+			if (light.position.z > 23.0f) light.position.z = 23.0f;
+			if (light.position.z < -23.0f) light.position.z = -23.0f;
+
+			const glm::vec4 colors[] = {
+				glm::vec4 (0, 0, 1, 1),
+				glm::vec4 (0, 1, 0, 1),
+				glm::vec4 (1, 0, 0, 1),
+				glm::vec4 (0, 1, 1, 1),
+				glm::vec4 (1, 1, 0, 1),
+				glm::vec4 (1, 0, 1, 1),
+			};			
+			light.color = colors[rand () % 6];
+			light.specular.color = glm::vec3 (light.color);
+		}
+		renderer->queue.EnqueueWriteBuffer
+			 (renderer->lightmem, CL_TRUE, 0,
+				sizeof (Light) * renderer->lights.size (),
+				&renderer->lights[0], 0, NULL, NULL);
 	}
 }
 
