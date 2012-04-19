@@ -37,7 +37,7 @@ typedef struct _Light
 	 struct
 	 {
 			glm::vec3 color;
-			float shininess;
+			float padding;
 	 } specular;
 	 /*
 		* attenuation.x: constant attenuation

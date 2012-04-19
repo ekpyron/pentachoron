@@ -198,11 +198,10 @@ float4 compute_pixel (read_only image2d_t colormap,
 			 	  - light.position.xyz),
 			 	  normal));
 
-		if (light.specular.w != 0.0)
+		if (param.specular.x != 0.0)
 		{
 			specular += attenuation * light.specular.xyz
 				     * native_powr (r, param.specular.x);
-//				     * native_powr (r, light.specular.w);
 		}
 	}
 

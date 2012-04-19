@@ -62,8 +62,6 @@ const std::vector<Menu> menus = {
 			{ "Edit Direction", NULL, &Interface::EditLightDirection },
 			{ "Edit Diffuse Color", NULL, &Interface::EditDiffuseColor },
 			{ "Edit Specular Color", NULL, &Interface::EditSpecularColor },
-			{ "Edit Shininess ", &Interface::PrintShininess,
-				&Interface::EditShininess },
 			{ "Edit Attenuation", NULL, &Interface::EditAttenuation },
 			{ "Spot Angle ", &Interface::PrintSpotAngle,
 				&Interface::EditSpotAngle },
@@ -182,7 +180,6 @@ void Interface::AddLight (int what)
 		light.spot.penumbra_angle = light.spot.angle * 0.8f;
 		light.spot.penumbra_cosine = cosf (light.spot.penumbra_angle);
 		light.specular.color = glm::vec3 (1, 1, 1);
-		light.specular.shininess = 8.0f;
 		light.attenuation = glm::vec4 (0.0f, 0.0f, 0.007f, 50.0f);
 		renderer->lights.push_back (light);
 
@@ -741,19 +738,6 @@ void Interface::EditMaxDistance (int what)
 			0, NULL, NULL);
 }
 
-void Interface::EditShininess (int what)
-{
-	renderer->lights[active_light].specular.shininess
-		 += what * timefactor * 10.0;
-	renderer->queue.EnqueueWriteBuffer
-		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].specular.shininess)
-			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].specular.shininess),
-			&renderer->lights[active_light].specular.shininess,
-			0, NULL, NULL);
-}
-
 void Interface::PrintActiveLight (void)
 {
 	font.Print (active_light + 1, " / ", renderer->lights.size ());
@@ -881,11 +865,6 @@ void Interface::PrintQuadraticAttenuation (void)
 void Interface::PrintMaxDistance (void)
 {
 	font.Print (renderer->lights[active_light].attenuation.w);
-}
-
-void Interface::PrintShininess (void)
-{
-	font.Print (renderer->lights[active_light].specular.shininess);
 }
 
 bool Interface::Init (void)
