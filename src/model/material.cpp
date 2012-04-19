@@ -24,7 +24,8 @@ GLenum TranslateFormat (const std::string &str);
 
 Material::Material (void)
 	: diffuse_enabled (false), normalmap_enabled (false),
-		specularmap_enabled (false), transparent (false)
+		specularmap_enabled (false), transparent (false),
+		parametermap_enabled (false)
 {
 }
 
@@ -35,11 +36,14 @@ Material::Material (Material &&material)
 		normalmap_enabled (material.normalmap_enabled),
 		specularmap (std::move (material.specularmap)),
 		specularmap_enabled (material.specularmap_enabled),
+		parametermap (std::move (material.parametermap)),
+		parametermap_enabled (material.parametermap_enabled),
 		transparent (material.transparent)
 {
 	material.diffuse_enabled = false;
 	material.normalmap_enabled = false;
 	material.specularmap_enabled = false;
+	material.parametermap_enabled = false;
 	material.transparent = false;
 }
 
@@ -58,6 +62,9 @@ Material &Material::operator= (Material &&material)
 	specularmap = std::move (material.specularmap);
 	specularmap_enabled = material.specularmap_enabled;
 	material.specularmap_enabled = false;
+	parametermap = std::move (material.parametermap);
+	parametermap_enabled = material.parametermap_enabled;
+	material.parametermap_enabled = false;
 	transparent = material.transparent;
 	material.transparent = false;
 }
@@ -86,16 +93,23 @@ bool LoadTex (gl::Texture &texture, bool &result,
 		return true;
 	}
 
+	std::cout << "Load image " << filename << std::endl;
 	if (!image.Load (filename))
 	{
 		(*logstream) << "Could not load the texture " << filename
 								 << "." << std::endl;
 		return false;
 	}
+	std::cout << "Bind buffer" << std::endl;
 	image.GetBuffer ().Bind (GL_PIXEL_UNPACK_BUFFER);
+	std::cout << "Image2D" << std::endl;
+	std::cout << image.GetWidth () << "x" << image.GetHeight ()
+						<< ": " << std::hex << image.GetFormat () << " - "
+						<< image.GetType () << std::dec << std::endl;
 	texture.Image2D (GL_TEXTURE_2D, 0, format, image.GetWidth (),
 									 image.GetHeight (), 0, image.GetFormat (),
 									 image.GetType (), NULL);
+	std::cout << "Generate Mipmap" << std::endl;
 	texture.GenerateMipmap (GL_TEXTURE_2D);
 	result = true;
 	return true;
@@ -135,6 +149,10 @@ bool Material::Load (const std::string &name)
 								desc["textures"]["specularmap"],
 								GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB))
 		 return false;
+	if (!LoadTex (parametermap, parametermap_enabled,
+								desc["textures"]["parametermap"],
+								GL_R8))
+		 return false;
 
 	return true;
 }
@@ -160,6 +178,11 @@ void Material::Use (const gl::Program &program) const
 	if (specularmap_enabled)
 	{
 		specularmap.Bind (GL_TEXTURE2, GL_TEXTURE_2D);
+	}
+	program["parametermap_enabled"] = parametermap_enabled;
+	if (parametermap_enabled)
+	{
+		parametermap.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
 	}
 }
 

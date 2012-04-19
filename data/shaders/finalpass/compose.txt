@@ -4,6 +4,11 @@ layout(binding = 0) uniform sampler2D colorbuffer;
 layout(binding = 1) uniform sampler2D glowbuffer;
 uniform uvec2 viewport;
 
+float luminance (vec4 color)
+{
+	return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+}
+
 void main (void)
 {
 	vec4 color, glow;
@@ -11,5 +16,42 @@ void main (void)
 	color = texture (colorbuffer, coord);
 	glow = texture (glowbuffer, coord, 2);
 	color.xyz += glow.xyz;
+
+	const mat3x3 RGB2XYZ = mat3x3 (0.5141364, 0.3238786,  0.16036376,					       0.265068,  0.67023428, 0.06409157,
+                               	       0.0241188, 0.1228178,  0.84442666);
+	const mat3x3 XYZ2RGB = mat3x3 (2.5651,-1.1665,-0.3986,
+                               	      -1.0217, 1.9777, 0.0439, 
+                               	       0.0753, -0.2543, 1.1892);
+
+				       
+
+	float avgLuminance = 0.5;
+//luminance (texture (colorbuffer, coord, 10));
+
+	const float image_key = 0.42;
+	float exposure = image_key / avgLuminance;
+	const float white = 0.95;
+
+	vec3 XYZ;
+
+	XYZ = RGB2XYZ * color.xyz;
+
+	vec3 Yxy;
+	Yxy.r = XYZ.g;
+	Yxy.g = XYZ.r / (XYZ.r + XYZ.g + XYZ.b);
+	Yxy.b = XYZ.g / (XYZ.r + XYZ.g + XYZ.b);
+
+	float Lp = Yxy.r * exposure / avgLuminance;
+
+	Yxy.r = (Lp * (1.0f + Lp / (white * white)))
+	      	/ (1.0f + Lp);
+
+	XYZ.r = Yxy.r * Yxy.g / Yxy.b;
+	XYZ.g = Yxy.r;
+	XYZ.b = Yxy.r * (1 - Yxy.g - Yxy.b) / Yxy.b;
+
+	color.xyz = XYZ2RGB * XYZ;
+	color.w = 1.0;
+
 	output = color;
 }

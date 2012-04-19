@@ -105,7 +105,8 @@ void FinalPass::Render (void)
 	switch (rendermode)
 	{
 	case 0:
-		renderer->windowgrid.sampler.Bind (0);
+//		renderer->windowgrid.sampler.Bind (0);
+		sampler.Bind (0);
 		renderer->composition.screen.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		sampler.Bind (1);
 		renderer->composition.glow.Bind (GL_TEXTURE1, GL_TEXTURE_2D);

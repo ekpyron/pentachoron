@@ -28,6 +28,7 @@
 #include "interface.h"
 #include "composition.h"
 #include "light.h"
+#include "parameter.h"
 #include "culling.h"
 
 class Renderer
@@ -60,6 +61,9 @@ private:
 
 	 std::vector<Light> lights;
 	 cl::Memory lightmem;
+
+	 std::vector<Parameter> parameters;
+	 cl::Memory parametermem;
 
 	 cl::Context clctx;
 

@@ -1,19 +1,21 @@
 #version 420 core
 
 layout(location = 0) out vec4 color;
-layout(location = 1) out vec3 normal;
-layout(location = 2) out vec3 specular;
+layout(location = 1) out vec4 normal;
+layout(location = 2) out vec4 specular;
 layout(location = 3) out float depth;
 
 layout(binding = 0) uniform sampler2D diffusemap;
 layout(binding = 1) uniform sampler2D normalmap;
 layout(binding = 2) uniform sampler2D specularmap;
-layout(binding = 3) uniform samplerRect depthtexture;
-layout(binding = 4) uniform samplerRect opaquedepthtexture;
+layout(binding = 3) uniform sampler2D parametermap;
+layout(binding = 4) uniform samplerRect depthtexture;
+layout(binding = 5) uniform samplerRect opaquedepthtexture;
 uniform bool first_pass;
 uniform bool diffuse_enabled;
 uniform bool normalmap_enabled;
 uniform bool specularmap_enabled;
+uniform bool parametermap_enabled;
 
 in vec2 uv;
 
@@ -45,9 +47,9 @@ void main (void)
 		color = vec4 (1.0, 1.0, 1.0, 1.0);
 
 	if (specularmap_enabled)
-		specular = texture2D (specularmap, uv).xyz;
+		specular.xyz = texture2D (specularmap, uv).xyz;
 	else
-		specular = vec3 (0.0, 0.0, 0.0);
+		specular.xyz = vec3 (0.0, 0.0, 0.0);
 
 	if (normalmap_enabled)
 	{
@@ -57,11 +59,20 @@ void main (void)
 
 		n.xy = texture2D (normalmap, uv).xy * 2.0 - 1.0;
 		n.z = sqrt (1.0 - n.x * n.x - n.y * n.y);
-		normal = (tangentmat * n) * 0.5 + 0.5;
+		normal.xyz = (tangentmat * n) * 0.5 + 0.5;
 	}
 	else
 	{
-		normal = fNormal * 0.5 + 0.5;
+		normal.xyz = fNormal * 0.5 + 0.5;
+	}
+
+	if (parametermap_enabled)
+	{
+		specular.w = texture2D (parametermap, uv).r;
+	}
+	else
+	{
+		specular.w = 0;
 	}
 
 	depth = gl_FragCoord.z;

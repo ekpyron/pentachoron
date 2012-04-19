@@ -16,6 +16,7 @@
  */
 #include "renderer.h"
 #include <ctime>
+#include <fstream>
 
 Renderer::Renderer (void)
 	: geometry (this), shadowmap (this),
@@ -109,6 +110,37 @@ bool Renderer::Init (void)
 
 	interface.AddLight (0);
 	interface.AddShadow (0);
+
+	{
+		YAML::Node parameterlist;
+		std::string filename (MakePath ("materials", "parameters.yaml"));
+		std::ifstream file (filename, std::ifstream::in);
+		if (!file.is_open ())
+		{
+			(*logstream) << "Cannot open " << filename << std::endl;
+			return false;
+		}
+		parameterlist = YAML::Load (file);
+
+		if (!parameterlist.IsSequence ())
+		{
+			(*logstream) << "The parameter file " << filename
+									 << " has an invalid format." << std::endl;
+		}
+
+		for (const YAML::Node &node : parameterlist)
+		{
+			Parameter parameter;
+			parameter.specular.exponent = node["specular_exponent"].as<float> (2.0f);
+			parameters.push_back (parameter);
+		}
+		parametermem = clctx.CreateBuffer
+		 (CL_MEM_READ_ONLY,	sizeof (Parameter) * parameters.size (), NULL);
+		queue.EnqueueWriteBuffer
+			 (parametermem, CL_TRUE, 0,
+				sizeof (Parameter) * parameters.size (),
+				&parameters[0], 0, NULL, NULL);
+	}
 
 	(*logstream) << "Initialize Composition..." << std::endl;
 	if (!composition.Init ())

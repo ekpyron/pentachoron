@@ -45,6 +45,14 @@ struct ViewInfo
 	float4 eye;
 };
 
+struct Parameter
+{
+	/*
+	 * specular.x: specular exponent
+	 */
+	float4 specular;
+};
+
 float3 reflect (float3 I, float3 N)
 {
 	return mad (-2.0 * dot (N, I), N, I);
@@ -100,7 +108,7 @@ float compute_shadow (int x, int y, float4 pos,
 	   return 1;
 
 	float variance = moments.y - (moments.x * moments.x);
-	variance = max (variance, 0.00001);//info.min_variance);
+	variance = max (variance, 0.00001);
 	float d = lspos.z - moments.x;
 	float p = native_divide (variance, variance + d * d);
 	return smoothstep (0.1, 1.0, p);
@@ -115,7 +123,9 @@ float4 compute_pixel (read_only image2d_t colormap,
 		      global struct Light *lights,
 		      unsigned int num_light_indices,
 		      local ushort *light_indices,
-		      struct ViewInfo *info)
+		      struct ViewInfo *info,
+		      unsigned int num_parameters,
+		      global struct Parameter *parameters)
 {
 	float4 pos = p;
 	float depth = getpos (&pos, info);
@@ -124,6 +134,19 @@ float4 compute_pixel (read_only image2d_t colormap,
 	float3 diffuse = (float3) (0, 0, 0);
 	float3 specular = (float3) (0, 0, 0);
 	uint offset = mad24 (ly, get_local_size (0), lx);
+	uint material;
+	float4 speculartmp = read_imagef (specularmap, sampler,
+			    		  (int2) (x, y));
+	material = speculartmp.w * 255.0;
+
+	if (material >= num_parameters)
+	{
+		return (float4) (1.0, 0.0, 0.0, 1.0);
+	}
+
+	struct Parameter param;
+
+	param = parameters[material];
 
 	for (int i = 0; i < num_light_indices; i++)
 	{
@@ -178,13 +201,15 @@ float4 compute_pixel (read_only image2d_t colormap,
 		if (light.specular.w != 0.0)
 		{
 			specular += attenuation * light.specular.xyz
-				     * native_powr (r, light.specular.w);
+				     * native_powr (r, param.specular.x);
+//				     * native_powr (r, light.specular.w);
 		}
 	}
 
 	float shadow;
 	shadow = compute_shadow (x, y, pos, shadowmap, info);
-
+	shadow *= 0.7;
+	shadow += 0.3;
 	diffuse *= shadow;
 	specular *= shadow;
 
@@ -196,8 +221,7 @@ float4 compute_pixel (read_only image2d_t colormap,
 
 	if (any (specular > small4))
 	{
-		specular *= read_imagef (specularmap, sampler,
-			    		 (int2) (x, y)).xyz;
+		specular *= speculartmp.xyz;
 		pixel.xyz += specular;
 	}
 
@@ -225,7 +249,9 @@ kernel void composition (write_only image2d_t screen,
 			 read_only image2d_t shadowmap,
 			 unsigned int num_lights,
 			 global struct Light *lights,
-			 struct ViewInfo info)
+			 struct ViewInfo info,
+			 unsigned int num_parameters,
+			 global struct Parameter *parameters)
 {
 	uint lx = get_local_id (0),
 	    ly = get_local_id (1);
@@ -362,25 +388,31 @@ kernel void composition (write_only image2d_t screen,
 	pixel = compute_pixel (colormap1, pos, normalmap1,
       	       	 	       specularmap1, shadowmap, lx, ly,
 		 	       x, y, lights, num_light_indices,
-			       light_indices, &info);
+			       light_indices, &info,
+			       num_parameters, parameters);
 	pos.z = depths[1];
 	pixel2 = compute_pixel (colormap2, pos,
 		       	 	normalmap2, specularmap2,
 				shadowmap, lx, ly, x, y,
 				lights, num_light_indices,
-				light_indices, &info);
+				light_indices, &info,
+				num_parameters, parameters);
+
 	pos.z = depths[2];
 	pixel3 = compute_pixel (colormap3, pos,
 	             	 	normalmap3, specularmap3,
 				shadowmap, lx, ly, x, y,
 				lights, num_light_indices,
-				light_indices, &info);
+				light_indices, &info,
+				num_parameters, parameters);
+
 	pos.z = depths[3];
 	pixel4 = compute_pixel (colormap4, pos,
        	         	        normalmap4, specularmap4,
 	        		shadowmap, lx, ly, x, y,
 	        		lights, num_light_indices,
-				light_indices, &info);
+				light_indices, &info,
+			        num_parameters, parameters);
 	pixel = mix (pixel4, pixel, pixel4.w);
 	pixel = mix (pixel3, pixel, pixel3.w);
 	pixel = mix (pixel2, pixel, pixel2.w);
@@ -390,7 +422,7 @@ kernel void composition (write_only image2d_t screen,
 
 	float4 glow = (float4) (0.0, 0.0, 0.0, 0.0);
 
-	if (luminance > 0.5)
+	if (luminance > 0.75)
 	{
 		glow.xyz = pixel.xyz;
 		glow.w = luminance;

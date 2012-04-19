@@ -36,14 +36,14 @@ bool Composition::Init (void)
 	program.Build ("-cl-fast-relaxed-math -cl-mad-enable -cl-no-signed-zeros");
 	composition = program.CreateKernel ("composition");
 
-	screen.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8,
+	screen.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
 									renderer->gbuffer.width,
 									renderer->gbuffer.height,
-									0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glow.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8,
+									0, GL_RGBA, GL_FLOAT, NULL);
+	glow.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
 									renderer->gbuffer.width,
 									renderer->gbuffer.height,
-									0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+									0, GL_RGBA, GL_FLOAT, NULL);
 	glow.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
 	glow.GenerateMipmap (GL_TEXTURE_2D);
 
@@ -76,7 +76,7 @@ bool Composition::Init (void)
 
 	blur = renderer->filters.CreateBlur (glowmem_downsampled,
 																			 renderer->gbuffer.width >> 2,
-																			 renderer->gbuffer.height >> 2, 20);
+																			 renderer->gbuffer.height >> 2, 8);
 
 	return true;
 }
@@ -128,6 +128,10 @@ void Composition::Frame (float timefactor)
 	composition.SetArg (20, renderer->lightmem);
 	composition.SetArg (21, sizeof (ViewInfo), &info);
 
+	cl_uint num_parameters = renderer->parameters.size ();
+	composition.SetArg (22, sizeof (cl_uint), &num_parameters);
+	composition.SetArg (23, renderer->parametermem);
+
 	const size_t work_dim[] = { renderer->gbuffer.width,
 															renderer->gbuffer.height };
 	const size_t local_dim[] = { 16, 16 };
@@ -137,6 +141,7 @@ void Composition::Frame (float timefactor)
 																				local_dim, 0, NULL, NULL);
 	renderer->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
 
+	screen.GenerateMipmap (GL_TEXTURE_2D);
 	glow.GenerateMipmap (GL_TEXTURE_2D);
 
 	blur.Apply ();

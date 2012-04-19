@@ -39,6 +39,8 @@ private:
 	 bool normalmap_enabled;
 	 gl::Texture specularmap;
 	 bool specularmap_enabled;
+	 gl::Texture parametermap;
+	 bool parametermap_enabled;
 	 bool transparent;
 	 friend class Scene;
 	 friend class Geometry;

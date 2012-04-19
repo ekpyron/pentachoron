@@ -127,7 +127,7 @@ void Filters::ApplyBlur (const cl::Memory *memory, const cl::Memory &storage,
 	vblur.SetArg (3, offsets);
 	vblur.SetArg (4, sizeof (num_weights), &num_weights);
 
-	const size_t work_dim[] = { width, height};
+	const size_t work_dim[] = { width, height };
 
 	renderer->queue.EnqueueAcquireGLObjects ({ *memory }, 0, NULL, NULL);
 	renderer->queue.EnqueueNDRangeKernel (hblur, 2, NULL, work_dim,

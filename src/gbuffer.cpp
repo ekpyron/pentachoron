@@ -143,8 +143,8 @@ void GBuffer::Render (Geometry &geometry)
 		}
 		else
 		{
-			depthtexture[i - 1].Bind (GL_TEXTURE3, GL_TEXTURE_RECTANGLE);
-			depthtexture[0].Bind (GL_TEXTURE4, GL_TEXTURE_RECTANGLE);
+			depthtexture[i - 1].Bind (GL_TEXTURE4, GL_TEXTURE_RECTANGLE);
+			depthtexture[0].Bind (GL_TEXTURE5, GL_TEXTURE_RECTANGLE);
 			program["first_pass"] = false;
 			geometry.bboxprogram["first_pass"] = false;
 		}
