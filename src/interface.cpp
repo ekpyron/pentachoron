@@ -21,6 +21,7 @@ typedef struct MenuEntry {
 	 std::string name;
 	 void (Interface::*info) (void);
 	 void (Interface::*handler) (int what);
+	 bool repeating;
 } MenuEntry;
 
 typedef struct Menu {
@@ -38,110 +39,130 @@ typedef struct Menu {
 #define EDIT_LIGHT_SPECULAR      6
 #define EDIT_LIGHT_ATTENUATION   7
 #define EDIT_SHADOW_POSITION     8
+#define EDIT_TONE_MAPPING        9
 
 const std::vector<Menu> menus = {
 	{
 		"Main Menu", NULL,
 		{
-			{ "Edit Lights", NULL, &Interface::EditLights },
-			{ "Edit Shadows", NULL, &Interface::EditShadows },
+			{ "Edit Lights", NULL, &Interface::EditLights, false },
+			{ "Edit Shadows", NULL, &Interface::EditShadows, false },
 			{ "Soft Shadows: ", &Interface::PrintSoftShadow,
-				&Interface::ToggleSoftShadow },
+				&Interface::ToggleSoftShadow, false },
+			{ "Tone Mapping", NULL, &Interface::EditToneMapping, false },
+			{ "Glow size: ", &Interface::PrintGlowSize,
+				&Interface::EditGlowSize, false },
 			{ "Toggle Rendermode: ", &Interface::PrintRendermode,
-				&Interface::ToggleRendermode },
-			{ "Exit", NULL, &Interface::Exit }
+				&Interface::ToggleRendermode, false },
+			{ "Exit", NULL, &Interface::Exit, false }
 		}
 	},
 	{
 		"Edit Lights ", &Interface::PrintActiveLight,
 		{
-			{ "Add Light", NULL, &Interface::AddLight },
-			{ "Next Light ", NULL , &Interface::NextLight },
-			{ "Previous Light ", NULL , &Interface::PreviousLight },
-			{ "Edit Position", NULL, &Interface::EditLightPosition },
-			{ "Edit Direction", NULL, &Interface::EditLightDirection },
-			{ "Edit Diffuse Color", NULL, &Interface::EditDiffuseColor },
-			{ "Edit Specular Color", NULL, &Interface::EditSpecularColor },
-			{ "Edit Attenuation", NULL, &Interface::EditAttenuation },
+			{ "Add Light", NULL, &Interface::AddLight, false },
+			{ "Select Light ", NULL , &Interface::SelectLight, false },
+			{ "Edit Position", NULL, &Interface::EditLightPosition, false },
+			{ "Edit Direction", NULL, &Interface::EditLightDirection, false },
+			{ "Edit Diffuse Color", NULL, &Interface::EditDiffuseColor, false },
+			{ "Edit Specular Color", NULL, &Interface::EditSpecularColor, false },
+			{ "Edit Attenuation", NULL, &Interface::EditAttenuation, false },
 			{ "Spot Angle ", &Interface::PrintSpotAngle,
-				&Interface::EditSpotAngle },
+				&Interface::EditSpotAngle, true },
 			{ "Spot Penumbra Angle ", &Interface::PrintSpotPenumbraAngle,
-				&Interface::EditSpotPenumbraAngle },
+				&Interface::EditSpotPenumbraAngle, true },
 			{ "Spot Exponent ", &Interface::PrintSpotExponent,
-				&Interface::EditSpotExponent },
-			{ "Remove", NULL, &Interface::RemoveLight },
-			{ "Randomize lights", NULL, &Interface::RandomizeLights },
-			{ "Back", NULL, &Interface::MainMenu }
+				&Interface::EditSpotExponent, true },
+			{ "Remove", NULL, &Interface::RemoveLight, false },
+			{ "Randomize lights", NULL, &Interface::RandomizeLights, false },
+			{ "Back", NULL, &Interface::MainMenu, false }
 		}
 	},
 	{
 		"Edit Shadows ", &Interface::PrintActiveShadow,
 		{
-			{ "Add Shadow", NULL, &Interface::AddShadow },
-			{ "Next Shadow ", NULL , &Interface::NextShadow },
-			{ "Previous Shadow ", NULL , &Interface::PreviousShadow },
-			{ "Edit Position", NULL, &Interface::EditShadowPosition },
-			{ "Remove", NULL, &Interface::RemoveShadow },
-			{ "Back", NULL, &Interface::MainMenu }
+			{ "Add Shadow", NULL, &Interface::AddShadow, false },
+			{ "Select Shadow ", NULL , &Interface::SelectShadow, false },
+			{ "Edit Position", NULL, &Interface::EditShadowPosition, false },
+			{ "Remove", NULL, &Interface::RemoveShadow, false },
+			{ "Back", NULL, &Interface::MainMenu, false }
 		}
 	},
 	{
 		"Light Position ", &Interface::PrintActiveLight,
 		{
-			{ "X ", &Interface::PrintLightX, &Interface::MoveLightX },
-			{ "Y ", &Interface::PrintLightY, &Interface::MoveLightY },
-			{ "Z ", &Interface::PrintLightZ, &Interface::MoveLightZ },
-			{ "Back", NULL, &Interface::EditLights }
+			{ "X ", &Interface::PrintLightX, &Interface::MoveLightX, true },
+			{ "Y ", &Interface::PrintLightY, &Interface::MoveLightY, true },
+			{ "Z ", &Interface::PrintLightZ, &Interface::MoveLightZ, true },
+			{ "Back", NULL, &Interface::EditLights, false }
 		}
 	},
 	{
 		"Light Direction ", &Interface::PrintActiveLight,
 		{
-			{ "X ", &Interface::PrintLightDirX, &Interface::MoveLightDirX },
-			{ "Y ", &Interface::PrintLightDirY, &Interface::MoveLightDirY },
-			{ "Z ", &Interface::PrintLightDirZ, &Interface::MoveLightDirZ },
-			{ "Back", NULL, &Interface::EditLights }
+			{ "X ", &Interface::PrintLightDirX, &Interface::MoveLightDirX, true },
+			{ "Y ", &Interface::PrintLightDirY, &Interface::MoveLightDirY, true },
+			{ "Z ", &Interface::PrintLightDirZ, &Interface::MoveLightDirZ, true },
+			{ "Back", NULL, &Interface::EditLights, false }
 		}
 	},
 	{
 		"Light Diffuse Color ", &Interface::PrintActiveLight,
 		{
-			{ "R ", &Interface::PrintDiffuseR, &Interface::EditDiffuseR },
-			{ "G ", &Interface::PrintDiffuseG, &Interface::EditDiffuseG },
-			{ "B ", &Interface::PrintDiffuseB, &Interface::EditDiffuseB },
-			{ "Back", NULL, &Interface::EditLights }
+			{ "R ", &Interface::PrintDiffuseR, &Interface::EditDiffuseR, true },
+			{ "G ", &Interface::PrintDiffuseG, &Interface::EditDiffuseG, true },
+			{ "B ", &Interface::PrintDiffuseB, &Interface::EditDiffuseB, true },
+			{ "Back", NULL, &Interface::EditLights, false }
 		}
 	},
 	{
 		"Light Specular Color ", &Interface::PrintActiveLight,
 		{
-			{ "R ", &Interface::PrintSpecularR, &Interface::EditSpecularR },
-			{ "G ", &Interface::PrintSpecularG, &Interface::EditSpecularG },
-			{ "B ", &Interface::PrintSpecularB, &Interface::EditSpecularB },
-			{ "Back", NULL, &Interface::EditLights }
+			{ "R ", &Interface::PrintSpecularR, &Interface::EditSpecularR, true },
+			{ "G ", &Interface::PrintSpecularG, &Interface::EditSpecularG, true },
+			{ "B ", &Interface::PrintSpecularB, &Interface::EditSpecularB, true },
+			{ "Back", NULL, &Interface::EditLights, false }
 		}
 	},
 	{
 		"Light Attenuation ", &Interface::PrintActiveLight,
 		{
 			{ "Constant ", &Interface::PrintConstantAttenuation,
-				&Interface::EditConstantAttenuation },
+				&Interface::EditConstantAttenuation, true },
 			{ "Linear ", &Interface::PrintLinearAttenuation,
-				&Interface::EditLinearAttenuation },
+				&Interface::EditLinearAttenuation, true },
 			{ "Quadratic ", &Interface::PrintQuadraticAttenuation,
-				&Interface::EditQuadraticAttenuation },
+				&Interface::EditQuadraticAttenuation, true },
 			{ "Max Distance ", &Interface::PrintMaxDistance,
-				&Interface::EditMaxDistance },
-			{ "Back", NULL, &Interface::EditLights }
+				&Interface::EditMaxDistance, true },
+			{ "Back", NULL, &Interface::EditLights, false }
 		}
 	},
 	{
 		"Shadow Position ", &Interface::PrintActiveShadow,
 		{
-			{ "X ", &Interface::PrintShadowX, &Interface::MoveShadowX },
-			{ "Y ", &Interface::PrintShadowY, &Interface::MoveShadowY },
-			{ "Z ", &Interface::PrintShadowZ, &Interface::MoveShadowZ },
-			{ "Back", NULL, &Interface::EditShadows }
+			{ "X ", &Interface::PrintShadowX, &Interface::MoveShadowX, true },
+			{ "Y ", &Interface::PrintShadowY, &Interface::MoveShadowY, true },
+			{ "Z ", &Interface::PrintShadowZ, &Interface::MoveShadowZ, true },
+			{ "Back", NULL, &Interface::EditShadows, false }
+		}
+	},
+	{
+		"Tone Mapping", NULL,
+		{
+			{ "Mode: ", &Interface::PrintToneMappingMode,
+				&Interface::EditToneMappingMode, false },
+			{ "Image Key ", &Interface::PrintImageKey,
+				&Interface::EditImageKey, true },
+			{ "White Threshold ", &Interface::PrintWhiteThreshold,
+				&Interface::EditWhiteThreshold, true },
+			{ "Sigma: ", &Interface::PrintToneMappingSigma,
+				&Interface::EditToneMappingSigma, true },
+			{ "n: ", &Interface::PrintToneMappingN,
+				&Interface::EditToneMappingN, true },
+			{ "RGB Working Space: ", &Interface::PrintRGBWorkingSpace,
+				&Interface::EditRGBWorkingSpace, false },
+			{ "Back", NULL, &Interface::MainMenu, false }
 		}
 	}
 };
@@ -237,6 +258,24 @@ void Interface::RemoveLight (int what)
 	}
 }
 
+void Interface::EditGlowSize (int what)
+{
+	GLuint size = renderer->composition.blur.GetSize ();
+
+	size += what * 4;
+	if (size > 0)
+	{
+		renderer->composition.blur = renderer->filters.CreateBlur
+			 (renderer->composition.glowmem_downsampled,
+				renderer->gbuffer.width >> 2, renderer->gbuffer.height >> 2, size);
+	}
+}
+
+void Interface::PrintGlowSize (void)
+{
+	font.Print (renderer->composition.blur.GetSize ());
+}
+
 void Interface::RandomizeLights (int what)
 {
 	if (!what)
@@ -301,14 +340,52 @@ void Interface::EditShadows (int what)
 
 void Interface::ToggleRendermode (int what)
 {
+	GLint rendermode = renderer->finalpass.GetRenderMode ();
+	rendermode += what;
+	if (rendermode < 0)
+		 rendermode += NUM_RENDERMODES;
+	if (rendermode >= NUM_RENDERMODES)
+		 rendermode = 0;
+	renderer->finalpass.SetRenderMode (rendermode);
+}
+
+void Interface::EditToneMapping (int what)
+{
 	if (!what)
 	{
-		GLuint rendermode = renderer->finalpass.GetRenderMode ();
-		rendermode++;
-		if (rendermode >= NUM_RENDERMODES)
-			 rendermode = 0;
-		renderer->finalpass.SetRenderMode (rendermode);
+		menu = EDIT_TONE_MAPPING;
+		submenu = 0;
 	}
+}
+
+#define NUM_RGB_WORKING_SPACES 7
+
+void Interface::EditRGBWorkingSpace (int what)
+{
+	GLint rgb_working_space;
+	rgb_working_space = renderer->finalpass.tonemapping.rgb_working_space;
+	rgb_working_space += what;
+	if (rgb_working_space < 0)
+		 rgb_working_space += NUM_RGB_WORKING_SPACES;
+	if (rgb_working_space >= NUM_RGB_WORKING_SPACES)
+		 rgb_working_space = 0;
+	renderer->finalpass.tonemapping.rgb_working_space = rgb_working_space;
+}
+
+void Interface::PrintRGBWorkingSpace (void)
+{
+	const char *rgb_working_spaces[NUM_RGB_WORKING_SPACES] = {
+		"Adobe RGB (1998)",
+		"AppleRGB",
+		"Best RGB",
+		"Beta RGB",
+		"Bruce RGB",
+		"CIE RGB",
+		"ColorMatch RGB"
+	};
+
+	font.Print (rgb_working_spaces[renderer->finalpass.
+																 tonemapping.rgb_working_space]);
 }
 
 extern bool running;
@@ -319,6 +396,41 @@ void Interface::Exit (int what)
 	{
 		running = false;
 	}
+}
+
+#define NUM_TONE_MAPPING_MODES 4
+
+void Interface::PrintToneMappingMode (void)
+{
+	const char *tone_mapping_modes[NUM_TONE_MAPPING_MODES] = {
+		"Reinhard",
+		"Logarithmic",
+		"URQ",
+		"Exponential"
+	};
+	font.Print (tone_mapping_modes [renderer->finalpass.tonemapping.mode]);
+}
+
+void Interface::EditToneMappingMode (int what)
+{
+	GLint mode;
+	mode = renderer->finalpass.tonemapping.mode;
+	mode += what;
+	if (mode < 0)
+		 mode += NUM_TONE_MAPPING_MODES;
+	if (mode >= NUM_TONE_MAPPING_MODES)
+		 mode = 0;
+	renderer->finalpass.tonemapping.mode = mode;
+}
+
+void Interface::PrintToneMappingN (void)
+{
+	font.Print (renderer->finalpass.tonemapping.n);
+}
+
+void Interface::EditToneMappingN (int what)
+{
+	renderer->finalpass.tonemapping.n += what * timefactor;
 }
 
 void Interface::PrintRendermode (void)
@@ -348,46 +460,22 @@ void Interface::PrintRendermode (void)
 	font.Print (rendermodes[renderer->finalpass.GetRenderMode ()]);
 }
 
-void Interface::NextShadow (int what)
+void Interface::SelectShadow (int what)
 {
-	if (!what)
-	{
-		active_shadow++;
-		if (active_shadow >= renderer->shadows.size ())
-			 active_shadow = 0;
-	}
+	active_shadow += what;
+	if (active_shadow < 0)
+		active_shadow += renderer->shadows.size ();
+	if (active_shadow >= renderer->shadows.size ())
+		 active_shadow = 0;
 }
 
-void Interface::PreviousShadow (int what)
+void Interface::SelectLight (int what)
 {
-	if (!what)
-	{
-		if (!active_shadow)
-			 active_shadow = renderer->shadows.size ();
-		if (active_shadow)
-			 active_shadow--;
-	}
-}
-
-void Interface::NextLight (int what)
-{
-	if (!what)
-	{
-		active_light++;
-		if (active_light >= renderer->lights.size ())
-			 active_light = 0;
-	}
-}
-
-void Interface::PreviousLight (int what)
-{
-	if (!what)
-	{
-		if (!active_light)
-			 active_light = renderer->lights.size ();
-		if (active_light)
-			 active_light--;
-	}
+	active_light += what;
+	if (active_light < 0)
+		active_light += renderer->lights.size ();
+	if (active_light >= renderer->lights.size ())
+		 active_light = 0;
 }
 
 void Interface::EditShadowPosition (int what)
@@ -738,6 +826,26 @@ void Interface::EditMaxDistance (int what)
 			0, NULL, NULL);
 }
 
+void Interface::EditImageKey (int what)
+{
+	renderer->finalpass.tonemapping.image_key += what * timefactor;
+}
+
+void Interface::EditWhiteThreshold (int what)
+{
+	renderer->finalpass.tonemapping.white_threshold += what * timefactor;
+}
+
+void Interface::EditToneMappingSigma (int what)
+{
+	renderer->finalpass.tonemapping.sigma += what * timefactor;
+}
+
+void Interface::PrintToneMappingSigma (void)
+{
+	font.Print (renderer->finalpass.tonemapping.sigma);
+}
+
 void Interface::PrintActiveLight (void)
 {
 	font.Print (active_light + 1, " / ", renderer->lights.size ());
@@ -867,6 +975,16 @@ void Interface::PrintMaxDistance (void)
 	font.Print (renderer->lights[active_light].attenuation.w);
 }
 
+void Interface::PrintImageKey (void)
+{
+	font.Print (renderer->finalpass.tonemapping.image_key);
+}
+
+void Interface::PrintWhiteThreshold (void)
+{
+	font.Print (renderer->finalpass.tonemapping.white_threshold);
+}
+
 bool Interface::Init (void)
 {
 	if (!freetype.Init ())
@@ -902,6 +1020,14 @@ void Interface::OnKeyUp (int key)
 			break;
 		case GLFW_KEY_ENTER:
 			(this->*(menus[menu].entries[submenu].handler)) (0);
+			break;
+		case GLFW_KEY_LEFT:
+			if (!menus[menu].entries[submenu].repeating)
+				 (this->*(menus[menu].entries[submenu].handler)) (-1);
+			break;
+		case GLFW_KEY_RIGHT:
+			if (!menus[menu].entries[submenu].repeating)
+				 (this->*(menus[menu].entries[submenu].handler)) (1);
 			break;
 		case GLFW_KEY_ESC:
 			if (menu == MAIN_MENU)
@@ -943,12 +1069,14 @@ void Interface::Frame (float tf)
 
 	if (glfwGetKey (GLFW_KEY_RIGHT))
 	{
-		(this->*(menus[menu].entries[submenu].handler)) (1);
+		if (menus[menu].entries[submenu].repeating)
+			 (this->*(menus[menu].entries[submenu].handler)) (1);
 	}
 
 	if (glfwGetKey (GLFW_KEY_LEFT))
 	{
-		(this->*(menus[menu].entries[submenu].handler)) (-1);
+		if (menus[menu].entries[submenu].repeating)
+			 (this->*(menus[menu].entries[submenu].handler)) (-1);
 	}
 
 	font.Frame ();

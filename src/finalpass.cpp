@@ -19,7 +19,8 @@
 #include "renderer.h"
 
 FinalPass::FinalPass (Renderer *parent)
-	: renderer (parent), rendermode (0)
+	: renderer (parent), rendermode (0), 
+		tonemapping ({ 0.18f, 1.0f, 1.0f, 1.0f, 0, 0 })
 {
 }
 
@@ -87,6 +88,68 @@ GLuint FinalPass::GetRenderMode (void)
 	return rendermode;
 }
 
+const std::vector<glm::mat3x3> RGB2XYZ = {
+// Adobe RGB (1998)
+	glm::mat3x3 (0.5767309f, 0.1855540f, 0.1881852f,
+							 0.2973769f, 0.6273491f, 0.0752741f,
+							 0.0270343f, 0.0706872f, 0.9911085f),
+// AppleRGB
+	glm::mat3x3 (0.4497288f, 0.3162486f, 0.1844926f,
+							 0.2446525f, 0.6720283f, 0.0833192f,
+							 0.0251848f, 0.1411824f, 0.9224628f),
+// Best RGB
+	glm::mat3x3 (0.6326696f, 0.2045558f, 0.1269946f,
+							 0.2284569f, 0.7373523f, 0.0341908f,
+							 0.0000000f, 0.0095142f, 0.8156958f),
+// Beta RGB
+	glm::mat3x3 (0.6712537f, 0.1745834f, 0.1183829f,
+							 0.3032726f, 0.6637861f, 0.0329413f,
+							 0.0000000f, 0.0407010f, 0.7845090f),
+// Bruce RGB
+	glm::mat3x3 (0.4674162f, 0.2944512f, 0.1886026f,
+							 0.2410115f, 0.6835475f, 0.0754410f,
+							 0.0219101f, 0.0736128f, 0.9933071f),
+// CIE RGB
+	glm::mat3x3 (0.4887180f, 0.3106803f, 0.2006017f,
+							 0.1762044f, 0.8129847f, 0.0108109f,
+							 0.0000000f, 0.0102048f, 0.9897952f),
+// ColorMatch RGB
+	glm::mat3x3 (0.5093439f, 0.3209071f, 0.1339691f,
+							 0.2748840f, 0.6581315f, 0.0669845f,
+							 0.0242545f, 0.1087821f, 0.6921735f)
+};
+
+const std::vector<glm::mat3x3> XYZ2RGB = {
+// Adobe RGB (1998)
+	glm::mat3x3 (2.0413690f, -0.5649464f,-0.3446944f,
+							 -0.9692660f, 1.8760108f, 0.0415560f,
+							 0.0134474f, -0.1183897f, 1.0154096f),
+// AppleRGB
+	glm::mat3x3 (2.9515373f, -1.2894116f,-0.4738445f,
+							 -1.0851093f, 1.9908566f, 0.0372026f,
+							 0.0854934f, -0.2694964f, 1.0912975f),
+// Best RGB
+	glm::mat3x3 (1.7552599f, -0.4836786f,-0.2530000f,
+							 -0.5441336f, 1.5068789f, 0.0215528f,
+							 0.0063467f, -0.0175761f, 1.2256959f),
+// Beta RGB
+	glm::mat3x3 (1.6832270f, -0.4282363f,-0.2360185,
+							 -0.7710229f, 1.7065571f, 0.0446900,
+							 0.0400013f, -0.0885376f, 1.2723640),
+// Bruce RGB
+	glm::mat3x3 (2.7454669f, -1.1358136f,-0.4350269f,
+							 -0.9692660f, 1.8760108f, 0.0415560f,
+							 0.0112723f, -0.1139754f, 1.0132541f),
+// CIE RGB
+	glm::mat3x3 (2.3706743f, -0.9000405f,-0.4706338f,
+							 -0.5138850f, 1.4253036f, 0.0885814f,
+							 0.0052982f, -0.0146949f, 1.0093968f),
+// ColorMatch RGB
+	glm::mat3x3 (2.6422874f, -1.2234270f,-0.3930143f,
+							 -1.1119763f, 2.0590183f, 0.0159614f,
+							 0.0821699f, -0.2807254f, 1.4559877f)
+};
+
 void FinalPass::Render (void)
 {
 	glm::uvec2 viewport;
@@ -96,6 +159,16 @@ void FinalPass::Render (void)
 		program["viewport"] = viewport;
 		program["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
 		program["farClipPlane"] = renderer->camera.GetFarClipPlane ();
+		program["tonemapping.image_key"] = tonemapping.image_key;
+		program["tonemapping.white_threshold"] = tonemapping.white_threshold;
+		if (tonemapping.rgb_working_space >= RGB2XYZ.size ())
+			 tonemapping.rgb_working_space = 0;
+		program["tonemapping.RGB2XYZ"] = RGB2XYZ[tonemapping.rgb_working_space];
+		program["tonemapping.XYZ2RGB"] = XYZ2RGB[tonemapping.rgb_working_space];
+
+		program["tonemapping.mode"] = tonemapping.mode;
+		program["tonemapping.sigma"] = powf (tonemapping.sigma, tonemapping.n);
+		program["tonemapping.n"] = tonemapping.n;
 	}
 	gl::Viewport (0, 0, viewport.x, viewport.y);
 
@@ -105,8 +178,7 @@ void FinalPass::Render (void)
 	switch (rendermode)
 	{
 	case 0:
-//		renderer->windowgrid.sampler.Bind (0);
-		sampler.Bind (0);
+		renderer->windowgrid.sampler.Bind (0);
 		renderer->composition.screen.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		sampler.Bind (1);
 		renderer->composition.glow.Bind (GL_TEXTURE1, GL_TEXTURE_2D);

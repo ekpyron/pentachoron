@@ -35,7 +35,17 @@ private:
 	 std::vector<gl::ProgramPipeline> pipelines;
 	 gl::Sampler sampler;
 	 GLuint rendermode;
+	 struct
+	 {
+			float image_key;
+			float white_threshold;
+			float sigma;
+			float n;
+			GLuint rgb_working_space;
+			GLuint mode;
+	 } tonemapping;
 	 Renderer *renderer;
+	 friend class Interface;
 };
 
 #endif /* !defined FINALPASS_H */

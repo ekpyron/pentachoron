@@ -93,23 +93,16 @@ bool LoadTex (gl::Texture &texture, bool &result,
 		return true;
 	}
 
-	std::cout << "Load image " << filename << std::endl;
 	if (!image.Load (filename))
 	{
 		(*logstream) << "Could not load the texture " << filename
 								 << "." << std::endl;
 		return false;
 	}
-	std::cout << "Bind buffer" << std::endl;
 	image.GetBuffer ().Bind (GL_PIXEL_UNPACK_BUFFER);
-	std::cout << "Image2D" << std::endl;
-	std::cout << image.GetWidth () << "x" << image.GetHeight ()
-						<< ": " << std::hex << image.GetFormat () << " - "
-						<< image.GetType () << std::dec << std::endl;
 	texture.Image2D (GL_TEXTURE_2D, 0, format, image.GetWidth (),
 									 image.GetHeight (), 0, image.GetFormat (),
 									 image.GetType (), NULL);
-	std::cout << "Generate Mipmap" << std::endl;
 	texture.GenerateMipmap (GL_TEXTURE_2D);
 	result = true;
 	return true;

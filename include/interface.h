@@ -39,17 +39,17 @@ public:
 	 void EditShadows (int what);
 	 void ToggleRendermode (int what);
 	 void ToggleSoftShadow (int what);
+	 void EditToneMapping (int what);
+	 void EditGlowSize (int what);
 	 void Exit (int what);
 
-	 void NextShadow (int what);
-	 void PreviousShadow (int what);
+	 void SelectShadow (int what);
 	 void EditShadowPosition (int what);
 	 void RemoveShadow (int what);
 
 	 void RemoveLight (int what);
 	 void RandomizeLights (int what);
-	 void NextLight (int what);
-	 void PreviousLight (int what);
+	 void SelectLight (int what);
 	 void EditLightPosition (int what);
 	 void MoveShadowX (int what);
 	 void MoveShadowY (int what);
@@ -78,6 +78,12 @@ public:
 	 void EditQuadraticAttenuation (int what);
 	 void EditMaxDistance (int what);
 	 void EditShininess (int what);
+	 void EditImageKey (int what);
+	 void EditWhiteThreshold (int what);
+	 void EditRGBWorkingSpace (int what);
+	 void EditToneMappingMode (int what);
+	 void EditToneMappingSigma (int what);
+	 void EditToneMappingN (int what);
 
 	 void PrintRendermode (void);
 	 void PrintActiveLight (void);
@@ -106,6 +112,13 @@ public:
 	 void PrintQuadraticAttenuation (void);
 	 void PrintMaxDistance (void);
 	 void PrintShininess (void);
+	 void PrintImageKey (void);
+	 void PrintWhiteThreshold (void);
+	 void PrintRGBWorkingSpace (void);
+	 void PrintToneMappingMode (void);
+	 void PrintToneMappingSigma (void);
+	 void PrintToneMappingN (void);
+	 void PrintGlowSize (void);
 private:
 	 gl::Freetype freetype;
 	 gl::Font font;
@@ -113,7 +126,7 @@ private:
 	 bool showInterface;
 	 unsigned int menu, submenu;
 
-	 unsigned int active_light, active_shadow;
+	 int active_light, active_shadow;
 
 	 float timefactor;
 

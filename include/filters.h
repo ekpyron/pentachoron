@@ -32,15 +32,17 @@ public:
 	 void Apply (void);
 	 Blur &operator= (const Blur&) = delete;
 	 Blur &operator= (Blur &&blur);
+	 GLuint GetSize (void);
 //private:
 	 const cl::Memory *memory;
 	 cl::Memory weights, offsets;
+	 GLuint size;
 	 GLuint num_weights;
 	 GLuint width, height;
 	 Filters *parent;
 	 cl::Memory storage;
 	 Blur (const cl::Memory *memory, cl::Memory storage, cl::Memory weights,
-				 cl::Memory offsets, GLuint num_weights, GLuint width,
+				 cl::Memory offsets, GLuint num_weights, GLuint size, GLuint width,
 				 GLuint height, Filters *p);
 	 friend class Filters;
 };

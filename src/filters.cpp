@@ -107,7 +107,7 @@ Blur Filters::CreateBlur (cl::Memory &memory, GLuint width,
 
 	cl_int num_weights = linear_weights_data.size ();
 
-	return Blur (&memory, storage, weights, offsets, num_weights,
+	return Blur (&memory, storage, weights, offsets, num_weights, size,
 							 width, height, this);
 }
 
@@ -142,18 +142,21 @@ Blur::Blur (void) : parent (NULL)
 }
 
 Blur::Blur (const cl::Memory *mem, cl::Memory s, cl::Memory w,
-						cl::Memory o, GLuint num, GLuint x, GLuint y, Filters *p)
+						cl::Memory o, GLuint num, GLuint sz,
+						GLuint x, GLuint y, Filters *p)
 	: parent (p), memory (mem), storage (s), weights (w), 
-		offsets (o), num_weights (num), width (x), height (y)
+		offsets (o), num_weights (num), width (x), height (y), size (sz)
 {
 }
 
 Blur::Blur (Blur &&blur)
 	: num_weights (blur.num_weights), memory (blur.memory),
 		weights (std::move (blur.weights)), parent (blur.parent),
-		storage (std::move (blur.storage)), width (blur.width),
-		height (blur.height), offsets (std::move (blur.offsets))
+		storage (std::move (blur.storage)), size (blur.size),
+		width (blur.width), height (blur.height),
+		offsets (std::move (blur.offsets))
 {
+	blur.size = 0;
 	blur.num_weights = 0;
 	blur.width = 0;
 	blur.height = 0;
@@ -168,6 +171,7 @@ Blur &Blur::operator= (Blur &&blur)
 	width = blur.width;
 	height = blur.height;
 	num_weights = blur.num_weights;
+	size = blur.size;
 	weights = std::move (blur.weights);
 	offsets = std::move (blur.offsets);
 	storage = std::move (blur.storage);
@@ -176,6 +180,12 @@ Blur &Blur::operator= (Blur &&blur)
 	blur.num_weights = 0;
 	blur.width = 0;
 	blur.height = 0;
+	blur.size = 0;
+}
+
+GLuint Blur::GetSize (void)
+{
+	return size;
 }
 
 void Blur::Apply (void)

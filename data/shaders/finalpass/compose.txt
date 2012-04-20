@@ -3,6 +3,16 @@ layout(location = 0) out vec4 output;
 layout(binding = 0) uniform sampler2D colorbuffer;
 layout(binding = 1) uniform sampler2D glowbuffer;
 uniform uvec2 viewport;
+uniform struct
+{
+	float image_key;
+	float white_threshold;
+	mat3x3 RGB2XYZ;
+	mat3x3 XYZ2RGB;
+	unsigned int mode;
+	float sigma;
+	float n;
+} tonemapping;
 
 float luminance (vec4 color)
 {
@@ -17,24 +27,22 @@ void main (void)
 	glow = texture (glowbuffer, coord, 2);
 	color.xyz += glow.xyz;
 
-	const mat3x3 RGB2XYZ = mat3x3 (0.5141364, 0.3238786,  0.16036376,					       0.265068,  0.67023428, 0.06409157,
+/*	const mat3x3 RGB2XYZ = mat3x3 (0.5141364, 0.3238786,  0.16036376,					       0.265068,  0.67023428, 0.06409157,
                                	       0.0241188, 0.1228178,  0.84442666);
 	const mat3x3 XYZ2RGB = mat3x3 (2.5651,-1.1665,-0.3986,
                                	      -1.0217, 1.9777, 0.0439, 
                                	       0.0753, -0.2543, 1.1892);
 
-				       
+*/				       
 
 	float avgLuminance = 0.5;
 //luminance (texture (colorbuffer, coord, 10));
 
-	const float image_key = 0.42;
-	float exposure = image_key / avgLuminance;
-	const float white = 0.95;
+	float exposure = tonemapping.image_key / avgLuminance;
 
 	vec3 XYZ;
 
-	XYZ = RGB2XYZ * color.xyz;
+	XYZ = tonemapping.RGB2XYZ * color.xyz;
 
 	vec3 Yxy;
 	Yxy.r = XYZ.g;
@@ -43,14 +51,36 @@ void main (void)
 
 	float Lp = Yxy.r * exposure / avgLuminance;
 
-	Yxy.r = (Lp * (1.0f + Lp / (white * white)))
-	      	/ (1.0f + Lp);
+	Lp = pow (Lp, tonemapping.n);
+
+	switch (tonemapping.mode)
+	{
+		case 0:
+		     Yxy.r = (Lp * (1.0f + Lp
+		     	     / (tonemapping.white_threshold
+			        * tonemapping.white_threshold)))
+	      		     / (tonemapping.sigma + Lp);
+
+		break;
+		case 1:
+		     Yxy.r = log (1 + Lp)
+		     	     / log (1 + tonemapping.white_threshold);
+		break;
+		case 2:
+		     Yxy.r = tonemapping.sigma * Lp
+		     	     / (tonemapping.sigma * Lp - Lp
+			        + tonemapping.white_threshold);
+		break;
+		case 3:
+		     Yxy.r = 1 - exp (-Lp);
+		break;
+	}
 
 	XYZ.r = Yxy.r * Yxy.g / Yxy.b;
 	XYZ.g = Yxy.r;
 	XYZ.b = Yxy.r * (1 - Yxy.g - Yxy.b) / Yxy.b;
 
-	color.xyz = XYZ2RGB * XYZ;
+	color.xyz = tonemapping.XYZ2RGB * XYZ;
 	color.w = 1.0;
 
 	output = color;

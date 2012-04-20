@@ -141,7 +141,6 @@ void Composition::Frame (float timefactor)
 																				local_dim, 0, NULL, NULL);
 	renderer->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
 
-	screen.GenerateMipmap (GL_TEXTURE_2D);
 	glow.GenerateMipmap (GL_TEXTURE_2D);
 
 	blur.Apply ();

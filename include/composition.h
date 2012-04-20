@@ -88,6 +88,9 @@ private:
 		* The Renderer this class belongs to.
 		*/
 	 Renderer *renderer;
+	 /** Interface is a friend.
+		*/
+	 friend class Interface;
 };
 
 #endif /* !defined COMPOSITION_H */
