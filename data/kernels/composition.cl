@@ -12,37 +12,41 @@ struct Light
 	      	     float4 position;
 		     float4 color;
 		     float4 direction;
-		     /*
-		      * spot.x: cosine
-		      * spot.y: exponent
-		      * spot.z: angle
-		      * spot.w: tangent
-		      */
-		     float4 spot;
-		     /*
-		      * spot2.x: penumbra_angle
-		      * spot2.y: penumbra_cosine
-		      */
-		     float4 spot2;
+		     struct
+		     {
+			float cosine;
+			float exponent;
+			float angle;
+			float tangens;
+			struct
+			{
+				float angle;
+				float cosine;
+				float padding[2];
+			} penumbra;
+		     } spot;
 		     float4 specular;
-		     /*
-		      * attenuation.x: constant
-		      * attenuation.y: linear
-		      * attenuation.z: quadratic
-		      * attenuation.w: max distance
-		      */
-		     float4 attenuation;
+		     struct
+		     {
+			float scalar;
+			float linear;
+			float quadratic;
+			float max_distance;
+		     } attenuation;
 	      };
 	      float4 data[6];
 	};
 };
 
-struct ViewInfo
+struct Info
 {
 	float4 projinfo;
 	float4 vmatinv[4];
 	float4 shadowmat[4];
 	float4 eye;
+	float luminance_threshold;
+	float shadow_alpha;
+	float padding[2];
 };
 
 struct Parameter
@@ -50,7 +54,11 @@ struct Parameter
 	/*
 	 * specular.x: specular exponent
 	 */
-	float4 specular;
+	struct
+	{
+		float exponent;
+		float padding[3];
+	} specular;
 };
 
 float3 reflect (float3 I, float3 N)
@@ -58,7 +66,7 @@ float3 reflect (float3 I, float3 N)
 	return mad (-2.0 * dot (N, I), N, I);
 }
 
-float getpos (float4 *pos, struct ViewInfo *info)
+float getpos (float4 *pos, struct Info *info)
 {
 	float depth = pos->z;
 	if (depth == 1.0)
@@ -85,7 +93,7 @@ float getpos (float4 *pos, struct ViewInfo *info)
 }
 
 float compute_shadow (int x, int y, float4 pos,
-      		      read_only image2d_t shadowmap, struct ViewInfo *info)
+      		      read_only image2d_t shadowmap, struct Info *info)
 {
 	float4 lspos;
 
@@ -123,7 +131,7 @@ float4 compute_pixel (read_only image2d_t colormap,
 		      global struct Light *lights,
 		      unsigned int num_light_indices,
 		      local ushort *light_indices,
-		      struct ViewInfo *info,
+		      struct Info *info,
 		      unsigned int num_parameters,
 		      global struct Parameter *parameters)
 {
@@ -158,9 +166,10 @@ float4 compute_pixel (read_only image2d_t colormap,
 		lightDir = native_divide (lightDir, dist);
 
 		float attenuation;
-		attenuation = native_recip (mad (light.attenuation.z,
-			    dist * dist, mad (light.attenuation.y,
-			    	   	      dist, light.attenuation.x)));
+		attenuation = native_recip
+			    (mad (light.attenuation.quadratic, dist * dist,
+			    	  mad (light.attenuation.linear,
+			    	       dist, light.attenuation.scalar)));
 		if (attenuation < 0.001)
 		   continue;
 
@@ -169,15 +178,16 @@ float4 compute_pixel (read_only image2d_t colormap,
 		
 		angle = dot (fast_normalize (light.direction.xyz),
 			     -lightDir);
-		if (angle < light.spot.x)
+		if (angle < light.spot.cosine)
 		   continue;
-		if (angle < light.spot2.y)
+		if (angle < light.spot.penumbra.cosine)
 		{
-		   spotEffect = (angle - light.spot.x)
-		   		/ (light.spot2.y - light.spot.x);
+		   spotEffect = (angle - light.spot.cosine)
+		   		/ (light.spot.penumbra.cosine
+				   - light.spot.cosine);
 		}
 
-		spotEffect *= native_powr (angle, light.spot.y);
+		spotEffect *= native_powr (angle, light.spot.exponent);
 
 		attenuation *= spotEffect;
 		if (attenuation < 0.001)
@@ -198,17 +208,17 @@ float4 compute_pixel (read_only image2d_t colormap,
 			 	  - light.position.xyz),
 			 	  normal));
 
-		if (param.specular.x != 0.0)
+		if (param.specular.exponent != 0.0)
 		{
 			specular += attenuation * light.specular.xyz
-				     * native_powr (r, param.specular.x);
+				     * native_powr (r, param.specular.exponent);
 		}
 	}
 
 	float shadow;
 	shadow = compute_shadow (x, y, pos, shadowmap, info);
-	shadow *= 0.7;
-	shadow += 0.3;
+	shadow *= info->shadow_alpha;
+	shadow += 1 - info->shadow_alpha;
 	diffuse *= shadow;
 	specular *= shadow;
 
@@ -248,7 +258,7 @@ kernel void composition (write_only image2d_t screen,
 			 read_only image2d_t shadowmap,
 			 unsigned int num_lights,
 			 global struct Light *lights,
-			 struct ViewInfo info,
+			 struct Info info,
 			 unsigned int num_parameters,
 			 global struct Parameter *parameters)
 {
@@ -351,10 +361,11 @@ kernel void composition (write_only image2d_t screen,
 					dot (light.direction,
 					    light.direction));
 
-		if (lambda >= 0 && lambda - radius < light.attenuation.w)
+		if (lambda >= 0 && lambda - radius
+		    < light.attenuation.max_distance)
 		{
 
-			float r = mad (light.spot.w, lambda,
+			float r = mad (light.spot.tangens, lambda,
 			      	       radius);
 
 			float d = fast_distance (mad (lambda, light.direction,
@@ -421,7 +432,7 @@ kernel void composition (write_only image2d_t screen,
 
 	float4 glow = (float4) (0.0, 0.0, 0.0, 0.0);
 
-	if (luminance > 0.75)
+	if (luminance > info.luminance_threshold)
 	{
 		glow.xyz = pixel.xyz;
 		glow.w = luminance;

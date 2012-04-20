@@ -57,6 +57,15 @@ public:
 		* A texture storing the parts of the screen that is supposed to glow.
 		*/
 	 gl::Texture glow;
+	 /** Luminance threshold.
+		* Pixels with a luminance higher than this threshold will be written
+		* to the glow map.
+		*/
+	 GLfloat luminance_threshold;
+	 /** Shadow alpha.
+		* This value specifies the degree of transparency of the shadows.
+		*/
+	 GLfloat shadow_alpha;
 private:
 	 /** Glow blur.
 		* A Blur object for blurring the downsampled glow map.

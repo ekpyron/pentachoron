@@ -37,6 +37,7 @@ public:
 	 void AddShadow (int what);
 	 void EditLights (int what);
 	 void EditShadows (int what);
+	 void EditGlow (int what);
 	 void ToggleRendermode (int what);
 	 void ToggleSoftShadow (int what);
 	 void EditToneMapping (int what);
@@ -54,6 +55,7 @@ public:
 	 void MoveShadowX (int what);
 	 void MoveShadowY (int what);
 	 void MoveShadowZ (int what);
+	 void EditShadowAlpha (int what);
 	 void MoveLightX (int what);
 	 void MoveLightY (int what);
 	 void MoveLightZ (int what);
@@ -84,6 +86,7 @@ public:
 	 void EditToneMappingMode (int what);
 	 void EditToneMappingSigma (int what);
 	 void EditToneMappingN (int what);
+	 void EditLuminanceThreshold (int what);
 
 	 void PrintRendermode (void);
 	 void PrintActiveLight (void);
@@ -92,6 +95,7 @@ public:
 	 void PrintShadowX (void);
 	 void PrintShadowY (void);
 	 void PrintShadowZ (void);
+	 void PrintShadowAlpha (void);
 	 void PrintLightX (void);
 	 void PrintLightY (void);
 	 void PrintLightZ (void);
@@ -119,6 +123,7 @@ public:
 	 void PrintToneMappingSigma (void);
 	 void PrintToneMappingN (void);
 	 void PrintGlowSize (void);
+	 void PrintLuminanceThreshold (void);
 private:
 	 gl::Freetype freetype;
 	 gl::Font font;

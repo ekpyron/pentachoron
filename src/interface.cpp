@@ -40,19 +40,16 @@ typedef struct Menu {
 #define EDIT_LIGHT_ATTENUATION   7
 #define EDIT_SHADOW_POSITION     8
 #define EDIT_TONE_MAPPING        9
-
+#define EDIT_GLOW                10
 const std::vector<Menu> menus = {
 	{
 		"Main Menu", NULL,
 		{
-			{ "Edit Lights", NULL, &Interface::EditLights, false },
-			{ "Edit Shadows", NULL, &Interface::EditShadows, false },
-			{ "Soft Shadows: ", &Interface::PrintSoftShadow,
-				&Interface::ToggleSoftShadow, false },
+			{ "Lights", NULL, &Interface::EditLights, false },
+			{ "Shadows", NULL, &Interface::EditShadows, false },
 			{ "Tone Mapping", NULL, &Interface::EditToneMapping, false },
-			{ "Glow size: ", &Interface::PrintGlowSize,
-				&Interface::EditGlowSize, false },
-			{ "Toggle Rendermode: ", &Interface::PrintRendermode,
+			{ "Glow", NULL, &Interface::EditGlow, false },
+			{ "Rendermode: ", &Interface::PrintRendermode,
 				&Interface::ToggleRendermode, false },
 			{ "Exit", NULL, &Interface::Exit, false }
 		}
@@ -85,6 +82,10 @@ const std::vector<Menu> menus = {
 			{ "Select Shadow ", NULL , &Interface::SelectShadow, false },
 			{ "Edit Position", NULL, &Interface::EditShadowPosition, false },
 			{ "Remove", NULL, &Interface::RemoveShadow, false },
+			{ "Shadow Alpha: ", &Interface::PrintShadowAlpha,
+				&Interface::EditShadowAlpha, true },
+			{ "Soft Shadows: ", &Interface::PrintSoftShadow,
+				&Interface::ToggleSoftShadow, false },
 			{ "Back", NULL, &Interface::MainMenu, false }
 		}
 	},
@@ -162,6 +163,16 @@ const std::vector<Menu> menus = {
 				&Interface::EditToneMappingN, true },
 			{ "RGB Working Space: ", &Interface::PrintRGBWorkingSpace,
 				&Interface::EditRGBWorkingSpace, false },
+			{ "Back", NULL, &Interface::MainMenu, false }
+		}
+	},
+	{
+		"Glow", NULL,
+		{
+			{ "Blur size: ", &Interface::PrintGlowSize,
+				&Interface::EditGlowSize, false },
+			{ "Luminance Threshold: ", &Interface::PrintLuminanceThreshold,
+				&Interface::EditLuminanceThreshold, true },
 			{ "Back", NULL, &Interface::MainMenu, false }
 		}
 	}
@@ -332,6 +343,15 @@ void Interface::EditShadows (int what)
 			AddShadow (0);
 		}
 		menu = EDIT_SHADOWS;
+		submenu = 0;
+	}
+}
+
+void Interface::EditGlow (int what)
+{
+	if (!what)
+	{
+		menu = EDIT_GLOW;
 		submenu = 0;
 	}
 }
@@ -841,6 +861,20 @@ void Interface::EditToneMappingSigma (int what)
 	renderer->finalpass.tonemapping.sigma += what * timefactor;
 }
 
+void Interface::EditLuminanceThreshold (int what)
+{
+	renderer->composition.luminance_threshold += what * timefactor;
+}
+
+void Interface::EditShadowAlpha (int what)
+{
+	renderer->composition.shadow_alpha += what * timefactor;
+	if (renderer->composition.shadow_alpha < 0)
+		 renderer->composition.shadow_alpha = 0;
+	if (renderer->composition.shadow_alpha > 1)
+		 renderer->composition.shadow_alpha = 1;
+}
+
 void Interface::PrintToneMappingSigma (void)
 {
 	font.Print (renderer->finalpass.tonemapping.sigma);
@@ -983,6 +1017,16 @@ void Interface::PrintImageKey (void)
 void Interface::PrintWhiteThreshold (void)
 {
 	font.Print (renderer->finalpass.tonemapping.white_threshold);
+}
+
+void Interface::PrintLuminanceThreshold (void)
+{
+	font.Print (renderer->composition.luminance_threshold);
+}
+
+void Interface::PrintShadowAlpha (void)
+{
+	font.Print (renderer->composition.shadow_alpha);
 }
 
 bool Interface::Init (void)

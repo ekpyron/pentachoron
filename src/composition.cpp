@@ -18,7 +18,8 @@
 #include "renderer.h"
 
 Composition::Composition (Renderer *parent)
-	: renderer (parent)
+	: renderer (parent), luminance_threshold (0.75),
+		shadow_alpha (0.7)
 {
 }
 
@@ -83,13 +84,16 @@ bool Composition::Init (void)
 
 void Composition::Frame (float timefactor)
 {
-	typedef struct ViewInfo
+	typedef struct Info
 	{
 		 glm::vec4 projinfo;
 		 glm::mat4 vmatinv;
 		 glm::mat4 shadowmat;
 		 glm::vec4 eye;
-	} ViewInfo;
+		 GLfloat luminance_threshold;
+		 GLfloat shadow_alpha;
+		 GLfloat padding[2];
+	} Info;
 	std::vector<cl::Memory> mem = { screenmem, glowmem_full,
 																	glowmem_downsampled,
 																	renderer->gbuffer.colormem[0],
@@ -109,7 +113,7 @@ void Composition::Frame (float timefactor)
 																	renderer->gbuffer.depthmem[2],
 																	renderer->gbuffer.depthmem[3],
 																	renderer->shadowmap.shadowmapmem };
-	ViewInfo info;
+	Info info;
 
 	cl_uint num_lights = renderer->lights.size ();
 
@@ -123,10 +127,12 @@ void Composition::Frame (float timefactor)
 																	 * renderer->shadowmap.projmat
 																	 * renderer->shadowmap.vmat);
 	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
+	info.luminance_threshold = luminance_threshold;
+	info.shadow_alpha = shadow_alpha;
 
 	composition.SetArg (19, sizeof (cl_uint), &num_lights);
 	composition.SetArg (20, renderer->lightmem);
-	composition.SetArg (21, sizeof (ViewInfo), &info);
+	composition.SetArg (21, sizeof (Info), &info);
 
 	cl_uint num_parameters = renderer->parameters.size ();
 	composition.SetArg (22, sizeof (cl_uint), &num_parameters);
