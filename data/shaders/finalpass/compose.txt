@@ -27,16 +27,7 @@ void main (void)
 	glow = texture (glowbuffer, coord, 2);
 	color.xyz += glow.xyz;
 
-/*	const mat3x3 RGB2XYZ = mat3x3 (0.5141364, 0.3238786,  0.16036376,					       0.265068,  0.67023428, 0.06409157,
-                               	       0.0241188, 0.1228178,  0.84442666);
-	const mat3x3 XYZ2RGB = mat3x3 (2.5651,-1.1665,-0.3986,
-                               	      -1.0217, 1.9777, 0.0439, 
-                               	       0.0753, -0.2543, 1.1892);
-
-*/				       
-
 	float avgLuminance = 0.5;
-//luminance (texture (colorbuffer, coord, 10));
 
 	float exposure = tonemapping.image_key / avgLuminance;
 
