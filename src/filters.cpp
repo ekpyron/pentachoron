@@ -62,6 +62,9 @@ Blur Filters::CreateBlur (cl::Memory &memory, GLuint width,
 	std::vector<float> linear_weights_data;
 	std::vector<float> linear_offsets_data;
 
+	if (size == 0)
+		 return Blur ();
+
 	// round up
 	size = (size + 3) & ~3;
 
@@ -137,7 +140,8 @@ void Filters::ApplyBlur (const cl::Memory *memory, const cl::Memory &storage,
 	renderer->queue.EnqueueReleaseGLObjects ({ *memory }, 0, NULL, NULL);
 }
 
-Blur::Blur (void) : parent (NULL)
+Blur::Blur (void) : parent (NULL), num_weights (0), width (0), height (0),
+										size (0)
 {
 }
 
@@ -190,6 +194,8 @@ GLuint Blur::GetSize (void)
 
 void Blur::Apply (void)
 {
+	if (size == 0)
+		 return;
 	parent->ApplyBlur (memory, storage, weights, offsets,
 										 num_weights, width, height);
 }

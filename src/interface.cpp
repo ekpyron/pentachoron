@@ -260,10 +260,10 @@ void Interface::RemoveLight (int what)
 
 void Interface::EditGlowSize (int what)
 {
-	GLuint size = renderer->composition.blur.GetSize ();
+	GLint size = renderer->composition.blur.GetSize ();
 
 	size += what * 4;
-	if (size > 0)
+	if (size >= 0)
 	{
 		renderer->composition.blur = renderer->filters.CreateBlur
 			 (renderer->composition.glowmem_downsampled,
