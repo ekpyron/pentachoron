@@ -41,6 +41,7 @@ typedef struct Menu {
 #define EDIT_SHADOW_POSITION     8
 #define EDIT_TONE_MAPPING        9
 #define EDIT_GLOW                10
+
 const std::vector<Menu> menus = {
 	{
 		"Main Menu", NULL,
