@@ -398,13 +398,13 @@ void Interface::EditToneMapping (int what)
 void Interface::EditRGBWorkingSpace (int what)
 {
 	GLint rgb_working_space;
-	rgb_working_space = renderer->finalpass.tonemapping.rgb_working_space;
+	rgb_working_space = renderer->finalpass.GetRGBWorkingSpace ();
 	rgb_working_space += what;
 	if (rgb_working_space < 0)
 		 rgb_working_space += NUM_RGB_WORKING_SPACES;
 	if (rgb_working_space >= NUM_RGB_WORKING_SPACES)
 		 rgb_working_space = 0;
-	renderer->finalpass.tonemapping.rgb_working_space = rgb_working_space;
+	renderer->finalpass.SetRGBWorkingSpace (rgb_working_space);
 }
 
 void Interface::PrintRGBWorkingSpace (void)
@@ -428,8 +428,7 @@ void Interface::PrintRGBWorkingSpace (void)
 		"Wide Gamut RGB"
 	};
 
-	font.Print (rgb_working_spaces[renderer->finalpass.
-																 tonemapping.rgb_working_space]);
+	font.Print (rgb_working_spaces[renderer->finalpass.GetRGBWorkingSpace ()]);
 }
 
 extern bool running;
@@ -452,29 +451,32 @@ void Interface::PrintToneMappingMode (void)
 		"URQ",
 		"Exponential"
 	};
-	font.Print (tone_mapping_modes [renderer->finalpass.tonemapping.mode]);
+	font.Print (tone_mapping_modes [renderer->finalpass.GetTonemappingMode ()]);
 }
 
 void Interface::EditToneMappingMode (int what)
 {
 	GLint mode;
-	mode = renderer->finalpass.tonemapping.mode;
+	mode = renderer->finalpass.GetTonemappingMode ();
 	mode += what;
 	if (mode < 0)
 		 mode += NUM_TONE_MAPPING_MODES;
 	if (mode >= NUM_TONE_MAPPING_MODES)
 		 mode = 0;
-	renderer->finalpass.tonemapping.mode = mode;
+	renderer->finalpass.SetTonemappingMode (mode);
 }
 
 void Interface::PrintToneMappingN (void)
 {
-	font.Print (renderer->finalpass.tonemapping.n);
+	font.Print (renderer->finalpass.GetTonemappingExponent ());
 }
 
 void Interface::EditToneMappingN (int what)
 {
-	renderer->finalpass.tonemapping.n += what * timefactor;
+	float n;
+	n = renderer->finalpass.GetTonemappingExponent ();
+	n += what * timefactor;
+	renderer->finalpass.SetTonemappingExponent (n);
 }
 
 void Interface::PrintRendermode (void)
@@ -873,17 +875,26 @@ void Interface::EditMaxDistance (int what)
 
 void Interface::EditImageKey (int what)
 {
-	renderer->finalpass.tonemapping.image_key += what * timefactor;
+	float key;
+	key = renderer->finalpass.GetImageKey ();
+	key += what * timefactor;
+	renderer->finalpass.SetImageKey (key);
 }
 
 void Interface::EditWhiteThreshold (int what)
 {
-	renderer->finalpass.tonemapping.white_threshold += what * timefactor;
+	float threshold;
+	threshold = renderer->finalpass.GetWhiteThreshold ();
+	threshold += what * timefactor;
+	renderer->finalpass.SetWhiteThreshold (threshold);
 }
 
 void Interface::EditToneMappingSigma (int what)
 {
-	renderer->finalpass.tonemapping.sigma += what * timefactor;
+	float sigma;
+	sigma = renderer->finalpass.GetTonemappingSigma ();
+	sigma += what * timefactor;
+	renderer->finalpass.SetTonemappingSigma (sigma);
 }
 
 void Interface::EditLuminanceThreshold (int what)
@@ -902,7 +913,7 @@ void Interface::EditShadowAlpha (int what)
 
 void Interface::PrintToneMappingSigma (void)
 {
-	font.Print (renderer->finalpass.tonemapping.sigma);
+	font.Print (renderer->finalpass.GetTonemappingSigma ());
 }
 
 void Interface::PrintActiveLight (void)
@@ -1036,12 +1047,12 @@ void Interface::PrintMaxDistance (void)
 
 void Interface::PrintImageKey (void)
 {
-	font.Print (renderer->finalpass.tonemapping.image_key);
+	font.Print (renderer->finalpass.GetImageKey ());
 }
 
 void Interface::PrintWhiteThreshold (void)
 {
-	font.Print (renderer->finalpass.tonemapping.white_threshold);
+	font.Print (renderer->finalpass.GetWhiteThreshold ());
 }
 
 void Interface::PrintLuminanceThreshold (void)

@@ -28,8 +28,21 @@ public:
 	 ~FinalPass (void);
 	 bool Init (void);
 	 void Render (void);
+
 	 void SetRenderMode (GLuint mode);
 	 GLuint GetRenderMode (void);
+	 void SetImageKey (float key);
+	 float GetImageKey (void);
+	 void SetWhiteThreshold (float threshold);
+	 float GetWhiteThreshold (void);
+	 void SetTonemappingSigma (float sigma);
+	 float GetTonemappingSigma (void);
+	 void SetTonemappingExponent (float n);
+	 float GetTonemappingExponent (void);
+	 void SetRGBWorkingSpace (GLuint ws);
+	 GLuint GetRGBWorkingSpace (void);
+	 void SetTonemappingMode (GLuint mode);
+	 GLuint GetTonemappingMode (void);
 private:
 	 std::vector<gl::Program> fprograms;
 	 std::vector<gl::ProgramPipeline> pipelines;
@@ -45,7 +58,6 @@ private:
 			GLuint mode;
 	 } tonemapping;
 	 Renderer *renderer;
-	 friend class Interface;
 };
 
 #endif /* !defined FINALPASS_H */

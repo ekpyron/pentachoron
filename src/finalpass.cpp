@@ -88,6 +88,66 @@ GLuint FinalPass::GetRenderMode (void)
 	return rendermode;
 }
 
+void FinalPass::SetImageKey (float key)
+{
+	tonemapping.image_key = key;
+}
+
+float FinalPass::GetImageKey (void)
+{
+	return tonemapping.image_key;
+}
+
+void FinalPass::SetWhiteThreshold (float threshold)
+{
+	tonemapping.white_threshold = threshold;
+}
+
+float FinalPass::GetWhiteThreshold (void)
+{
+	return tonemapping.white_threshold;
+}
+
+void FinalPass::SetTonemappingSigma (float sigma)
+{
+	tonemapping.sigma = sigma;
+}
+
+float FinalPass::GetTonemappingSigma (void)
+{
+	return tonemapping.sigma;
+}
+
+void FinalPass::SetTonemappingExponent (float n)
+{
+	tonemapping.n = n;
+}
+
+float FinalPass::GetTonemappingExponent (void)
+{
+	return tonemapping.n;
+}
+
+void FinalPass::SetRGBWorkingSpace (GLuint ws)
+{
+	tonemapping.rgb_working_space = ws;
+}
+
+GLuint FinalPass::GetRGBWorkingSpace (void)
+{
+	return tonemapping.rgb_working_space;
+}
+
+void FinalPass::SetTonemappingMode (GLuint mode)
+{
+	tonemapping.mode = mode;
+}
+
+GLuint FinalPass::GetTonemappingMode (void)
+{
+	return tonemapping.mode;
+}
+
 const std::vector<glm::mat3x3> RGB2XYZ = {
 // Adobe RGB (1998)
 	glm::mat3x3 (0.5767309f, 0.1855540f, 0.1881852f,
