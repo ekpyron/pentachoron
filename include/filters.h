@@ -34,16 +34,36 @@ public:
 	 Blur &operator= (Blur &&blur);
 	 GLuint GetSize (void);
 //private:
-	 const cl::Memory *memory;
+	 const cl::Memory *source, *destination;
 	 cl::Memory weights, offsets;
 	 GLuint size;
 	 GLuint num_weights;
 	 GLuint width, height;
 	 Filters *parent;
 	 cl::Memory storage;
-	 Blur (const cl::Memory *memory, cl::Memory storage, cl::Memory weights,
+	 Blur (const cl::Memory *source, const cl::Memory *destination,
+				 cl::Memory storage, cl::Memory weights,
 				 cl::Memory offsets, GLuint num_weights, GLuint size, GLuint width,
 				 GLuint height, Filters *p);
+	 friend class Filters;
+};
+
+class FreiChen
+{
+public:
+	 FreiChen (void);
+	 FreiChen (FreiChen &&freichen);
+	 FreiChen (const FreiChen&) = delete;
+	 ~FreiChen (void);
+	 void Apply (void);
+	 FreiChen &operator= (const FreiChen&) = delete;
+	 FreiChen &operator= (FreiChen &&freichen);
+//private:
+	 const cl::Memory *source, *destination;
+	 GLuint width, height;
+	 FreiChen (const cl::Memory *source, const cl::Memory *destination,
+					GLuint width, GLuint height, Filters *p);
+	 Filters *parent;
 	 friend class Filters;
 };
 
@@ -58,12 +78,19 @@ public:
 
 	 Blur CreateBlur (cl::Memory &memory, GLuint width, GLuint height,
 										GLuint size);
+	 Blur CreateBlur (cl::Memory &source, cl::Memory &destination,
+										GLuint width, GLuint height, GLuint size);
+	 FreiChen CreateFreiChen (cl::Memory &source, cl::Memory &destination,
+										 GLuint width, GLuint height);
 //private:
-	 void ApplyBlur (const cl::Memory *memory, const cl::Memory &storage,
-									 const cl::Memory &weights, const cl::Memory &offsets,
-									 GLuint num_weights, GLuint width, GLuint height);
-	 cl::Program clblur;
-	 cl::Kernel hblur, vblur;
+	 void ApplyBlur (const cl::Memory *source, const cl::Memory *destination,
+									 const cl::Memory &storage, const cl::Memory &weights,
+									 const cl::Memory &offsets, GLuint num_weights,
+									 GLuint width, GLuint height);
+	 void ApplyFreiChen (const cl::Memory *source, const cl::Memory *destination,
+										GLuint width, GLuint height);
+	 cl::Program filters;
+	 cl::Kernel hblur, vblur, freichen;
 	 Renderer *renderer;
 	 friend class Blur;
 };

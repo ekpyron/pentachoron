@@ -48,6 +48,11 @@ public:
 		* \returns The current eye vector.
 		*/
 	 glm::vec3 GetEye (void) const;
+	 /** Return center of scene.
+		* Returns a vector pointing to the center of the scene.
+		* \returns The center of the scene.
+		*/
+	 glm::vec3 GetCenter (void) const;
 	 /** Return view matrix.
 		* Returns the current view matrix.
 		* \returns The current view matrix.

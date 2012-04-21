@@ -18,8 +18,8 @@
 #include "renderer.h"
 
 Composition::Composition (Renderer *parent)
-	: renderer (parent), luminance_threshold (0.75),
-		shadow_alpha (0.7)
+	: renderer (parent), shadow_alpha (0.7),
+		luminance_threshold (0.75)
 {
 }
 
@@ -41,6 +41,10 @@ bool Composition::Init (void)
 									renderer->gbuffer.width,
 									renderer->gbuffer.height,
 									0, GL_RGBA, GL_FLOAT, NULL);
+	edgemap.Image2D (GL_TEXTURE_2D, 0, GL_R16F,
+									 renderer->gbuffer.width,
+									 renderer->gbuffer.height,
+									 0, GL_RED, GL_FLOAT, NULL);
 	glow.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
 									renderer->gbuffer.width,
 									renderer->gbuffer.height,
@@ -49,11 +53,29 @@ bool Composition::Init (void)
 	glow.GenerateMipmap (GL_TEXTURE_2D);
 
 	screenmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, screen);
+		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, screen);
+	edgemem = renderer->clctx.CreateFromGLTexture2D
+		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, edgemap);
 	glowmem_full = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, glow);
 	glowmem_downsampled = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 2, glow);
+
+	if (renderer->antialiasing)
+	{
+		 softmap.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
+											renderer->gbuffer.width,
+											renderer->gbuffer.height,
+											0, GL_RGBA, GL_FLOAT, NULL);
+		 softmem = renderer->clctx.CreateFromGLTexture2D
+				(CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, softmap);
+		 softmapblur = renderer->filters.CreateBlur (screenmem, softmem,
+																								 renderer->gbuffer.width,
+																								 renderer->gbuffer.height, 4);
+		 freichen = renderer->filters.CreateFreiChen (softmem, edgemem,
+																									renderer->gbuffer.width,
+																									renderer->gbuffer.height);
+	}
 
 	composition.SetArg (0, screenmem);
 	composition.SetArg (1, glowmem_full);
@@ -75,6 +97,10 @@ bool Composition::Init (void)
 	composition.SetArg (17, renderer->gbuffer.specularmem[3]);
 	composition.SetArg (18, renderer->shadowmap.shadowmapmem);
 
+	cl_uint num_parameters = renderer->parameters.size ();
+	composition.SetArg (22, sizeof (cl_uint), &num_parameters);
+	composition.SetArg (23, renderer->parametermem);
+
 	blur = renderer->filters.CreateBlur (glowmem_downsampled,
 																			 renderer->gbuffer.width >> 2,
 																			 renderer->gbuffer.height >> 2, 8);
@@ -90,6 +116,7 @@ void Composition::Frame (float timefactor)
 		 glm::mat4 vmatinv;
 		 glm::mat4 shadowmat;
 		 glm::vec4 eye;
+		 glm::vec4 center;
 		 GLfloat luminance_threshold;
 		 GLfloat shadow_alpha;
 		 GLfloat padding[2];
@@ -127,16 +154,13 @@ void Composition::Frame (float timefactor)
 																	 * renderer->shadowmap.projmat
 																	 * renderer->shadowmap.vmat);
 	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
+	info.center = glm::vec4 (renderer->camera.GetCenter (), 0.0);
 	info.luminance_threshold = luminance_threshold;
 	info.shadow_alpha = shadow_alpha;
 
 	composition.SetArg (19, sizeof (cl_uint), &num_lights);
 	composition.SetArg (20, renderer->lightmem);
 	composition.SetArg (21, sizeof (Info), &info);
-
-	cl_uint num_parameters = renderer->parameters.size ();
-	composition.SetArg (22, sizeof (cl_uint), &num_parameters);
-	composition.SetArg (23, renderer->parametermem);
 
 	const size_t work_dim[] = { renderer->gbuffer.width,
 															renderer->gbuffer.height };
@@ -150,4 +174,10 @@ void Composition::Frame (float timefactor)
 	glow.GenerateMipmap (GL_TEXTURE_2D);
 
 	blur.Apply ();
+
+	if (renderer->antialiasing > 0)
+	{
+		 softmapblur.Apply ();
+		 freichen.Apply ();
+	}
 }

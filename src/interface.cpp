@@ -50,6 +50,8 @@ const std::vector<Menu> menus = {
 			{ "Shadows", NULL, &Interface::EditShadows, false },
 			{ "Tone Mapping", NULL, &Interface::EditToneMapping, false },
 			{ "Glow", NULL, &Interface::EditGlow, false },
+			{ "Antialiasing: ", &Interface::PrintAntialiasing,
+				&Interface::EditAntialiasing, false },
 			{ "Rendermode: ", &Interface::PrintRendermode,
 				&Interface::ToggleRendermode, false },
 			{ "Exit", NULL, &Interface::Exit, false }
@@ -283,6 +285,44 @@ void Interface::EditGlowSize (int what)
 	}
 }
 
+void Interface::EditAntialiasing (int what)
+{
+	GLint size = renderer->antialiasing;
+
+	size += what * 4;
+	if (size < 0) return;
+	renderer->antialiasing = size;
+	if (size > 0)
+	{
+		renderer->composition.softmap = gl::Texture ();
+		renderer->composition.softmap.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
+																					 renderer->gbuffer.width,
+																					 renderer->gbuffer.height,
+																					 0, GL_RGBA, GL_FLOAT, NULL);
+		renderer->composition.softmem = renderer->clctx.CreateFromGLTexture2D
+				(CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, renderer->composition.softmap);
+
+		renderer->composition.softmapblur = renderer->filters.CreateBlur
+			 (renderer->composition.screenmem, renderer->composition.softmem,
+				renderer->gbuffer.width, renderer->gbuffer.height, size);
+		renderer->composition.freichen = renderer->filters.CreateFreiChen 
+			 (renderer->composition.softmem, renderer->composition.edgemem,
+				renderer->gbuffer.width, renderer->gbuffer.height);
+	}
+	else
+	{
+		renderer->composition.softmapblur = Blur ();
+		renderer->composition.freichen = FreiChen ();
+		renderer->composition.softmem = cl::Memory ();
+		renderer->composition.softmap = gl::Texture ();
+	}
+}
+
+void Interface::PrintAntialiasing (void)
+{
+	font.Print (renderer->antialiasing);
+}
+
 void Interface::PrintGlowSize (void)
 {
 	font.Print (renderer->composition.blur.GetSize ());
@@ -357,7 +397,7 @@ void Interface::EditGlow (int what)
 	}
 }
 
-#define NUM_RENDERMODES 19
+#define NUM_RENDERMODES 20
 
 void Interface::ToggleRendermode (int what)
 {
@@ -379,7 +419,7 @@ void Interface::EditToneMapping (int what)
 	}
 }
 
-#define NUM_RGB_WORKING_SPACES 7
+#define NUM_RGB_WORKING_SPACES 16
 
 void Interface::EditRGBWorkingSpace (int what)
 {
@@ -402,7 +442,16 @@ void Interface::PrintRGBWorkingSpace (void)
 		"Beta RGB",
 		"Bruce RGB",
 		"CIE RGB",
-		"ColorMatch RGB"
+		"ColorMatch RGB",
+		"Don RGB 4",
+		"ECI RGB",
+		"Ekta Space PS5",
+		"NTSC RGB",
+		"PAL/SECAM RGB",
+		"ProPhoto RGB",
+		"SMPTE-C RGB",
+		"sRGB",
+		"Wide Gamut RGB"
 	};
 
 	font.Print (rgb_working_spaces[renderer->finalpass.
@@ -475,7 +524,8 @@ void Interface::PrintRendermode (void)
 		"depth buffer [2]",
 		"depth buffer [3]",
 		"shadow projection",
-		"glow"
+		"glow",
+		"edges"
 	};
 
 	font.Print (rendermodes[renderer->finalpass.GetRenderMode ()]);

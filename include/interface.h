@@ -42,6 +42,7 @@ public:
 	 void ToggleSoftShadow (int what);
 	 void EditToneMapping (int what);
 	 void EditGlowSize (int what);
+	 void EditAntialiasing (int what);
 	 void Exit (int what);
 
 	 void SelectShadow (int what);
@@ -124,6 +125,7 @@ public:
 	 void PrintToneMappingN (void);
 	 void PrintGlowSize (void);
 	 void PrintLuminanceThreshold (void);
+	 void PrintAntialiasing (void);
 private:
 	 gl::Freetype freetype;
 	 gl::Font font;

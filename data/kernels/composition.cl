@@ -44,6 +44,7 @@ struct Info
 	float4 vmatinv[4];
 	float4 shadowmat[4];
 	float4 eye;
+	float4 center;
 	float luminance_threshold;
 	float shadow_alpha;
 	float padding[2];
@@ -122,6 +123,15 @@ float compute_shadow (int x, int y, float4 pos,
 	return smoothstep (0.1, 1.0, p);
 }
 
+float4 compute_sky (float4 p, struct Info *info)
+{
+	float4 color;
+	color.xyz = (float3) (0.0, 0.0, 0.10);
+	color.w = 1.0;
+
+	return color;
+}
+
 float4 compute_pixel (read_only image2d_t colormap,
        		      float4 p,
 		      read_only image2d_t normalmap,
@@ -136,9 +146,8 @@ float4 compute_pixel (read_only image2d_t colormap,
 		      global struct Parameter *parameters)
 {
 	float4 pos = p;
-	float depth = getpos (&pos, info);
-	if (depth == 1.0)
-	   return (float4) (0.0, 0.0, 0.0, 1.0);
+	if (getpos (&pos, info) == 1.0)
+	   return compute_sky (p, info);
 	float3 diffuse = (float3) (0, 0, 0);
 	float3 specular = (float3) (0, 0, 0);
 	uint offset = mad24 (ly, get_local_size (0), lx);
@@ -209,10 +218,8 @@ float4 compute_pixel (read_only image2d_t colormap,
 			 	  normal));
 
 		if (param.specular.exponent != 0.0)
-		{
-			specular += attenuation * light.specular.xyz
-				     * native_powr (r, param.specular.exponent);
-		}
+		    specular += attenuation * light.specular.xyz
+				* native_powr (r, param.specular.exponent);
 	}
 
 	float shadow;
@@ -352,24 +359,24 @@ kernel void composition (write_only image2d_t screen,
 
 	if (offset < num_lights)
 	{
-		struct Light light;
+		global struct Light *light;
 
 		float lambda;
-		light = lights[(pass<<8) + offset];
-		lambda = native_divide (dot (light.direction,
-		       	 	       	     sphere - light.position),
-					dot (light.direction,
-					    light.direction));
+		light = &lights[(pass<<8) + offset];
+		lambda = native_divide (dot (light->direction,
+		       	 	       	     sphere - light->position),
+					dot (light->direction,
+					    light->direction));
 
 		if (lambda >= 0 && lambda - radius
-		    < light.attenuation.max_distance)
+		    < light->attenuation.max_distance)
 		{
 
-			float r = mad (light.spot.tangens, lambda,
+			float r = mad (light->spot.tangens, lambda,
 			      	       radius);
 
-			float d = fast_distance (mad (lambda, light.direction,
-			      	  		      light.position),
+			float d = fast_distance (mad (lambda, light->direction,
+			      	  		      light->position),
 						 sphere);
 
 			if (d <= r)

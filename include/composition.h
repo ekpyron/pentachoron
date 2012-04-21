@@ -57,20 +57,38 @@ public:
 		* A texture storing the parts of the screen that is supposed to glow.
 		*/
 	 gl::Texture glow;
-	 /** Luminance threshold.
-		* Pixels with a luminance higher than this threshold will be written
-		* to the glow map.
+	 /** Edge map.
+		* A texture storing a map which highlights the edges in the
+		* screen texture intended for anti-aliasing.
 		*/
-	 GLfloat luminance_threshold;
+	 gl::Texture edgemap;
+	 /** Soft map.
+		* A texture containing a blurred version of the screen used
+		* for anti-aliasing.
+		*/
+	 gl::Texture softmap;
 	 /** Shadow alpha.
 		* This value specifies the degree of transparency of the shadows.
 		*/
 	 GLfloat shadow_alpha;
+	 /** Luminance threshold.
+		* Pixels with a luminance greater than this threshold will be
+		* written to the glow map.
+		*/
+	 GLfloat luminance_threshold;
 private:
 	 /** Glow blur.
 		* A Blur object for blurring the downsampled glow map.
 		*/
 	 Blur blur;
+	 /** Soft map blur.
+		* A Blur object for creating the softmap.
+		*/
+	 Blur softmapblur;
+	 /** Frei Chen filter.
+		* A Frei Chen filter object used for edge detection.
+		*/
+	 FreiChen freichen;
 	 /** OpenCL program.
 		* The OpenCL program containing the composition kernel.
 		*/
@@ -83,6 +101,14 @@ private:
 		* OpenCL memory object referring to the screen texture.
 		*/
 	 cl::Memory screenmem;
+	 /** Soft map (OpenCL memory object).
+		* OpenCL memory object referring to the soft map.
+		*/
+	 cl::Memory softmem;
+	 /** Edge map (OpenCL memory object).
+		* OpenCL memory object referring to the edge map.
+		*/
+	 cl::Memory edgemem;
 	 /** Glow map (full resolution; OpenCL memory object).
 		* OpenCL memory object referring to the glow map in
 		* full resolution (mipmap level 0).

@@ -32,7 +32,7 @@ bool FinalPass::Init (void)
 {
 	std::vector<const char *> fprogram_sources = {
 		"compose.txt", "normal.txt", "passthrough.txt", "diffuse.txt",
-		"shadowmap.txt", "glow.txt", "depth.txt"
+		"shadowmap.txt", "glow.txt", "depth.txt", "edge.txt"
 	};
 	for (const char *&filename : fprogram_sources)
 	{
@@ -116,7 +116,43 @@ const std::vector<glm::mat3x3> RGB2XYZ = {
 // ColorMatch RGB
 	glm::mat3x3 (0.5093439f, 0.3209071f, 0.1339691f,
 							 0.2748840f, 0.6581315f, 0.0669845f,
-							 0.0242545f, 0.1087821f, 0.6921735f)
+							 0.0242545f, 0.1087821f, 0.6921735f),
+// Don RGB 4
+	glm::mat3x3 (0.6457711f, 0.1933511f, 0.1250978f,
+							 0.2783496f, 0.6879702f, 0.0336802f,
+							 0.0037113f, 0.0179861f, 0.8035125),
+// ECI RGB
+	glm::mat3x3 (0.6502043f, 0.1780774f, 0.1359384f,
+							 0.3202499f, 0.6020711f, 0.0776791f,
+							 0.0000000f, 0.0678390f, 0.7573710f),
+// Ekta Space PS5
+	glm::mat3x3 (0.5938914f, 0.2729801f, 0.0973485f,
+							 0.2606286f, 0.7349465f, 0.0044249f,
+							 0.0000000f, 0.0419969f, 0.7832131f),
+// NTSC RGB
+	glm::mat3x3 (0.6068909f, 0.1735011f, 0.2003480f,
+							 0.2989164f, 0.5865990f, 0.1144845f,
+							 0.0000000f, 0.0660957f, 1.1162243f),
+// PAL/SECAM RGB
+	glm::mat3x3 (0.4306190f, 0.3415419f, 0.1783091f,
+							 0.2220379f, 0.7066384f, 0.0713236f,
+							 0.0201853f, 0.1295504f, 0.9390944f),
+// ProPhoto RGB
+	glm::mat3x3 (0.7976749f, 0.1351917f, 0.0313534f,
+							 0.2880402f, 0.7118741f, 0.0000857f,
+							 0.0000000f, 0.0000000f, 0.8252100f),
+// SMPTE-C RGB
+	glm::mat3x3 (0.3935891f, 0.3652497f, 0.1916313f,
+							 0.2124132f, 0.7010437f, 0.0865432f,
+							 0.0187423f, 0.1119313f, 0.9581563f),
+// sRGB
+	glm::mat3x3 (0.4124564f, 0.3575761f, 0.1804375f,
+							 0.2126729f, 0.7151522f, 0.0721750f,
+							 0.0193339f, 0.1191920f, 0.9503041f),
+// Wide Gamut RGB
+	glm::mat3x3 (0.7161046f, 0.1009296f, 0.1471858f,
+							 0.2581874f, 0.7249378f, 0.0168748f,
+							 0.0000000f, 0.0517813f, 0.7734287f)
 };
 
 const std::vector<glm::mat3x3> XYZ2RGB = {
@@ -147,7 +183,43 @@ const std::vector<glm::mat3x3> XYZ2RGB = {
 // ColorMatch RGB
 	glm::mat3x3 (2.6422874f, -1.2234270f,-0.3930143f,
 							 -1.1119763f, 2.0590183f, 0.0159614f,
-							 0.0821699f, -0.2807254f, 1.4559877f)
+							 0.0821699f, -0.2807254f, 1.4559877f),
+// Don RGB 4
+	glm::mat3x3 (1.7603902f, -0.4881198f, -0.2536126f,
+							 -0.7126288f, 1.6527432f,  0.0416715f,
+							 0.0078207f, -0.0347411f,  1.2447743f),
+// ECI RGB
+	glm::mat3x3 (1.7827618f, -0.4969847f, -0.2690101f,
+							-0.9593623f,  1.9477962f, -0.0275807f,
+							 0.0859317f, -0.1744674f,  1.3228273f),
+// Ekta Space PS5
+	glm::mat3x3 (2.0043819f, -0.7304844f, -0.2450052f,
+							-0.7110285f,  1.6202126f,  0.0792227f,
+							 0.0381263f, -0.0868780f,  1.2725438f),
+// NTSC RGB
+	glm::mat3x3 (1.9099961f, -0.5324542f, -0.2882091f,
+							-0.9846663f,  1.9991710f, -0.0283082f,
+							 0.0583056f, -0.1183781f,  0.8975535f),
+// PAL/SECAM RGB
+	glm::mat3x3 (3.0628971f, -1.3931791f, -0.4757517f,
+							-0.9692660f,  1.8760108f,  0.0415560f,
+							 0.0678775f, -0.2288548f,  1.0693490f),
+// ProPhoto RGB
+	glm::mat3x3 (1.3459433f, -0.2556075f, -0.0511118f,
+							-0.5445989f,  1.5081673f,  0.0205351f,
+							 0.0000000f,  0.0000000f,  1.2118128f),
+// SMPTE-C RGB
+	glm::mat3x3 (3.5053960f, -1.7394894f, -0.5439640f,
+							-1.0690722f,  1.9778245f,  0.0351722f,
+							 0.0563200f, -0.1970226f,  1.0502026f),
+// sRGB
+	glm::mat3x3 (3.2404542f, -1.5371385f, -0.4985314f,
+							-0.9692660f,  1.8760108f,  0.0415560f,
+							 0.0556434f, -0.2040259f,  1.0572252f),
+// Wide Gamut RGB
+	glm::mat3x3 (1.4628067f, -0.1840623f, -0.2743606f,
+							-0.5217933f,  1.4472381f,  0.0677227f,
+							 0.0349342f, -0.0968930f,  1.2884099f)
 };
 
 void FinalPass::Render (void)
@@ -169,6 +241,7 @@ void FinalPass::Render (void)
 		program["tonemapping.mode"] = tonemapping.mode;
 		program["tonemapping.sigma"] = powf (tonemapping.sigma, tonemapping.n);
 		program["tonemapping.n"] = tonemapping.n;
+		program["antialiasing"] = renderer->antialiasing > 0;
 	}
 	gl::Viewport (0, 0, viewport.x, viewport.y);
 
@@ -182,6 +255,12 @@ void FinalPass::Render (void)
 		renderer->composition.screen.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		sampler.Bind (1);
 		renderer->composition.glow.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
+		renderer->windowgrid.sampler.Bind (2);
+		renderer->composition.edgemap.Bind (GL_TEXTURE2,
+																				GL_TEXTURE_2D);
+		renderer->windowgrid.sampler.Bind (3);
+		if (renderer->antialiasing)
+			 renderer->composition.softmap.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
 		pipelines[0].Bind ();
 		break;
 	case 1:
@@ -274,6 +353,12 @@ void FinalPass::Render (void)
 		sampler.Bind (0);
 		renderer->composition.glow.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[5].Bind ();
+		break;
+	case 19:
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->composition.edgemap.Bind (GL_TEXTURE0,
+																				GL_TEXTURE_2D);
+		pipelines[7].Bind ();
 		break;
 	default:
 		throw std::runtime_error ("Invalid render mode.");

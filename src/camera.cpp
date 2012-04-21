@@ -47,6 +47,11 @@ glm::vec3 Camera::GetEye (void) const
 	return center - dir * 1.0f;
 }
 
+glm::vec3 Camera::GetCenter (void) const
+{
+	return center;
+}
+
 glm::mat4 Camera::GetViewMatrix (void) const
 {
 	return vmat;

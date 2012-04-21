@@ -21,7 +21,8 @@
 Renderer::Renderer (void)
 	: geometry (this), shadowmap (this),
 		finalpass (this), gbuffer (this), filters (this),
-		interface (this), composition (this)
+		interface (this), composition (this),
+		antialiasing (0)
 {
 }
 
@@ -149,6 +150,8 @@ bool Renderer::Init (void)
 	if (!finalpass.Init ())
 		 return false;
 
+	(*logstream) << "Initialization complete." << std::endl;
+
 	return true;
 }
 
@@ -167,6 +170,8 @@ void Renderer::OnKeyDown (int key)
 	interface.OnKeyDown (key);
 }
 
+extern bool running;
+
 void Renderer::Frame (void)
 {
 	static float last_time = 0;
@@ -184,6 +189,7 @@ void Renderer::Frame (void)
 
 	camera.Frame (timefactor);
 	culling.Frame ();
+
 	gbuffer.Render (geometry);
 
 	for (GLuint i = 0; i < shadows.size (); i++)
