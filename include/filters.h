@@ -33,7 +33,7 @@ public:
 	 Blur &operator= (const Blur&) = delete;
 	 Blur &operator= (Blur &&blur);
 	 GLuint GetSize (void);
-//private:
+private:
 	 const cl::Memory *source, *destination;
 	 cl::Memory weights, offsets;
 	 GLuint size;
@@ -58,7 +58,7 @@ public:
 	 void Apply (void);
 	 FreiChen &operator= (const FreiChen&) = delete;
 	 FreiChen &operator= (FreiChen &&freichen);
-//private:
+private:
 	 const cl::Memory *source, *destination;
 	 GLuint width, height;
 	 FreiChen (const cl::Memory *source, const cl::Memory *destination,
@@ -82,7 +82,7 @@ public:
 										GLuint width, GLuint height, GLuint size);
 	 FreiChen CreateFreiChen (cl::Memory &source, cl::Memory &destination,
 										 GLuint width, GLuint height);
-//private:
+private:
 	 void ApplyBlur (const cl::Memory *source, const cl::Memory *destination,
 									 const cl::Memory &storage, const cl::Memory &weights,
 									 const cl::Memory &offsets, GLuint num_weights,
@@ -93,6 +93,7 @@ public:
 	 cl::Kernel hblur, vblur, freichen;
 	 Renderer *renderer;
 	 friend class Blur;
+	 friend class FreiChen;
 };
 
 #endif /* !defined FILTERS_H */
