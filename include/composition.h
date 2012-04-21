@@ -164,9 +164,6 @@ private:
 		* The Renderer this class belongs to.
 		*/
 	 Renderer *renderer;
-	 /** Final pass is a friend.
-		*/
-	 friend class FinalPass;
 };
 
 #endif /* !defined COMPOSITION_H */
