@@ -65,6 +65,26 @@ public:
 		* Sets the current level of antialiasing.
 		*/
 	 void SetAntialiasing (GLuint size);
+	 /** Get shadow alpha.
+		* Obtains the transparency factor of the shadows.
+		* \returns shadow transparency factor.
+		*/
+	 float GetShadowAlpha (void);
+	 /** Set shadow alpha.
+		* Sets the transparency factor for the shadows.
+		* \param alpha shadow alpha
+		*/
+	 void SetShadowAlpha (float alpha);
+	 /** Get luminance threshold.
+		* Obtains the luminance threshold for writing to the glow map.
+		* \returns the luminance threshold
+		*/
+	 float GetLuminanceThreshold (void);
+	 /** Set luminance threshold.
+		* Sets the luminance threshold for writing to the glow map.
+		* \param threshold the luminance threshold
+		*/
+	 void SetLuminanceThreshold (float threshold);
 	 /** Screen texture.
 		* A texture storing the combined, lit pixel value to be
 		* displayed on screen.
@@ -84,6 +104,7 @@ public:
 		* for anti-aliasing.
 		*/
 	 gl::Texture softmap;
+private:
 	 /** Shadow alpha.
 		* This value specifies the degree of transparency of the shadows.
 		*/
@@ -93,7 +114,6 @@ public:
 		* written to the glow map.
 		*/
 	 GLfloat luminance_threshold;
-private:
 	 /** Antialiasing.
 		* Stores the currently used level of antialiasing.
 		*/

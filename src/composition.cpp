@@ -107,6 +107,30 @@ GLuint Composition::GetGlowSize (void)
 	return glowblur.GetSize ();
 }
 
+void Composition::SetLuminanceThreshold (float threshold)
+{
+	luminance_threshold = threshold;
+}
+
+float Composition::GetLuminanceThreshold (void)
+{
+	return luminance_threshold;
+}
+
+void Composition::SetShadowAlpha (float alpha)
+{
+	if (alpha < 0)
+		 alpha = 0;
+	if (alpha > 1)
+		 alpha = 1;
+	shadow_alpha = alpha;
+}
+
+float Composition::GetShadowAlpha (void)
+{
+	return shadow_alpha;
+}
+
 void Composition::SetAntialiasing (GLuint size)
 {
 	if (size > 0)

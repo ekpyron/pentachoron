@@ -899,16 +899,22 @@ void Interface::EditToneMappingSigma (int what)
 
 void Interface::EditLuminanceThreshold (int what)
 {
-	renderer->composition.luminance_threshold += what * timefactor;
+	float threshold;
+	threshold = renderer->composition.GetLuminanceThreshold ();
+	threshold += what * timefactor;
+	renderer->composition.SetLuminanceThreshold (threshold);
 }
 
 void Interface::EditShadowAlpha (int what)
 {
-	renderer->composition.shadow_alpha += what * timefactor;
-	if (renderer->composition.shadow_alpha < 0)
-		 renderer->composition.shadow_alpha = 0;
-	if (renderer->composition.shadow_alpha > 1)
-		 renderer->composition.shadow_alpha = 1;
+	float alpha;
+	alpha = renderer->composition.GetShadowAlpha ();
+	alpha += what * timefactor;
+	if (alpha < 0)
+		 alpha = 0;
+	if (alpha > 1)
+		 alpha = 1;
+	renderer->composition.SetShadowAlpha (alpha);
 }
 
 void Interface::PrintToneMappingSigma (void)
@@ -1057,12 +1063,12 @@ void Interface::PrintWhiteThreshold (void)
 
 void Interface::PrintLuminanceThreshold (void)
 {
-	font.Print (renderer->composition.luminance_threshold);
+	font.Print (renderer->composition.GetLuminanceThreshold ());
 }
 
 void Interface::PrintShadowAlpha (void)
 {
-	font.Print (renderer->composition.shadow_alpha);
+	font.Print (renderer->composition.GetShadowAlpha ());
 }
 
 bool Interface::Init (void)
