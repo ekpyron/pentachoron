@@ -182,7 +182,8 @@ bool Model::Load (const std::string &filename)
 		}
 		meshes.emplace_back (*this);
 		if (!meshes.back ().Load (static_cast<void*> (scene->mMeshes[mesh]),
-															&material, bbox.min, bbox.max))
+															&material, bbox.min, bbox.max,
+															node["shadows"].as<bool> (true)))
 		{
 			(*logstream) << "Mesh " << mesh << " in " << modelfile
 									 << " could not be loaded." << std::endl;

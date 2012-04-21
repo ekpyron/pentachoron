@@ -24,7 +24,8 @@
 
 Mesh::Mesh (Model &model) : trianglecount (0), vertexcount (0),
 														parent (model), material (NULL),
-														bsphere ({ glm::vec3 (0, 0, 0), 0.0f })
+														bsphere ({ glm::vec3 (0, 0, 0), 0.0f }),
+														shadows (true)
 {
 }
 
@@ -37,12 +38,14 @@ Mesh::Mesh (Mesh &&mesh)
 		indices (std::move (mesh.indices)),
 		material (mesh.material),
 		parent (mesh.parent),
-		bsphere ({ mesh.bsphere.center, mesh.bsphere.radius })
+		bsphere ({ mesh.bsphere.center, mesh.bsphere.radius }),
+		shadows (mesh.shadows)
 {
 	mesh.trianglecount = mesh.vertexcount = 0;
 	mesh.bsphere.center = glm::vec3 (0, 0, 0);
 	mesh.bsphere.radius = 0.0f;
 	mesh.material = NULL;
+	mesh.shadows = true;
 }
 
 Mesh::~Mesh (void)
@@ -60,16 +63,20 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 	material = mesh.material;
 	bsphere.center = mesh.bsphere.center;
 	bsphere.radius = mesh.bsphere.radius;
+	shadows = mesh.shadows;
 	parent = std::move (mesh.parent);
 	mesh.trianglecount = mesh.vertexcount = 0;
 	mesh.material = NULL;
 	mesh.bsphere.center = glm::vec3 (0, 0, 0);
 	mesh.bsphere.radius = 0.0f;
+	mesh.shadows = true;
 }
 
 bool Mesh::Load (void *m, const Material *mat,
-								 glm::vec3 &min, glm::vec3 &max)
+								 glm::vec3 &min, glm::vec3 &max,
+								 bool s)
 {
+	shadows = s;
 	material = mat;
 	aiMesh *mesh = static_cast<aiMesh*> (m);
 
@@ -211,6 +218,8 @@ bool Mesh::IsTransparent (void) const
 void Mesh::Render (const gl::Program &program,
 									 bool shadowpass)
 {
+	if (shadowpass && !shadows)
+		 return;
 	if (!parent.parent->renderer->culling.IsVisible
 			(bsphere.center, bsphere.radius))
 		return;

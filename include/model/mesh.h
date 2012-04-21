@@ -36,7 +36,9 @@ public:
 	 bool IsTransparent (void) const;
 	 static GLuint culled;
 private:
-	 bool Load (void*, const Material *mat, glm::vec3 &min, glm::vec3 &max);
+	 bool shadows;
+	 bool Load (void*, const Material *mat, glm::vec3 &min, glm::vec3 &max,
+							bool shadows);
 	 Model &parent;
 	 friend class Model;
 	 const Material *material;
