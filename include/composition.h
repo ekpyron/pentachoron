@@ -47,7 +47,24 @@ public:
 		* \param timefactor The fraction of seconds since the last frame.
 		*/
 	 void Frame (float timefactor);
-
+	 /** Get glow size.
+		* Obtains the size of the current glow effect.
+		* \return size of current glow.
+		*/
+	 GLuint GetGlowSize (void);
+	 /** Set glow size.
+		* Sets the size of the current glow effect.
+		*/
+	 void SetGlowSize (GLuint size);
+	 /** Get antialiasing.
+		* Obtains the current level of antialiasing.
+		* \return current antialiasing level.
+		*/
+	 GLuint GetAntialiasing (void);
+	 /** Set antialiasing.
+		* Sets the current level of antialiasing.
+		*/
+	 void SetAntialiasing (GLuint size);
 	 /** Screen texture.
 		* A texture storing the combined, lit pixel value to be
 		* displayed on screen.
@@ -77,6 +94,10 @@ public:
 		*/
 	 GLfloat luminance_threshold;
 private:
+	 /** Antialiasing.
+		* Stores the currently used level of antialiasing.
+		*/
+	 GLuint antialiasing;
 	 /** Glow blur.
 		* A Blur object for blurring the downsampled glow map.
 		*/
@@ -123,9 +144,6 @@ private:
 		* The Renderer this class belongs to.
 		*/
 	 Renderer *renderer;
-	 /** Interface is a friend.
-		*/
-	 friend class Interface;
 	 /** Final pass is a friend.
 		*/
 	 friend class FinalPass;

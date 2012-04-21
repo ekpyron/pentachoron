@@ -21,8 +21,7 @@
 Renderer::Renderer (void)
 	: geometry (this), shadowmap (this),
 		finalpass (this), gbuffer (this), filters (this),
-		interface (this), composition (this),
-		antialiasing (0)
+		interface (this), composition (this)
 {
 }
 

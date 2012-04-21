@@ -19,7 +19,8 @@
 
 Composition::Composition (Renderer *parent)
 	: renderer (parent), shadow_alpha (0.7),
-		luminance_threshold (0.75)
+		luminance_threshold (0.75),
+		antialiasing (0)
 {
 }
 
@@ -61,21 +62,7 @@ bool Composition::Init (void)
 	glowmem_downsampled = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 2, glow);
 
-	if (renderer->antialiasing)
-	{
-		 softmap.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
-											renderer->gbuffer.width,
-											renderer->gbuffer.height,
-											0, GL_RGBA, GL_FLOAT, NULL);
-		 softmem = renderer->clctx.CreateFromGLTexture2D
-				(CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, softmap);
-		 softmapblur = renderer->filters.CreateBlur (screenmem, softmem,
-																								 renderer->gbuffer.width,
-																								 renderer->gbuffer.height, 4);
-		 freichen = renderer->filters.CreateFreiChen (softmem, edgemem,
-																									renderer->gbuffer.width,
-																									renderer->gbuffer.height);
-	}
+	SetAntialiasing (antialiasing);
 
 	composition.SetArg (0, screenmem);
 	composition.SetArg (1, glowmem_full);
@@ -106,6 +93,51 @@ bool Composition::Init (void)
 																					 renderer->gbuffer.height >> 2, 8);
 
 	return true;
+}
+
+void Composition::SetGlowSize (GLuint size)
+{
+	glowblur = renderer->filters.CreateBlur (glowmem_downsampled,
+																					 renderer->gbuffer.width >> 2,
+																					 renderer->gbuffer.height >> 2, size);
+}
+
+GLuint Composition::GetGlowSize (void)
+{
+	return glowblur.GetSize ();
+}
+
+void Composition::SetAntialiasing (GLuint size)
+{
+	if (size > 0)
+	{
+		softmap = gl::Texture ();
+		softmap.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
+										 renderer->gbuffer.width,
+										 renderer->gbuffer.height,
+										 0, GL_RGBA, GL_FLOAT, NULL);
+		softmem = renderer->clctx.CreateFromGLTexture2D
+				(CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, softmap);
+		softmapblur = renderer->filters.CreateBlur
+			 (screenmem, softmem,	renderer->gbuffer.width,
+				renderer->gbuffer.height, size);
+		freichen =  renderer->filters.CreateFreiChen
+			 (softmem, edgemem, renderer->gbuffer.width,
+				renderer->gbuffer.height);
+	}
+	else
+	{
+		softmapblur = Blur ();
+		freichen = FreiChen ();
+		softmem = cl::Memory ();
+		softmap = gl::Texture ();
+	}
+	antialiasing = size;
+}
+
+GLuint Composition::GetAntialiasing (void)
+{
+	return antialiasing;
 }
 
 void Composition::Frame (float timefactor)
@@ -180,7 +212,7 @@ void Composition::Frame (float timefactor)
 		glowblur.Apply ();
 	}
 
-	if (renderer->antialiasing > 0)
+	if (antialiasing > 0)
 	{
 		 softmapblur.Apply ();
 		 freichen.Apply ();

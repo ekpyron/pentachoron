@@ -241,7 +241,7 @@ void FinalPass::Render (void)
 		program["tonemapping.mode"] = tonemapping.mode;
 		program["tonemapping.sigma"] = powf (tonemapping.sigma, tonemapping.n);
 		program["tonemapping.n"] = tonemapping.n;
-		program["antialiasing"] = renderer->antialiasing > 0;
+		program["antialiasing"] = renderer->composition.GetAntialiasing () > 0;
 		program["glow"] = renderer->composition.glowblur.GetSize () > 0;
 	}
 	gl::Viewport (0, 0, viewport.x, viewport.y);
@@ -260,7 +260,7 @@ void FinalPass::Render (void)
 		renderer->composition.edgemap.Bind (GL_TEXTURE2,
 																				GL_TEXTURE_2D);
 		renderer->windowgrid.sampler.Bind (3);
-		if (renderer->antialiasing)
+		if (renderer->composition.GetAntialiasing ())
 			 renderer->composition.softmap.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
 		pipelines[0].Bind ();
 		break;

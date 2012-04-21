@@ -57,8 +57,6 @@ private:
 	 gl::Program opacityprogram;
 	 cl::CommandQueue queue;
 
-	 GLuint antialiasing;
-
 	 std::vector<Shadow> shadows;
 
 	 std::vector<Light> lights;

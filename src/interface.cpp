@@ -274,58 +274,32 @@ void Interface::RemoveLight (int what)
 
 void Interface::EditGlowSize (int what)
 {
-	GLint size = renderer->composition.glowblur.GetSize ();
+	GLint size = renderer->composition.GetGlowSize ();
 
 	size += what * 4;
 	if (size >= 0)
 	{
-		renderer->composition.glowblur = renderer->filters.CreateBlur
-			 (renderer->composition.glowmem_downsampled,
-				renderer->gbuffer.width >> 2, renderer->gbuffer.height >> 2, size);
+		renderer->composition.SetGlowSize (size);
 	}
 }
 
 void Interface::EditAntialiasing (int what)
 {
-	GLint size = renderer->antialiasing;
+	GLint size = renderer->composition.GetAntialiasing ();
 
 	size += what * 4;
-	if (size < 0) return;
-	renderer->antialiasing = size;
-	if (size > 0)
-	{
-		renderer->composition.softmap = gl::Texture ();
-		renderer->composition.softmap.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
-																					 renderer->gbuffer.width,
-																					 renderer->gbuffer.height,
-																					 0, GL_RGBA, GL_FLOAT, NULL);
-		renderer->composition.softmem = renderer->clctx.CreateFromGLTexture2D
-				(CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, renderer->composition.softmap);
-
-		renderer->composition.softmapblur = renderer->filters.CreateBlur
-			 (renderer->composition.screenmem, renderer->composition.softmem,
-				renderer->gbuffer.width, renderer->gbuffer.height, size);
-		renderer->composition.freichen = renderer->filters.CreateFreiChen 
-			 (renderer->composition.softmem, renderer->composition.edgemem,
-				renderer->gbuffer.width, renderer->gbuffer.height);
-	}
-	else
-	{
-		renderer->composition.softmapblur = Blur ();
-		renderer->composition.freichen = FreiChen ();
-		renderer->composition.softmem = cl::Memory ();
-		renderer->composition.softmap = gl::Texture ();
-	}
+	if (size >= 0)
+		 renderer->composition.SetAntialiasing (size);
 }
 
 void Interface::PrintAntialiasing (void)
 {
-	font.Print (renderer->antialiasing);
+	font.Print (renderer->composition.GetAntialiasing ());
 }
 
 void Interface::PrintGlowSize (void)
 {
-	font.Print (renderer->composition.glowblur.GetSize ());
+	font.Print (renderer->composition.GetGlowSize ());
 }
 
 void Interface::RandomizeLights (int what)
