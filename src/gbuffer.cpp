@@ -113,6 +113,16 @@ bool GBuffer::Init (void)
 	return true;
 }
 
+GLuint GBuffer::GetWidth (void)
+{
+	return width;
+}
+
+GLuint GBuffer::GetHeight (void)
+{
+	return height;
+}
+
 void GBuffer::Render (Geometry &geometry)
 {
 	program["projmat"] = renderer->camera.GetProjMatrix ();

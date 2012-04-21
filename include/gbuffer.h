@@ -40,13 +40,14 @@ public:
 	 cl::Memory specularmem[layers];
 	 gl::Texture depthtexture[layers];
 	 gl::Renderbuffer depthbuffer[layers];
-
+	 cl::Memory depthmem[layers];
+	 GLuint GetWidth (void);
+	 GLuint GetHeight (void);
+private:
 	 GLuint width, height;
 
 	 gl::Framebuffer framebuffer[layers];
 
-	 cl::Memory depthmem[layers];
-private:
 	 gl::Program program;
 
 	 Renderer *renderer;

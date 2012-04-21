@@ -39,17 +39,17 @@ bool Composition::Init (void)
 	composition = program.CreateKernel ("composition");
 
 	screen.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
-									renderer->gbuffer.width,
-									renderer->gbuffer.height,
+									renderer->gbuffer.GetWidth (),
+									renderer->gbuffer.GetHeight (),
 									0, GL_RGBA, GL_FLOAT, NULL);
 	edgemap.Image2D (GL_TEXTURE_2D, 0, GL_R16F,
-									 renderer->gbuffer.width,
-									 renderer->gbuffer.height,
+									 renderer->gbuffer.GetWidth (),
+									 renderer->gbuffer.GetHeight (),
 									 0, GL_RED, GL_FLOAT, NULL);
 	glow.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
-									renderer->gbuffer.width,
-									renderer->gbuffer.height,
-									0, GL_RGBA, GL_FLOAT, NULL);
+								renderer->gbuffer.GetWidth (),
+								renderer->gbuffer.GetHeight (),
+								0, GL_RGBA, GL_FLOAT, NULL);
 	glow.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
 	glow.GenerateMipmap (GL_TEXTURE_2D);
 
@@ -88,18 +88,18 @@ bool Composition::Init (void)
 	composition.SetArg (22, sizeof (cl_uint), &num_parameters);
 	composition.SetArg (23, renderer->parametermem);
 
-	glowblur = renderer->filters.CreateBlur (glowmem_downsampled,
-																					 renderer->gbuffer.width >> 2,
-																					 renderer->gbuffer.height >> 2, 8);
+	glowblur = renderer->filters.CreateBlur
+		 (glowmem_downsampled, renderer->gbuffer.GetWidth () >> 2,
+			renderer->gbuffer.GetHeight () >> 2, 8);
 
 	return true;
 }
 
 void Composition::SetGlowSize (GLuint size)
 {
-	glowblur = renderer->filters.CreateBlur (glowmem_downsampled,
-																					 renderer->gbuffer.width >> 2,
-																					 renderer->gbuffer.height >> 2, size);
+	glowblur = renderer->filters.CreateBlur
+		 (glowmem_downsampled, renderer->gbuffer.GetWidth ()>> 2,
+			renderer->gbuffer.GetHeight () >> 2, size);
 }
 
 GLuint Composition::GetGlowSize (void)
@@ -137,17 +137,17 @@ void Composition::SetAntialiasing (GLuint size)
 	{
 		softmap = gl::Texture ();
 		softmap.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
-										 renderer->gbuffer.width,
-										 renderer->gbuffer.height,
+										 renderer->gbuffer.GetWidth (),
+										 renderer->gbuffer.GetHeight (),
 										 0, GL_RGBA, GL_FLOAT, NULL);
 		softmem = renderer->clctx.CreateFromGLTexture2D
 				(CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, softmap);
 		softmapblur = renderer->filters.CreateBlur
-			 (screenmem, softmem,	renderer->gbuffer.width,
-				renderer->gbuffer.height, size);
+			 (screenmem, softmem,	renderer->gbuffer.GetWidth (),
+				renderer->gbuffer.GetHeight (), size);
 		freichen =  renderer->filters.CreateFreiChen
-			 (softmem, edgemem, renderer->gbuffer.width,
-				renderer->gbuffer.height);
+			 (softmem, edgemem, renderer->gbuffer.GetWidth (),
+				renderer->gbuffer.GetHeight ());
 	}
 	else
 	{
@@ -220,8 +220,8 @@ void Composition::Frame (float timefactor)
 	composition.SetArg (20, renderer->lightmem);
 	composition.SetArg (21, sizeof (Info), &info);
 
-	const size_t work_dim[] = { renderer->gbuffer.width,
-															renderer->gbuffer.height };
+	const size_t work_dim[] = { renderer->gbuffer.GetWidth (),
+															renderer->gbuffer.GetHeight () };
 	const size_t local_dim[] = { 16, 16 };
 
 	renderer->queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
