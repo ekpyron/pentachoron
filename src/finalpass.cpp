@@ -242,6 +242,7 @@ void FinalPass::Render (void)
 		program["tonemapping.sigma"] = powf (tonemapping.sigma, tonemapping.n);
 		program["tonemapping.n"] = tonemapping.n;
 		program["antialiasing"] = renderer->antialiasing > 0;
+		program["glow"] = renderer->composition.glowblur.GetSize () > 0;
 	}
 	gl::Viewport (0, 0, viewport.x, viewport.y);
 

@@ -47,7 +47,8 @@ struct Info
 	float4 center;
 	float luminance_threshold;
 	float shadow_alpha;
-	float padding[2];
+	unsigned int glowsize;
+	float padding;
 };
 
 struct Parameter
@@ -437,15 +438,18 @@ kernel void composition (write_only image2d_t screen,
 	float luminance = 0.2126 * pixel.x + 0.7152 * pixel.y
 	      		  + 0.0722 * pixel.w;
 
-	float4 glow = (float4) (0.0, 0.0, 0.0, 0.0);
-
-	if (luminance > info.luminance_threshold)
+	if (info.glowsize > 0)
 	{
-		glow.xyz = pixel.xyz;
-		glow.w = luminance;
-	}
+		float4 glow = (float4) (0.0, 0.0, 0.0, 0.0);
 
-	write_imagef (glowmap, (int2) (x, y), glow);
+		if (luminance > info.luminance_threshold)
+		{
+			glow.xyz = pixel.xyz;
+			glow.w = luminance;
+		}
+
+		write_imagef (glowmap, (int2) (x, y), glow);
+	}
 
 	write_imagef (screen, (int2) (x, y), pixel);
 }

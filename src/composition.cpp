@@ -101,9 +101,9 @@ bool Composition::Init (void)
 	composition.SetArg (22, sizeof (cl_uint), &num_parameters);
 	composition.SetArg (23, renderer->parametermem);
 
-	blur = renderer->filters.CreateBlur (glowmem_downsampled,
-																			 renderer->gbuffer.width >> 2,
-																			 renderer->gbuffer.height >> 2, 8);
+	glowblur = renderer->filters.CreateBlur (glowmem_downsampled,
+																					 renderer->gbuffer.width >> 2,
+																					 renderer->gbuffer.height >> 2, 8);
 
 	return true;
 }
@@ -119,7 +119,8 @@ void Composition::Frame (float timefactor)
 		 glm::vec4 center;
 		 GLfloat luminance_threshold;
 		 GLfloat shadow_alpha;
-		 GLfloat padding[2];
+		 GLuint glowsize;
+		 GLfloat padding;
 	} Info;
 	std::vector<cl::Memory> mem = { screenmem, glowmem_full,
 																	glowmem_downsampled,
@@ -157,6 +158,7 @@ void Composition::Frame (float timefactor)
 	info.center = glm::vec4 (renderer->camera.GetCenter (), 0.0);
 	info.luminance_threshold = luminance_threshold;
 	info.shadow_alpha = shadow_alpha;
+	info.glowsize = glowblur.GetSize ();
 
 	composition.SetArg (19, sizeof (cl_uint), &num_lights);
 	composition.SetArg (20, renderer->lightmem);
@@ -171,9 +173,12 @@ void Composition::Frame (float timefactor)
 																				local_dim, 0, NULL, NULL);
 	renderer->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
 
-	glow.GenerateMipmap (GL_TEXTURE_2D);
+	if (glowblur.GetSize () > 0)
+	{
+		glow.GenerateMipmap (GL_TEXTURE_2D);
 
-	blur.Apply ();
+		glowblur.Apply ();
+	}
 
 	if (renderer->antialiasing > 0)
 	{

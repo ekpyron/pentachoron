@@ -274,12 +274,12 @@ void Interface::RemoveLight (int what)
 
 void Interface::EditGlowSize (int what)
 {
-	GLint size = renderer->composition.blur.GetSize ();
+	GLint size = renderer->composition.glowblur.GetSize ();
 
 	size += what * 4;
 	if (size >= 0)
 	{
-		renderer->composition.blur = renderer->filters.CreateBlur
+		renderer->composition.glowblur = renderer->filters.CreateBlur
 			 (renderer->composition.glowmem_downsampled,
 				renderer->gbuffer.width >> 2, renderer->gbuffer.height >> 2, size);
 	}
@@ -325,7 +325,7 @@ void Interface::PrintAntialiasing (void)
 
 void Interface::PrintGlowSize (void)
 {
-	font.Print (renderer->composition.blur.GetSize ());
+	font.Print (renderer->composition.glowblur.GetSize ());
 }
 
 void Interface::RandomizeLights (int what)

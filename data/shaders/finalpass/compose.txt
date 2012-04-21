@@ -6,6 +6,7 @@ layout(binding = 2) uniform sampler2D edgemap;
 layout(binding = 3) uniform sampler2D softmap;
 uniform uvec2 viewport;
 uniform bool antialiasing;
+uniform bool glow;
 uniform struct
 {
 	float image_key;
@@ -24,10 +25,9 @@ float luminance (vec3 color)
 
 void main (void)
 {
-	vec4 color, glow;
+	vec4 color;
 	float edge;
 	vec2 coord = gl_FragCoord.xy / viewport;
-	glow = texture (glowbuffer, coord, 2);
 	if (antialiasing)
 	{
 		edge = texture (edgemap, coord).r;
@@ -41,7 +41,10 @@ void main (void)
 		color = texture (colorbuffer, coord);
 	}
 
-	color.xyz += glow.xyz;
+	if (glow)
+	{
+		color.xyz += texture (glowbuffer, coord, 2).xyz;
+	}
 
 	float avgLuminance = 0.5;
 

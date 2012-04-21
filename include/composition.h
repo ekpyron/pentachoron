@@ -80,7 +80,7 @@ private:
 	 /** Glow blur.
 		* A Blur object for blurring the downsampled glow map.
 		*/
-	 Blur blur;
+	 Blur glowblur;
 	 /** Soft map blur.
 		* A Blur object for creating the softmap.
 		*/
@@ -126,6 +126,9 @@ private:
 	 /** Interface is a friend.
 		*/
 	 friend class Interface;
+	 /** Final pass is a friend.
+		*/
+	 friend class FinalPass;
 };
 
 #endif /* !defined COMPOSITION_H */
