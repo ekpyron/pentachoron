@@ -79,7 +79,7 @@ bool GBuffer::Init (void)
 		specularbuffer[i].Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
 															 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	
-		depthtexture[i].Image2D (GL_TEXTURE_RECTANGLE, 0, GL_R32F, width, height,
+		depthtexture[i].Image2D (GL_TEXTURE_2D, 0, GL_R32F, width, height,
 														 0, GL_RED, GL_FLOAT, NULL);
 		depthbuffer[i].Storage (GL_DEPTH_COMPONENT32, width, height);
 		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
@@ -88,7 +88,7 @@ bool GBuffer::Init (void)
 																 normalbuffer[i], 0);
 		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
 																 specularbuffer[i], 0);
-		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_RECTANGLE,
+		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
 															depthtexture[i], 0);
 		framebuffer[i].Renderbuffer (GL_DEPTH_ATTACHMENT,
 																 depthbuffer[(i>0)?(i-1):0]);
@@ -97,7 +97,7 @@ bool GBuffer::Init (void)
 					 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
 
 		depthmem[i] = renderer->clctx.CreateFromGLTexture2D
-			 (CL_MEM_READ_ONLY, GL_TEXTURE_RECTANGLE, 0,
+			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
 				renderer->gbuffer.depthtexture[i]);
 		colormem[i] = renderer->clctx.CreateFromGLTexture2D
 			 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
@@ -126,7 +126,10 @@ GLuint GBuffer::GetHeight (void)
 void GBuffer::Render (Geometry &geometry)
 {
 	program["projmat"] = renderer->camera.GetProjMatrix ();
+	program["viewport"] = glm::uvec2 (width, height);
 	renderer->culling.SetProjMatrix (renderer->camera.GetProjMatrix ());
+	program["farClipPlane"] = renderer->camera.GetFarClipPlane ();
+	program["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
 
 	gl::Enable (GL_DEPTH_TEST);
 	gl::DepthMask (GL_TRUE);
@@ -153,8 +156,10 @@ void GBuffer::Render (Geometry &geometry)
 		}
 		else
 		{
-			depthtexture[i - 1].Bind (GL_TEXTURE4, GL_TEXTURE_RECTANGLE);
-			depthtexture[0].Bind (GL_TEXTURE5, GL_TEXTURE_RECTANGLE);
+			renderer->windowgrid.sampler.Bind (4);
+			renderer->windowgrid.sampler.Bind (5);
+			depthtexture[i - 1].Bind (GL_TEXTURE4, GL_TEXTURE_2D);
+			depthtexture[0].Bind (GL_TEXTURE5, GL_TEXTURE_2D);
 			program["first_pass"] = false;
 			geometry.bboxprogram["first_pass"] = false;
 		}

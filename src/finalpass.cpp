@@ -301,7 +301,7 @@ void FinalPass::Render (void)
 		program["tonemapping.mode"] = tonemapping.mode;
 		program["tonemapping.sigma"] = powf (tonemapping.sigma, tonemapping.n);
 		program["tonemapping.n"] = tonemapping.n;
-		program["antialiasing"] = renderer->composition.GetAntialiasing () > 0;
+		program["antialiasing"] = (GLint) renderer->composition.GetAntialiasing ();
 		program["glow"] = renderer->composition.GetGlowSize () > 0;
 	}
 	gl::Viewport (0, 0, viewport.x, viewport.y);
@@ -320,8 +320,7 @@ void FinalPass::Render (void)
 		renderer->composition.edgemap.Bind (GL_TEXTURE2,
 																				GL_TEXTURE_2D);
 		renderer->windowgrid.sampler.Bind (3);
-		if (renderer->composition.GetAntialiasing ())
-			 renderer->composition.softmap.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
+		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE3, GL_TEXTURE_2D);
 		pipelines[0].Bind ();
 		break;
 	case 1:
@@ -386,22 +385,22 @@ void FinalPass::Render (void)
 		break;
 	case 13:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
+		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[6].Bind ();
 		break;
   case 14:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture[1].Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
+		renderer->gbuffer.depthtexture[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[6].Bind ();
 		break;
   case 15:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture[2].Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
+		renderer->gbuffer.depthtexture[2].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[6].Bind ();
 		break;
   case 16:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture[3].Bind (GL_TEXTURE0, GL_TEXTURE_RECTANGLE);
+		renderer->gbuffer.depthtexture[3].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[6].Bind ();
 		break;
 	case 17:

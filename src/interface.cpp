@@ -287,7 +287,7 @@ void Interface::EditAntialiasing (int what)
 {
 	GLint size = renderer->composition.GetAntialiasing ();
 
-	size += what * 4;
+	size += what;
 	if (size >= 0)
 		 renderer->composition.SetAntialiasing (size);
 }
@@ -1197,30 +1197,36 @@ void Interface::Frame (float tf)
 		font.Print ("\nOcclusion culled: ", Model::culled);
 		font.Print ("\nFrustum culled: ", renderer->culling.culled);
 	}
-	glm::vec3 dir (sin (renderer->camera.horizontal_angle), 0,
-								 cos (renderer->camera.horizontal_angle));
 	if (glfwGetKey ('A'))
 	{
-		renderer->camera.horizontal_angle += timefactor;
+		renderer->camera.RotateY (timefactor);
 	}
 	if (glfwGetKey ('D'))
 	{
-		renderer->camera.horizontal_angle -= timefactor;
+		renderer->camera.RotateY (-timefactor);
 	}
 	if (glfwGetKey ('W'))
 	{
-		renderer->camera.center += dir * timefactor * 10.0f;
+		renderer->camera.MoveForward (timefactor * 10.0f);
 	}
 	if (glfwGetKey ('S'))
 	{
-		renderer->camera.center -= dir * timefactor * 10.0f;
+		renderer->camera.MoveForward (-timefactor * 10.0f);
 	}
 	if (glfwGetKey ('Q'))
 	{
-		renderer->camera.center -= glm::vec3 (0, 4, 0) * timefactor;
+		renderer->camera.MoveUp (-4.0f * timefactor);
 	}
 	if (glfwGetKey ('E'))
 	{
-		renderer->camera.center += glm::vec3 (0, 4, 0) * timefactor;
+		renderer->camera.MoveUp (4.0f * timefactor);
+	}
+	if (glfwGetKey ('R'))
+	{
+		renderer->camera.RotateUp (timefactor);
+	}
+	if (glfwGetKey ('F'))
+	{
+		renderer->camera.RotateUp (-timefactor);
 	}
 }

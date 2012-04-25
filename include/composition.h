@@ -122,10 +122,6 @@ private:
 		* A Blur object for blurring the downsampled glow map.
 		*/
 	 Blur glowblur;
-	 /** Soft map blur.
-		* A Blur object for creating the softmap.
-		*/
-	 Blur softmapblur;
 	 /** Frei Chen filter.
 		* A Frei Chen filter object used for edge detection.
 		*/
@@ -142,10 +138,6 @@ private:
 		* OpenCL memory object referring to the screen texture.
 		*/
 	 cl::Memory screenmem;
-	 /** Soft map (OpenCL memory object).
-		* OpenCL memory object referring to the soft map.
-		*/
-	 cl::Memory softmem;
 	 /** Edge map (OpenCL memory object).
 		* OpenCL memory object referring to the edge map.
 		*/

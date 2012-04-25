@@ -6,7 +6,8 @@ uniform uvec2 viewport;
 void main (void)
 {
 	vec2 coord;
+	float edge;
 	coord = gl_FragCoord.xy / viewport;
-
-	color = texture (tex, coord).r * vec4 (1, 1, 1, 1);
+	edge = texture (tex, coord).r;
+	color = edge * vec4 (1, 1, 1, 1);
 }

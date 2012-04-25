@@ -95,6 +95,31 @@ public:
 		* \returns A vector containing projection information.
 		*/
 	 glm::vec4 GetProjInfo (void) const;
+	 /** Rotate camera around y.
+		* Rotates the camera around the y-axis.
+		* \param angle Angle around which to rotate.
+		*/
+	 void RotateY (float angle);
+	 /** Rotate camera up/down.
+		* Rotates the camera up/down.
+		* \param angle Angle around which to rotate.
+		*/
+	 void RotateUp (float angle);
+	 /** Get camera direction.
+		* Obtains the direction vector of the camera.
+		* \returns The camera direction.
+		*/
+	 glm::vec3 GetDirection (void) const;
+	 /** Move forward.
+		* Moves the camera forward.
+		* \param distance Distance to move the camera.
+		*/
+	 void MoveForward (float distance);
+	 /** Move upwards.
+		* Moves the camera upwards.
+		* \param distance Distance to move the camera.
+		*/
+	 void MoveUp (float distance);
 private:
 	 /** Viewport dimension.
 		* Stores the dimensions of the viewport.
@@ -124,12 +149,7 @@ private:
 		* Stores the horizontal camera rotation.
 		*/
 	 float horizontal_angle;
-	 /** Interface is a friend.
-		* Grants the Interface class access to the camera internals.
-		* This is a temporary measure and will probably be superseded
-		* by Set/Get functions.
-		*/
-	 friend class Interface;
+	 float up_angle;
 };
 
 #endif /* !defined CAMERA_H */

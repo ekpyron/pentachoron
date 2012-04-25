@@ -18,7 +18,7 @@
 
 Camera::Camera (void)
 	: center (0, 0, 0), horizontal_angle (0), viewport (glm::ivec2 (0, 0)),
-		nearClipPlane (0.1f), farClipPlane (1000.0f)
+		nearClipPlane (0.1f), farClipPlane (1000.0f), up_angle (0)
 {
 }
 
@@ -42,9 +42,7 @@ void Camera::Resize (int w, int h)
 
 glm::vec3 Camera::GetEye (void) const
 {
-	glm::vec3 dir (sin (horizontal_angle), 0, cos (horizontal_angle));
-	dir = glm::normalize (dir);
-	return center - dir * 1.0f;
+	return center - GetDirection () * 1.0f;
 }
 
 glm::vec3 Camera::GetCenter (void) const
@@ -87,8 +85,36 @@ float Camera::GetFarClipPlane (void) const
 	return farClipPlane;
 }
 
+void Camera::RotateY (float angle)
+{
+	horizontal_angle += angle;
+}
+
+glm::vec3 Camera::GetDirection (void) const
+{
+	glm::vec3 dir (sin (horizontal_angle), sin (up_angle),
+								 cos (horizontal_angle));
+	return glm::normalize (dir);
+}
+
 glm::vec4 Camera::GetProjInfo (void) const
 {
 	return glm::vec4 (1.0f / projmat[0].x, 1.0f / projmat[1].y,
 										nearClipPlane, farClipPlane);
+}
+
+void Camera::MoveForward (float distance)
+{
+	glm::vec3 dir (sin (horizontal_angle), 0, cos (horizontal_angle));
+	center += dir * distance;
+}
+
+void Camera::MoveUp (float distance)
+{
+	center += distance * glm::vec3 (0, 1, 0);
+}
+
+void Camera::RotateUp (float angle)
+{
+	up_angle += angle;
 }

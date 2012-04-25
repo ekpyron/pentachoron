@@ -9,13 +9,14 @@ layout(binding = 0) uniform sampler2D diffusemap;
 layout(binding = 1) uniform sampler2D normalmap;
 layout(binding = 2) uniform sampler2D specularmap;
 layout(binding = 3) uniform sampler2D parametermap;
-layout(binding = 4) uniform samplerRect depthtexture;
-layout(binding = 5) uniform samplerRect opaquedepthtexture;
+layout(binding = 4) uniform sampler2D depthtexture;
+layout(binding = 5) uniform sampler2D opaquedepthtexture;
 uniform bool first_pass;
 uniform bool diffuse_enabled;
 uniform bool normalmap_enabled;
 uniform bool specularmap_enabled;
 uniform bool parametermap_enabled;
+uniform uvec2 viewport;
 
 in vec2 uv;
 
@@ -27,14 +28,14 @@ void main (void)
 {
 	if (!first_pass)
 	{
+		vec2 coords = gl_FragCoord.xy / viewport;
 		float previous_depth, opaque_depth;
-		opaque_depth = texture (opaquedepthtexture,
-			       	        gl_FragCoord.xy).r;
+		opaque_depth = texture (opaquedepthtexture, coords).r;
 		if (opaque_depth < gl_FragCoord.z)
 		{
 			discard;
 		}
-		previous_depth = texture (depthtexture, gl_FragCoord.xy).r;
+		previous_depth = texture (depthtexture, coords).r;
 		if (previous_depth >= gl_FragCoord.z)
 		{
 			discard;

@@ -135,26 +135,13 @@ void Composition::SetAntialiasing (GLuint size)
 {
 	if (size > 0)
 	{
-		softmap = gl::Texture ();
-		softmap.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
-										 renderer->gbuffer.GetWidth (),
-										 renderer->gbuffer.GetHeight (),
-										 0, GL_RGBA, GL_FLOAT, NULL);
-		softmem = renderer->clctx.CreateFromGLTexture2D
-				(CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, softmap);
-		softmapblur = renderer->filters.CreateBlur
-			 (screenmem, softmem,	renderer->gbuffer.GetWidth (),
-				renderer->gbuffer.GetHeight (), size);
 		freichen =  renderer->filters.CreateFreiChen
-			 (softmem, edgemem, renderer->gbuffer.GetWidth (),
+			 (screenmem, edgemem, renderer->gbuffer.GetWidth (),
 				renderer->gbuffer.GetHeight ());
 	}
 	else
 	{
-		softmapblur = Blur ();
 		freichen = FreiChen ();
-		softmem = cl::Memory ();
-		softmap = gl::Texture ();
 	}
 	antialiasing = size;
 }
@@ -238,7 +225,6 @@ void Composition::Frame (float timefactor)
 
 	if (antialiasing > 0)
 	{
-		 softmapblur.Apply ();
 		 freichen.Apply ();
 	}
 }

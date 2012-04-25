@@ -1,6 +1,6 @@
 #version 420 core
 layout(location = 0) out vec4 color;
-layout(binding = 0) uniform samplerRect tex;
+layout(binding = 0) uniform sampler2D depthmap;
 uniform uvec2 viewport;
 uniform float farClipPlane;
 uniform float nearClipPlane;
@@ -10,7 +10,7 @@ void main (void)
 	vec2 coord;
 	coord = gl_FragCoord.xy / viewport;
 
-	float depth = texture (tex, gl_FragCoord.xy).r;
+	float depth = texture (depthmap, coord).r;
 
 	depth = (2.0 * nearClipPlane) / (farClipPlane + nearClipPlane
 	      - depth * (farClipPlane - nearClipPlane));
