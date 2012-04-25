@@ -31,10 +31,6 @@ float getdepth (vec2 coord)
 	       texture (depthmap, coord).r * (farClipPlane - nearClipPlane));
 }
 
-float getdepth (vec2 coord)
-{
-	return 1.0;
-}
 void main (void)
 {
 	vec4 color;
