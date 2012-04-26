@@ -1,24 +1,5 @@
 #version 420 core
 
-layout(location = 0) out vec4 color;
-//layout(location = 3) out float depth;
-
-//layout(binding = 3) uniform samplerRect depthtexture;
-
-//uniform bool first_pass;
-
 void main (void)
 {
-/*	if (!first_pass)
-	{
-		float previous_depth;
-		previous_depth = texture (depthtexture, gl_FragCoord.xy).r;
-		if (previous_depth >= gl_FragCoord.z)
-		{
-			discard;
-		}
-	}*/
-
-	color = vec4 (0.0, 1.0, 0.0, 1.0);
-	/*depth = gl_FragCoord.z;*/
 }

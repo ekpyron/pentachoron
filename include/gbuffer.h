@@ -39,7 +39,7 @@ public:
 	 gl::Texture specularbuffer[layers];
 	 cl::Memory specularmem[layers];
 	 gl::Texture depthtexture[layers];
-	 gl::Renderbuffer depthbuffer[layers];
+	 gl::Texture depthbuffer[layers];
 	 cl::Memory depthmem[layers];
 	 GLuint GetWidth (void);
 	 GLuint GetHeight (void);
@@ -49,6 +49,7 @@ private:
 	 gl::Framebuffer framebuffer[layers];
 
 	 gl::Program program;
+	 gl::Sampler depthsampler;
 
 	 Renderer *renderer;
 	 friend class Renderer;

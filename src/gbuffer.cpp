@@ -72,6 +72,15 @@ bool GBuffer::Init (void)
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
+	depthsampler.Parameter (GL_TEXTURE_COMPARE_MODE,
+													GL_COMPARE_REF_TO_TEXTURE);
+	depthsampler.Parameter (GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+	depthsampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	depthsampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	depthsampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	depthsampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	depthsampler.Parameter (GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
 	for (auto i = 0; i < layers; i++)
 	{
 		colorbuffer[i].Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
@@ -83,7 +92,10 @@ bool GBuffer::Init (void)
 	
 		depthtexture[i].Image2D (GL_TEXTURE_2D, 0, GL_R32F, width, height,
 														 0, GL_RED, GL_FLOAT, NULL);
-		depthbuffer[i].Storage (GL_DEPTH_COMPONENT32, width, height);
+
+		depthbuffer[i].Image2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
+														width, height, 0, GL_DEPTH_COMPONENT,
+														GL_FLOAT, NULL);
 		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 																 colorbuffer[i], 0);
 		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
@@ -92,8 +104,8 @@ bool GBuffer::Init (void)
 																 specularbuffer[i], 0);
 		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
 															depthtexture[i], 0);
-		framebuffer[i].Renderbuffer (GL_DEPTH_ATTACHMENT,
-																 depthbuffer[(i>0)?(i-1):0]);
+		framebuffer[i].Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+															depthbuffer[i], 0);
 		
 		framebuffer[i].DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
 					 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
@@ -148,22 +160,18 @@ void GBuffer::Render (Geometry &geometry)
 		gl::ClearBufferfv (GL_COLOR, 1, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
 		gl::ClearBufferfv (GL_COLOR, 2, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
 		gl::ClearBufferfv (GL_COLOR, 3, (float[]) {1.0f, 0.0f, 0.0f, 0.0f} );
-		if (i != 1)
-			 gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
+		gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
 
-		if (i < 2)
+		program["pass"] = (unsigned int) i;
+	  if (i > 0)
 		{
-			program["first_pass"] = true;
-			geometry.bboxprogram["first_pass"] = true;
-		}
-		else
-		{
-			renderer->windowgrid.sampler.Bind (4);
-			renderer->windowgrid.sampler.Bind (5);
-			depthtexture[i - 1].Bind (GL_TEXTURE4, GL_TEXTURE_2D);
-			depthtexture[0].Bind (GL_TEXTURE5, GL_TEXTURE_2D);
-			program["first_pass"] = false;
-			geometry.bboxprogram["first_pass"] = false;
+			depthsampler.Bind (5);
+			depthbuffer[0].Bind (GL_TEXTURE5, GL_TEXTURE_2D);
+			if (i > 1)
+			{
+				depthsampler.Bind (4);
+				depthbuffer[i - 1].Bind (GL_TEXTURE4, GL_TEXTURE_2D);
+			}
 		}
 		geometry.Render (Geometry::Pass::GBuffer + i * 0x00010000,
 										 program, renderer->camera.GetViewMatrix (),
