@@ -27,14 +27,14 @@ WindowGrid::~WindowGrid (void)
 bool WindowGrid::Init (void)
 {
 	std::string src;
-	if (!ReadFile (MakePath ("shaders", "windowgrid.txt"), src))
+	std::string filename (MakePath ("shaders", "passthrough.vs"));
+	if (!ReadFile (filename, src))
 		 return false;
 	if (!vprogram.Create (GL_VERTEX_SHADER, src))
 	{
 		(*logstream) << "Cannot create a shader program from "
-								 << MakePath ("shaders", "windowgrid.txt")
-								 << std::endl << ":" << vprogram.GetInfoLog ()
-								 << std::endl;
+								 << filename << std::endl << ":"
+								 << vprogram.GetInfoLog () << std::endl;
 		 return false;
 	}
 
