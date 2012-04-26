@@ -75,8 +75,8 @@ bool GBuffer::Init (void)
 	depthsampler.Parameter (GL_TEXTURE_COMPARE_MODE,
 													GL_COMPARE_REF_TO_TEXTURE);
 	depthsampler.Parameter (GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-	depthsampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	depthsampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	depthsampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	depthsampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	depthsampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	depthsampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	depthsampler.Parameter (GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
