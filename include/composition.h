@@ -85,26 +85,67 @@ public:
 		* \param threshold the luminance threshold
 		*/
 	 void SetLuminanceThreshold (float threshold);
+	 /** Get screen texture.
+		* Returns a reference to the screen texture.
+		* \returns a referene to the screen texture
+		*/
+	 const gl::Texture &GetScreen (void);
+	 /** Get glow map.
+		* Returns a reference to the (downsampled and blurred) glow map.
+		* \returns a referene to the glow map
+		*/
+	 const gl::Texture &GetGlowMap (void);
+	 /** Get edge map.
+		* Returns a reference to the edge map.
+		* \returns a referene to the edge map
+		*/
+	 const gl::Texture &GetEdgeMap (void);
+private:
 	 /** Screen texture.
 		* A texture storing the combined, lit pixel value to be
 		* displayed on screen.
 		*/
 	 gl::Texture screen;
-	 /** Glow map.
-		* A texture storing the parts of the screen that is supposed to glow.
-		*/
-	 gl::Texture glow;
+	 struct
+	 {
+			/** Glow map.
+			 * A texture storing the parts of the screen that is supposed to glow.
+			 */
+			gl::Texture map;
+			/** Glow map (downsampled).
+			 * A texture storing the parts of the screen that is supposed to glow
+			 * downsampled to a lower resolution.
+			 */
+			gl::Texture downsampled;
+			/** Glow map (full resolution; OpenCL memory object).
+			 * OpenCL memory object referring to the glow map.
+			 */
+			cl::Memory mem;
+			/** Glow map (downsampled; OpenCL memory object).
+			 * OpenCL memory object referring to the downsampled glow
+			 * map.
+			 */
+			cl::Memory mem_downsampled;
+			/** Glow blur.
+			 * A Blur object for blurring the downsampled glow map.
+			 */
+			Blur blur;
+			/** Source framebuffer.
+			 * The source framebuffer object for copying and downsampling
+			 * the glow map.
+			 */
+			gl::Framebuffer source;
+			/** Destination framebuffer.
+			 * The destination framebuffer object for copying and downsampling
+			 * the glow map.
+			 */
+			gl::Framebuffer destination;
+	 } glow;
 	 /** Edge map.
 		* A texture storing a map which highlights the edges in the
 		* screen texture intended for anti-aliasing.
 		*/
 	 gl::Texture edgemap;
-	 /** Soft map.
-		* A texture containing a blurred version of the screen used
-		* for anti-aliasing.
-		*/
-	 gl::Texture softmap;
-private:
 	 /** Shadow alpha.
 		* This value specifies the degree of transparency of the shadows.
 		*/
@@ -118,10 +159,6 @@ private:
 		* Stores the currently used level of antialiasing.
 		*/
 	 GLuint antialiasing;
-	 /** Glow blur.
-		* A Blur object for blurring the downsampled glow map.
-		*/
-	 Blur glowblur;
 	 /** Frei Chen filter.
 		* A Frei Chen filter object used for edge detection.
 		*/
@@ -142,16 +179,6 @@ private:
 		* OpenCL memory object referring to the edge map.
 		*/
 	 cl::Memory edgemem;
-	 /** Glow map (full resolution; OpenCL memory object).
-		* OpenCL memory object referring to the glow map in
-		* full resolution (mipmap level 0).
-		*/
-	 cl::Memory glowmem_full;
-	 /** Glow map (downsampled; OpenCL memory object).
-		* OpenCL memory object referring to the downsampled glow
-		* map (a specific mipmap level > 0).
-		*/
-	 cl::Memory glowmem_downsampled;
 	 /** Parent renderer.
 		* The Renderer this class belongs to.
 		*/

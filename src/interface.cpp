@@ -441,11 +441,12 @@ void Interface::Exit (int what)
 	}
 }
 
-#define NUM_TONE_MAPPING_MODES 4
+#define NUM_TONE_MAPPING_MODES 5
 
 void Interface::PrintToneMappingMode (void)
 {
 	const char *tone_mapping_modes[NUM_TONE_MAPPING_MODES] = {
+		"Disabled",
 		"Reinhard",
 		"Logarithmic",
 		"URQ",

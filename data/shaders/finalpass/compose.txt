@@ -31,6 +31,58 @@ float getdepth (vec2 coord)
 	       texture (depthmap, coord).r * (farClipPlane - nearClipPlane));
 }
 
+vec4 tonemap (vec4 color)
+{
+	if (tonemapping.mode == 0)
+	   return color;
+
+	float avgLuminance = 0.5;
+
+	float exposure = tonemapping.image_key / avgLuminance;
+
+	vec3 XYZ;
+
+	XYZ = tonemapping.RGB2XYZ * color.xyz;
+
+	vec3 Yxy;
+	Yxy.r = XYZ.g;
+	Yxy.g = XYZ.r / (XYZ.r + XYZ.g + XYZ.b);
+	Yxy.b = XYZ.g / (XYZ.r + XYZ.g + XYZ.b);
+
+	float Lp = Yxy.r * exposure / avgLuminance;
+
+	Lp = pow (Lp, tonemapping.n);
+
+	switch (tonemapping.mode)
+	{
+		case 1:
+		     Yxy.r = (Lp * (1.0f + Lp
+		     	     / (tonemapping.white_threshold
+			        * tonemapping.white_threshold)))
+	      		     / (tonemapping.sigma + Lp);
+
+		break;
+		case 2:
+		     Yxy.r = log (1 + Lp)
+		     	     / log (1 + tonemapping.white_threshold);
+		break;
+		case 3:
+		     Yxy.r = tonemapping.sigma * Lp
+		     	     / (tonemapping.sigma * Lp - Lp
+			        + tonemapping.white_threshold);
+		break;
+		case 4:
+		     Yxy.r = 1 - exp (-Lp);
+		break;
+	}
+
+	XYZ.r = Yxy.r * Yxy.g / Yxy.b;
+	XYZ.g = Yxy.r;
+	XYZ.b = Yxy.r * (1 - Yxy.g - Yxy.b) / Yxy.b;
+
+	return vec4 (tonemapping.XYZ2RGB * XYZ, 1.0);
+}
+
 void main (void)
 {
 	vec4 color;
@@ -88,55 +140,8 @@ void main (void)
 
 	if (glow)
 	{
-		color.xyz += texture (glowbuffer, coord, 2).xyz;
+		color.xyz += texture (glowbuffer, coord).xyz;
 	}
 
-	float avgLuminance = 0.5;
-
-	float exposure = tonemapping.image_key / avgLuminance;
-
-	vec3 XYZ;
-
-	XYZ = tonemapping.RGB2XYZ * color.xyz;
-
-	vec3 Yxy;
-	Yxy.r = XYZ.g;
-	Yxy.g = XYZ.r / (XYZ.r + XYZ.g + XYZ.b);
-	Yxy.b = XYZ.g / (XYZ.r + XYZ.g + XYZ.b);
-
-	float Lp = Yxy.r * exposure / avgLuminance;
-
-	Lp = pow (Lp, tonemapping.n);
-
-	switch (tonemapping.mode)
-	{
-		case 0:
-		     Yxy.r = (Lp * (1.0f + Lp
-		     	     / (tonemapping.white_threshold
-			        * tonemapping.white_threshold)))
-	      		     / (tonemapping.sigma + Lp);
-
-		break;
-		case 1:
-		     Yxy.r = log (1 + Lp)
-		     	     / log (1 + tonemapping.white_threshold);
-		break;
-		case 2:
-		     Yxy.r = tonemapping.sigma * Lp
-		     	     / (tonemapping.sigma * Lp - Lp
-			        + tonemapping.white_threshold);
-		break;
-		case 3:
-		     Yxy.r = 1 - exp (-Lp);
-		break;
-	}
-
-	XYZ.r = Yxy.r * Yxy.g / Yxy.b;
-	XYZ.g = Yxy.r;
-	XYZ.b = Yxy.r * (1 - Yxy.g - Yxy.b) / Yxy.b;
-
-	color.xyz = tonemapping.XYZ2RGB * XYZ;
-	color.w = 1.0;
-
-	output = color;
+	output = tonemap (color);
 }

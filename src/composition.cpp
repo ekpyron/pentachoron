@@ -46,26 +46,36 @@ bool Composition::Init (void)
 									 renderer->gbuffer.GetWidth (),
 									 renderer->gbuffer.GetHeight (),
 									 0, GL_RED, GL_FLOAT, NULL);
-	glow.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
+	glow.map.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
 								renderer->gbuffer.GetWidth (),
 								renderer->gbuffer.GetHeight (),
 								0, GL_RGBA, GL_FLOAT, NULL);
-	glow.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
-	glow.GenerateMipmap (GL_TEXTURE_2D);
+	glow.map.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
+	glow.map.GenerateMipmap (GL_TEXTURE_2D);
+	glow.downsampled.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
+														renderer->gbuffer.GetWidth () >> 2,
+														renderer->gbuffer.GetHeight () >> 2,
+														0, GL_RGBA, GL_FLOAT, NULL);
+
+	glow.source.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+												 glow.map, 1);
+	glow.destination.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+															glow.downsampled, 0);
+	glow.destination.DrawBuffers({ GL_COLOR_ATTACHMENT0 });
 
 	screenmem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, screen);
 	edgemem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, edgemap);
-	glowmem_full = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, glow);
-	glowmem_downsampled = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 2, glow);
+	glow.mem = renderer->clctx.CreateFromGLTexture2D
+		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, glow.map);
+	glow.mem_downsampled = renderer->clctx.CreateFromGLTexture2D
+		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, glow.downsampled);
 
 	SetAntialiasing (antialiasing);
 
 	composition.SetArg (0, screenmem);
-	composition.SetArg (1, glowmem_full);
+	composition.SetArg (1, glow.mem);
 	composition.SetArg (2, renderer->gbuffer.colormem[0]);
 	composition.SetArg (3, renderer->gbuffer.colormem[1]);
 	composition.SetArg (4, renderer->gbuffer.colormem[2]);
@@ -88,23 +98,21 @@ bool Composition::Init (void)
 	composition.SetArg (22, sizeof (cl_uint), &num_parameters);
 	composition.SetArg (23, renderer->parametermem);
 
-	glowblur = renderer->filters.CreateBlur
-		 (glowmem_downsampled, renderer->gbuffer.GetWidth () >> 2,
-			renderer->gbuffer.GetHeight () >> 2, 8);
+	SetGlowSize (0);
 
 	return true;
 }
 
 void Composition::SetGlowSize (GLuint size)
 {
-	glowblur = renderer->filters.CreateBlur
-		 (glowmem_downsampled, renderer->gbuffer.GetWidth ()>> 2,
+	glow.blur = renderer->filters.CreateBlur
+		 (glow.mem_downsampled, renderer->gbuffer.GetWidth ()>> 2,
 			renderer->gbuffer.GetHeight () >> 2, size);
 }
 
 GLuint Composition::GetGlowSize (void)
 {
-	return glowblur.GetSize ();
+	return glow.blur.GetSize ();
 }
 
 void Composition::SetLuminanceThreshold (float threshold)
@@ -151,6 +159,21 @@ GLuint Composition::GetAntialiasing (void)
 	return antialiasing;
 }
 
+const gl::Texture &Composition::GetScreen (void)
+{
+	return screen;
+}
+
+const gl::Texture &Composition::GetGlowMap (void)
+{
+	return glow.downsampled;
+}
+
+const gl::Texture &Composition::GetEdgeMap (void)
+{
+	return edgemap;
+}
+
 void Composition::Frame (float timefactor)
 {
 	typedef struct Info
@@ -165,8 +188,7 @@ void Composition::Frame (float timefactor)
 		 GLuint glowsize;
 		 GLfloat padding;
 	} Info;
-	std::vector<cl::Memory> mem = { screenmem, glowmem_full,
-																	glowmem_downsampled,
+	std::vector<cl::Memory> mem = { screenmem, glow.mem,
 																	renderer->gbuffer.colormem[0],
 																	renderer->gbuffer.colormem[1],
 																	renderer->gbuffer.colormem[2],
@@ -201,7 +223,7 @@ void Composition::Frame (float timefactor)
 	info.center = glm::vec4 (renderer->camera.GetCenter (), 0.0);
 	info.luminance_threshold = luminance_threshold;
 	info.shadow_alpha = shadow_alpha;
-	info.glowsize = glowblur.GetSize ();
+	info.glowsize = glow.blur.GetSize ();
 
 	composition.SetArg (19, sizeof (cl_uint), &num_lights);
 	composition.SetArg (20, renderer->lightmem);
@@ -216,11 +238,23 @@ void Composition::Frame (float timefactor)
 																				local_dim, 0, NULL, NULL);
 	renderer->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
 
-	if (glowblur.GetSize () > 0)
+	if (glow.blur.GetSize () > 0)
 	{
-		glow.GenerateMipmap (GL_TEXTURE_2D);
+		glow.map.GenerateMipmap (GL_TEXTURE_2D);
+		glow.source.Bind (GL_READ_FRAMEBUFFER);
+		glow.destination.Bind (GL_DRAW_FRAMEBUFFER);
+		gl::ReadBuffer (GL_COLOR_ATTACHMENT0);
 
-		glowblur.Apply ();
+		gl::BlitFramebuffer (0, 0, renderer->gbuffer.GetWidth () >> 1,
+												 renderer->gbuffer.GetHeight () >> 1,
+												 0, 0, renderer->gbuffer.GetWidth () >> 2,
+												 renderer->gbuffer.GetHeight () >> 2,
+												 GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+		gl::Framebuffer::Unbind (GL_DRAW_FRAMEBUFFER);
+		gl::Framebuffer::Unbind (GL_READ_FRAMEBUFFER);
+
+		glow.blur.Apply ();
 	}
 
 	if (antialiasing > 0)

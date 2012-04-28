@@ -70,11 +70,6 @@ bool FinalPass::Init (void)
 		pipelines.back ().UseProgramStages (GL_FRAGMENT_SHADER_BIT, fprogram);
 	}
 
-	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
 	return true;
 }
 
@@ -313,11 +308,11 @@ void FinalPass::Render (void)
 	{
 	case 0:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->composition.screen.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		sampler.Bind (1);
-		renderer->composition.glow.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
+		renderer->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->windowgrid.sampler.Bind (1);
+		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 		renderer->windowgrid.sampler.Bind (2);
-		renderer->composition.edgemap.Bind (GL_TEXTURE2,
+		renderer->composition.GetEdgeMap ().Bind (GL_TEXTURE2,
 																				GL_TEXTURE_2D);
 		renderer->windowgrid.sampler.Bind (3);
 		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE3, GL_TEXTURE_2D);
@@ -410,14 +405,14 @@ void FinalPass::Render (void)
 		pipelines[4].Bind ();
 		break;
 	case 18:
-		sampler.Bind (0);
-		renderer->composition.glow.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->windowgrid.sampler.Bind (0);
+		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[5].Bind ();
 		break;
 	case 19:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->composition.edgemap.Bind (GL_TEXTURE0,
-																				GL_TEXTURE_2D);
+		renderer->composition.GetEdgeMap ().Bind (GL_TEXTURE0,
+																							GL_TEXTURE_2D);
 		pipelines[7].Bind ();
 		break;
 	default:
