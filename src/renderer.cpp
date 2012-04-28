@@ -15,7 +15,6 @@
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "renderer.h"
-#include <ctime>
 #include <fstream>
 
 Renderer::Renderer (void)

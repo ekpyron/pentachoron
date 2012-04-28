@@ -27,6 +27,7 @@
 #include <config.h>
 #include <oglp/oglp.h>
 #include <iostream>
+#include <ctime>
 
 /** Defined to avoid conflicts.
  * Defined to avoid the inclusion of an conflicting gl.h
