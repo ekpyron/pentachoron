@@ -80,6 +80,7 @@ private:
 	 friend class Composition;
 	 friend class Model;
 	 friend class Mesh;
+	 friend class Glow;
 };
 
 #endif /* !defined RENDERER_H */

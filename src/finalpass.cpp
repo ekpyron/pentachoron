@@ -31,7 +31,7 @@ FinalPass::~FinalPass (void)
 bool FinalPass::Init (void)
 {
 	std::vector<const char *> fprogram_sources = {
-		"compose.txt", "normal.txt", "passthrough.txt", "diffuse.txt",
+		"compose.txt", "normal.txt", "passthrough.txt",
 		"shadowmap.txt", "glow.txt", "depth.txt", "edge.txt"
 	};
 	for (const char *&filename : fprogram_sources)
@@ -381,39 +381,39 @@ void FinalPass::Render (void)
 	case 13:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[6].Bind ();
+		pipelines[5].Bind ();
 		break;
   case 14:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->gbuffer.depthtexture[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[6].Bind ();
+		pipelines[5].Bind ();
 		break;
   case 15:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->gbuffer.depthtexture[2].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[6].Bind ();
+		pipelines[5].Bind ();
 		break;
   case 16:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->gbuffer.depthtexture[3].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[6].Bind ();
+		pipelines[5].Bind ();
 		break;
 	case 17:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->shadowmap.shadowmap.Bind (GL_TEXTURE0,
 																				GL_TEXTURE_2D);
-		pipelines[4].Bind ();
+		pipelines[3].Bind ();
 		break;
 	case 18:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[5].Bind ();
+		pipelines[4].Bind ();
 		break;
 	case 19:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->composition.GetEdgeMap ().Bind (GL_TEXTURE0,
 																							GL_TEXTURE_2D);
-		pipelines[7].Bind ();
+		pipelines[6].Bind ();
 		break;
 	default:
 		throw std::runtime_error ("Invalid render mode.");

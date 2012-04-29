@@ -20,6 +20,7 @@
 #include <common.h>
 #include <gbuffer.h>
 #include <filters.h>
+#include <glow.h>
 
 class Renderer;
 
@@ -106,41 +107,14 @@ private:
 		* displayed on screen.
 		*/
 	 gl::Texture screen;
-	 struct
-	 {
-			/** Glow map.
-			 * A texture storing the parts of the screen that is supposed to glow.
-			 */
-			gl::Texture map;
-			/** Glow map (downsampled).
-			 * A texture storing the parts of the screen that is supposed to glow
-			 * downsampled to a lower resolution.
-			 */
-			gl::Texture downsampled;
-			/** Glow map (full resolution; OpenCL memory object).
-			 * OpenCL memory object referring to the glow map.
-			 */
-			cl::Memory mem;
-			/** Glow map (downsampled; OpenCL memory object).
-			 * OpenCL memory object referring to the downsampled glow
-			 * map.
-			 */
-			cl::Memory mem_downsampled;
-			/** Glow blur.
-			 * A Blur object for blurring the downsampled glow map.
-			 */
-			Blur blur;
-			/** Source framebuffer.
-			 * The source framebuffer object for copying and downsampling
-			 * the glow map.
-			 */
-			gl::Framebuffer source;
-			/** Destination framebuffer.
-			 * The destination framebuffer object for copying and downsampling
-			 * the glow map.
-			 */
-			gl::Framebuffer destination;
-	 } glow;
+	 /** Glow effect.
+		* This class handles the glow effect.
+		*/
+	 Glow glow;
+	 /** Glow map.
+		* A texture storing the parts of the screen that is supposed to glow.
+		*/
+	 gl::Texture glowmap;
 	 /** Edge map.
 		* A texture storing a map which highlights the edges in the
 		* screen texture intended for anti-aliasing.
@@ -175,6 +149,10 @@ private:
 		* OpenCL memory object referring to the screen texture.
 		*/
 	 cl::Memory screenmem;
+	 /** Glow map (OpenCL memory object).
+		* OpenCL memory object referring to the glow map.
+		*/
+	 cl::Memory glowmem;
 	 /** Edge map (OpenCL memory object).
 		* OpenCL memory object referring to the edge map.
 		*/
