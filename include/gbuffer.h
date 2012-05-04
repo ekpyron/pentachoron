@@ -39,7 +39,7 @@ public:
 	 gl::Texture specularbuffer[layers];
 	 cl::Memory specularmem[layers];
 	 gl::Texture depthtexture[layers];
-	 gl::Texture depthbuffer[layers];
+	 gl::Renderbuffer depthbuffer;
 	 cl::Memory depthmem[layers];
 	 GLuint GetWidth (void);
 	 GLuint GetHeight (void);
