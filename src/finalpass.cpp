@@ -31,8 +31,8 @@ FinalPass::~FinalPass (void)
 bool FinalPass::Init (void)
 {
 	std::vector<const char *> fprogram_sources = {
-		"compose.txt", "normal.txt", "passthrough.txt",
-		"shadowmap.txt", "glow.txt", "depth.txt", "edge.txt"
+		"compose.txt", "normal.txt", "passthrough.txt", "shadowmap.txt",
+		"glow.txt", "depth.txt", "edge.txt"
 	};
 	for (const char *&filename : fprogram_sources)
 	{
