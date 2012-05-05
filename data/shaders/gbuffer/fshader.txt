@@ -18,6 +18,8 @@ uniform bool specularmap_enabled;
 uniform bool parametermap_enabled;
 uniform uvec2 viewport;
 
+layout(depth_unchanged) out float gl_FragDepth;
+
 in vec2 uv;
 
 smooth in vec3 fTangent;

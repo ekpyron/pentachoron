@@ -2,6 +2,8 @@
 
 layout(location = 0) out vec2 moments;
 
+layout (early_fragment_tests) in;
+
 void main (void)
 {
 	float dx, dy;
