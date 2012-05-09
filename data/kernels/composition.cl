@@ -247,22 +247,10 @@ float4 compute_pixel (read_only image2d_t colormap,
 
 kernel void composition (write_only image2d_t screen,
        	    		 write_only image2d_t glowmap,
-	      		 read_only image2d_t colormap1,
-	      		 read_only image2d_t colormap2,
-	      		 read_only image2d_t colormap3,
-	      		 read_only image2d_t colormap4,
-			 read_only image2d_t depthbuffer1,
-			 read_only image2d_t depthbuffer2,
-			 read_only image2d_t depthbuffer3,
-			 read_only image2d_t depthbuffer4,
-			 read_only image2d_t normalmap1,
-			 read_only image2d_t normalmap2,
-			 read_only image2d_t normalmap3,
-			 read_only image2d_t normalmap4,
-			 read_only image2d_t specularmap1,
-			 read_only image2d_t specularmap2,
-			 read_only image2d_t specularmap3,
-			 read_only image2d_t specularmap4,
+	      		 read_only image2d_t colormap,
+			 read_only image2d_t depthbuffer,
+			 read_only image2d_t normalmap,
+			 read_only image2d_t specularmap,
 			 read_only image2d_t shadowmap,
 			 unsigned int num_lights,
 			 global struct Light *lights,
@@ -290,11 +278,11 @@ kernel void composition (write_only image2d_t screen,
 	{
 	   case 0:
 	   	gxf = native_divide ((float)gx, 
-	       	       		     (float)get_image_width (depthbuffer1));
+	       	       		     (float)get_image_width (depthbuffer));
 	   break;
 	   case 1:
 	   	gyf = native_divide ((float)gy, 
-	       	 	             (float)get_image_width (depthbuffer1));
+	       	 	             (float)get_image_width (depthbuffer));
 	   break;
 	   case 2:
 		num_light_indices = 0;
@@ -304,35 +292,25 @@ kernel void composition (write_only image2d_t screen,
 	}
 
 	local ushort light_indices[256];
-	float depths[4];
+	float depth;
 	float4 pos;
 
 	pos.x = native_divide ((float)x,
-	       		       (float)get_image_width (depthbuffer1));
+	       		       (float)get_image_width (depthbuffer));
      	pos.y = native_divide ((float)y,
-	       		       (float)get_image_height (depthbuffer1));
+	       		       (float)get_image_height (depthbuffer));
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
-     	depths[0] = read_imagef (depthbuffer1, sampler,
-     	       	 	         (int2) (x, y)).x;
-        depths[1] = read_imagef (depthbuffer2, sampler,
-		     	       	 (int2) (x, y)).x;
-	depths[2] = read_imagef (depthbuffer3, sampler,
-		     	       	 (int2) (x, y)).x;
-	depths[3] = read_imagef (depthbuffer4, sampler,
-		     	       	 (int2) (x, y)).x;
+     	depth = read_imagef (depthbuffer, sampler,
+     	       	 	     (int2) (x, y)).x;
 
-	for (int i = 0; i < 4; i++)
+	if (depth < 1.0)
 	{
-		if (depths[i] < 1.0)
-		{
-			uint d = (uint) (depths[i] * 4294967295.0);
-			atomic_min (&boxmin_int, d);
-			atomic_max (&boxmax_int, d);
-		}
-	}
-	
+		uint d = (uint) (depth * 4294967295.0);
+		atomic_min (&boxmin_int, d);
+		atomic_max (&boxmax_int, d);
+	}	
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
@@ -402,38 +380,12 @@ kernel void composition (write_only image2d_t screen,
 /*	float f = ((float) num_light_indices) / 32.0f;
 	pixel = f * ((float4) (1, 1, 1, 1));*/
 
-	pos.z = depths[0];
-	pixel = compute_pixel (colormap1, pos, normalmap1,
-      	       	 	       specularmap1, shadowmap, lx, ly,
+	pos.z = depth;
+	pixel = compute_pixel (colormap, pos, normalmap,
+      	       	 	       specularmap, shadowmap, lx, ly,
 		 	       x, y, lights, num_light_indices,
 			       light_indices, &info,
 			       num_parameters, parameters);
-	pos.z = depths[1];
-	pixel2 = compute_pixel (colormap2, pos,
-		       	 	normalmap2, specularmap2,
-				shadowmap, lx, ly, x, y,
-				lights, num_light_indices,
-				light_indices, &info,
-				num_parameters, parameters);
-
-	pos.z = depths[2];
-	pixel3 = compute_pixel (colormap3, pos,
-	             	 	normalmap3, specularmap3,
-				shadowmap, lx, ly, x, y,
-				lights, num_light_indices,
-				light_indices, &info,
-				num_parameters, parameters);
-
-	pos.z = depths[3];
-	pixel4 = compute_pixel (colormap4, pos,
-       	         	        normalmap4, specularmap4,
-	        		shadowmap, lx, ly, x, y,
-	        		lights, num_light_indices,
-				light_indices, &info,
-			        num_parameters, parameters);
-	pixel = mix (pixel4, pixel, pixel4.w);
-	pixel = mix (pixel3, pixel, pixel3.w);
-	pixel = mix (pixel2, pixel, pixel2.w);
 
 	float luminance = 0.2126 * pixel.x + 0.7152 * pixel.y
 	      		  + 0.0722 * pixel.w;

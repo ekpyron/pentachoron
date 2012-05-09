@@ -30,23 +30,21 @@ public:
 	 bool Init (void);
 	 void Render (Geometry &geometry);
 
-	 static const unsigned int layers = 4;
-
-	 gl::Texture colorbuffer[layers];
-	 cl::Memory colormem[layers];
-	 gl::Texture normalbuffer[layers];
-	 cl::Memory normalmem[layers];
-	 gl::Texture specularbuffer[layers];
-	 cl::Memory specularmem[layers];
-	 gl::Texture depthtexture[layers];
+	 gl::Texture colorbuffer;
+	 cl::Memory colormem;
+	 gl::Texture normalbuffer;
+	 cl::Memory normalmem;
+	 gl::Texture specularbuffer;
+	 cl::Memory specularmem;
+	 gl::Texture depthtexture;
 	 gl::Renderbuffer depthbuffer;
-	 cl::Memory depthmem[layers];
+	 cl::Memory depthmem;
 	 GLuint GetWidth (void);
 	 GLuint GetHeight (void);
 private:
 	 GLuint width, height;
 
-	 gl::Framebuffer framebuffer[layers];
+	 gl::Framebuffer framebuffer;
 
 	 gl::Program program;
 	 gl::Sampler depthsampler;

@@ -315,101 +315,41 @@ void FinalPass::Render (void)
 		renderer->composition.GetEdgeMap ().Bind (GL_TEXTURE2,
 																				GL_TEXTURE_2D);
 		renderer->windowgrid.sampler.Bind (3);
-		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE3, GL_TEXTURE_2D);
+		renderer->gbuffer.depthtexture.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
 		pipelines[0].Bind ();
 		break;
 	case 1:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.colorbuffer[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->gbuffer.colorbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[2].Bind ();
 		break;
 	case 2:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.colorbuffer[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[2].Bind ();
+		renderer->gbuffer.normalbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[1].Bind ();
 		break;
 	case 3:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.colorbuffer[2].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->gbuffer.specularbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[2].Bind ();
 		break;
 	case 4:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.colorbuffer[3].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[2].Bind ();
+		renderer->gbuffer.depthtexture.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		pipelines[5].Bind ();
 		break;
 	case 5:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.normalbuffer[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[1].Bind ();
-		break;
-	case 6:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.normalbuffer[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[1].Bind ();
-		break;
-	case 7:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.normalbuffer[2].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[1].Bind ();
-		break;
-	case 8:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.normalbuffer[3].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[1].Bind ();
-		break;
-	case 9:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.specularbuffer[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[2].Bind ();
-		break;
-	case 10:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.specularbuffer[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[2].Bind ();
-		break;
-	case 11:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.specularbuffer[2].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[2].Bind ();
-		break;
-	case 12:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.specularbuffer[3].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[2].Bind ();
-		break;
-	case 13:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[5].Bind ();
-		break;
-  case 14:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture[1].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[5].Bind ();
-		break;
-  case 15:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture[2].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[5].Bind ();
-		break;
-  case 16:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture[3].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[5].Bind ();
-		break;
-	case 17:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->shadowmap.shadowmap.Bind (GL_TEXTURE0,
 																				GL_TEXTURE_2D);
 		pipelines[3].Bind ();
 		break;
-	case 18:
+	case 6:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[4].Bind ();
 		break;
-	case 19:
+	case 7:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->composition.GetEdgeMap ().Bind (GL_TEXTURE0,
 																							GL_TEXTURE_2D);
