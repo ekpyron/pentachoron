@@ -62,7 +62,28 @@ bool GBuffer::Init (void)
 									 << program.GetInfoLog () << std::endl;
 			return false;
 		}
-		
+
+		fshader = gl::Shader (GL_FRAGMENT_SHADER);
+		if (!ReadFile (MakePath ("shaders", "gbuffer", "transparency.txt"), src))
+			 return false;
+		fshader.Source (src);
+		if (!fshader.Compile ())
+		{
+			(*logstream) << "Cannot compile "
+									 << MakePath ("shaders", "gbuffer", "transparency.txt")
+									 << ":" << std::endl << fshader.GetInfoLog () << std::endl;
+			return false;
+		}
+
+		transparencyprog.Attach (vshader);
+		transparencyprog.Attach (fshader);
+		if (!transparencyprog.Link ())
+		{
+			(*logstream) << "Cannot link the gbuffer transparency shader:"
+									 << std::endl << transparencyprog.GetInfoLog ()
+									 << std::endl;
+			return false;
+		}
 	}
 
 	width = config["gbuffer"]["width"].as<GLuint> ();
@@ -102,18 +123,33 @@ bool GBuffer::Init (void)
 	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
 					 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
 
+	fragidx.Image2D (GL_TEXTURE_2D, 0, GL_R32I, width, height,
+									 0, GL_RED_INTEGER, GL_INT, NULL);
+	fraglist.Data (width * height * 4 * 4 * 4, NULL, GL_DYNAMIC_COPY);
+	fraglisttex.Buffer (GL_R32UI, fraglist);
+
+	transparencyfb.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
+	transparencyfb.DrawBuffers ({ });
+
+	transparencyclearfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+																 fragidx, 0);
+	transparencyclearfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
+
 	depthmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
-			renderer->gbuffer.depthtexture);
+		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, depthtexture);
 	colormem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
-			renderer->gbuffer.colorbuffer);
+		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, colorbuffer);
 	normalmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
-			renderer->gbuffer.normalbuffer);
+		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, normalbuffer);
 	specularmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0,
-			renderer->gbuffer.specularbuffer);
+		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, specularbuffer);
+
+	fragidxmem = renderer->clctx.CreateFromGLTexture2D
+		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, fragidx);
+	fraglistmem = renderer->clctx.CreateFromGLBuffer
+		 (CL_MEM_READ_ONLY, fraglist);
+
+	counter.Data (sizeof (GLuint), NULL, GL_DYNAMIC_DRAW);
 
 	return true;
 }
@@ -136,6 +172,11 @@ void GBuffer::Render (Geometry &geometry)
 	program["farClipPlane"] = renderer->camera.GetFarClipPlane ();
 	program["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
 
+	transparencyprog["projmat"] = renderer->camera.GetProjMatrix ();
+	transparencyprog["viewport"] = glm::uvec2 (width, height);
+	transparencyprog["farClipPlane"] = renderer->camera.GetFarClipPlane ();
+	transparencyprog["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+
 	gl::Enable (GL_DEPTH_TEST);
 	gl::DepthMask (GL_TRUE);
 	gl::DepthFunc (GL_LESS);
@@ -152,10 +193,36 @@ void GBuffer::Render (Geometry &geometry)
 	gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
 
 	geometry.Render (Geometry::Pass::GBuffer,
-										 program, renderer->camera.GetViewMatrix (),
-										 false, false);
-	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
+									 program, renderer->camera.GetViewMatrix (),
+									 false, false);
+
+	transparencyprog.Use ();
+
 	gl::DepthMask (GL_FALSE);
+
+	transparencyclearfb.Bind (GL_FRAMEBUFFER);
+
+	gl::ClearBufferuiv (GL_COLOR, 0, (GLuint[]) { (GLuint) -1, (GLuint) -1,
+				 (GLuint) -1, (GLuint) -1 });
+	
+	transparencyfb.Bind (GL_FRAMEBUFFER);
+	gl::Viewport (0, 0, width, height);
+
+	*(GLuint*)counter.Map (GL_WRITE_ONLY) = 0;
+	counter.Unmap ();
+
+	counter.BindBase (GL_ATOMIC_COUNTER_BUFFER, 0);
+
+	fraglisttex.BindImage (0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);
+	fragidx.BindImage (1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32I);
+	geometry.Render (Geometry::Pass::GBufferTransparency,
+									 transparencyprog, renderer->camera.GetViewMatrix (),
+									 false, true);
+
+	GLuint count = *(GLuint*)counter.Map (GL_READ_ONLY);
+	counter.Unmap ();
+
+	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	gl::Program::UseNone ();
 	
 	GL_CHECK_ERROR;

@@ -252,7 +252,7 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 			(bsphere.center, bsphere.radius))
 		return;
 
-	if (!shadowpass)
+	if (!shadowpass && !transparent)
 	{
 		auto query = queries.find (pass);
 		if (query == queries.end ())
@@ -307,7 +307,7 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 		gl::ColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		culled++;
 	}
-	if (!shadowpass)
+	if (!shadowpass && !transparent)
 		 gl::Query::End (GL_ANY_SAMPLES_PASSED);
 }
 

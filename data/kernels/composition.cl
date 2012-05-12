@@ -5,6 +5,14 @@ const sampler_t samplerB = CLK_NORMALIZED_COORDS_TRUE|CLK_FILTER_LINEAR
 
 constant float4 small4 = (float4) (0.001, 0.001, 0.001, 0.001);
 
+struct PixelData
+{
+	float4 color;
+	float4 specular;
+	float4 normal;
+	float depth;
+};
+
 struct Light
 {
 	union {
@@ -133,6 +141,15 @@ float4 compute_sky (float4 p, struct Info *info)
 	return color;
 }
 
+float4 unpackUnorm4x8 (uint val)
+{
+	float4 retval;
+	uchar4 ints;
+	ints = vload4 (0, (uchar*) &val);
+	retval = convert_float4 (ints);
+	return native_divide (retval, 255);
+}
+
 float4 compute_pixel (read_only image2d_t colormap,
        		      float4 p,
 		      read_only image2d_t normalmap,
@@ -245,6 +262,30 @@ float4 compute_pixel (read_only image2d_t colormap,
 	return pixel;
 }
 
+void sortByDepth (struct PixelData *data, uchar num, uchar indices[8])
+{
+	uchar i;
+	for (i = 0; i < num; i++)
+	{
+		indices[i] = i;
+	}
+	do
+	{
+		for (i = 1; i < num; i++)
+		{
+			if (data[indices[i - 1]].depth
+			    > data[indices[i]].depth)
+			{
+				uchar tmp;
+				tmp = indices[i];
+				indices[i] = indices[i - 1];
+				indices[i - 1] = tmp;
+				break;
+			}
+		}
+	} while (i < num);
+}
+
 kernel void composition (write_only image2d_t screen,
        	    		 write_only image2d_t glowmap,
 	      		 read_only image2d_t colormap,
@@ -252,6 +293,8 @@ kernel void composition (write_only image2d_t screen,
 			 read_only image2d_t normalmap,
 			 read_only image2d_t specularmap,
 			 read_only image2d_t shadowmap,
+			 read_only image2d_t fragidx,
+			 global uint *fraglist,
 			 unsigned int num_lights,
 			 global struct Light *lights,
 			 struct Info info,
@@ -380,12 +423,43 @@ kernel void composition (write_only image2d_t screen,
 /*	float f = ((float) num_light_indices) / 32.0f;
 	pixel = f * ((float4) (1, 1, 1, 1));*/
 
+	uint idx = read_imageui (fragidx, sampler, (int2) (x, y)).x;
+
 	pos.z = depth;
 	pixel = compute_pixel (colormap, pos, normalmap,
       	       	 	       specularmap, shadowmap, lx, ly,
 		 	       x, y, lights, num_light_indices,
 			       light_indices, &info,
 			       num_parameters, parameters);
+
+	if (idx != (uint) -1)
+	{
+		struct PixelData data[8];
+		uchar indices[8];
+		uchar num;
+		num = 0;
+		while (idx != (uint) -1)
+		{
+			data[num].color = unpackUnorm4x8
+					  (fraglist[5 * idx + 0]);
+			data[num].specular = unpackUnorm4x8
+					     (fraglist[5 * idx + 1]);
+			data[num].normal = unpackUnorm4x8
+					   (fraglist[5 * idx + 2]);
+			data[num].depth = as_float (fraglist[5 * idx + 3]);
+			num++;
+			idx = fraglist[5 * idx + 4];
+		}
+		sortByDepth (data, num, indices);
+		for (uchar i = 1; i <= num; i++)
+		{
+			pixel = mix (pixel, data[indices[num - i]].color,
+			      	     data[indices[num - i]].color.w);
+//			pixel = (float4) (1.0, 0.0, 0.0, 1.0);
+//			pixel = data[indices[num - 1]].color;
+		}
+	}
+
 
 	float luminance = 0.2126 * pixel.x + 0.7152 * pixel.y
 	      		  + 0.0722 * pixel.w;

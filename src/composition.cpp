@@ -72,10 +72,12 @@ bool Composition::Init (void)
 	composition.SetArg (4, renderer->gbuffer.normalmem);
 	composition.SetArg (5, renderer->gbuffer.specularmem);
 	composition.SetArg (6, renderer->shadowmap.shadowmapmem);
+	composition.SetArg (7, renderer->gbuffer.fragidxmem);
+	composition.SetArg (8, renderer->gbuffer.fraglistmem);
 
 	cl_uint num_parameters = renderer->parameters.size ();
-	composition.SetArg (10, sizeof (cl_uint), &num_parameters);
-	composition.SetArg (11, renderer->parametermem);
+	composition.SetArg (12, sizeof (cl_uint), &num_parameters);
+	composition.SetArg (13, renderer->parametermem);
 
 	SetGlowSize (0);
 
@@ -170,6 +172,8 @@ void Composition::Frame (float timefactor)
 																	renderer->gbuffer.normalmem,
 																	renderer->gbuffer.specularmem,
 																	renderer->gbuffer.depthmem,
+																	renderer->gbuffer.fraglistmem,
+																	renderer->gbuffer.fragidxmem,
 																	renderer->shadowmap.shadowmapmem };
 	Info info;
 
@@ -190,9 +194,9 @@ void Composition::Frame (float timefactor)
 	info.shadow_alpha = shadow_alpha;
 	info.glowsize = glow.GetSize ();
 
-	composition.SetArg (7, sizeof (cl_uint), &num_lights);
-	composition.SetArg (8, renderer->lightmem);
-	composition.SetArg (9, sizeof (Info), &info);
+	composition.SetArg (9, sizeof (cl_uint), &num_lights);
+	composition.SetArg (10, renderer->lightmem);
+	composition.SetArg (11, sizeof (Info), &info);
 
 	const size_t work_dim[] = { renderer->gbuffer.GetWidth (),
 															renderer->gbuffer.GetHeight () };

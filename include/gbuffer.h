@@ -41,13 +41,23 @@ public:
 	 cl::Memory depthmem;
 	 GLuint GetWidth (void);
 	 GLuint GetHeight (void);
+	 gl::Texture fraglisttex;
+	 gl::Buffer fraglist;
+	 cl::Memory fraglistmem;
+	 gl::Texture fragidx;
+	 cl::Memory fragidxmem;
 private:
 	 GLuint width, height;
 
 	 gl::Framebuffer framebuffer;
+	 gl::Framebuffer transparencyfb;
+	 gl::Framebuffer transparencyclearfb;
 
 	 gl::Program program;
+	 gl::Program transparencyprog;
 	 gl::Sampler depthsampler;
+
+	 gl::Buffer counter;
 
 	 Renderer *renderer;
 	 friend class Renderer;
