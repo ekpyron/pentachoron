@@ -150,12 +150,8 @@ float4 unpackUnorm4x8 (uint val)
 	return native_divide (retval, 255);
 }
 
-float4 compute_pixel (read_only image2d_t colormap,
-       		      float4 p,
-		      read_only image2d_t normalmap,
-		      read_only image2d_t specularmap,
-		      read_only image2d_t shadowmap,
-		      uint lx, uint ly, uint x, uint y,
+float4 compute_pixel (struct PixelData *data, read_only image2d_t shadowmap,
+      		      float2 p, uint offset, uint x, uint y,
 		      global struct Light *lights,
 		      unsigned int num_light_indices,
 		      local ushort *light_indices,
@@ -163,16 +159,16 @@ float4 compute_pixel (read_only image2d_t colormap,
 		      unsigned int num_parameters,
 		      global struct Parameter *parameters)
 {
-	float4 pos = p;
+	float4 pos;
+	pos.xy = p;
+	pos.z = data->depth;
+	pos.w = 1.0;
 	if (getpos (&pos, info) == 1.0)
-	   return compute_sky (p, info);
+	   return compute_sky (pos, info);
 	float3 diffuse = (float3) (0, 0, 0);
 	float3 specular = (float3) (0, 0, 0);
-	uint offset = mad24 (ly, get_local_size (0), lx);
 	uint material;
-	float4 speculartmp = read_imagef (specularmap, sampler,
-			    		  (int2) (x, y));
-	material = speculartmp.w * 255.0;
+	material = data->specular.w * 255.0;
 
 	if (material >= num_parameters)
 	{
@@ -186,7 +182,10 @@ float4 compute_pixel (read_only image2d_t colormap,
 	for (int i = 0; i < num_light_indices; i++)
 	{
 		struct Light light;
-		light = lights[light_indices[i]];
+		if (light_indices != 0)
+		   light = lights[light_indices[i]];
+		else
+		   light = lights[i];
 		float3 lightDir = light.position.xyz - pos.xyz;
 
 		float dist = fast_length (lightDir);
@@ -220,8 +219,7 @@ float4 compute_pixel (read_only image2d_t colormap,
 		if (attenuation < 0.001)
 		   continue;
 		
-		float3 normal = mad (read_imagef (normalmap, sampler,
-		       	  	      	          (int2) (x, y)).xyz, 2, -1);
+		float3 normal = mad (data->normal.xyz, 2, -1);
 
 		float NdotL;
 
@@ -249,13 +247,13 @@ float4 compute_pixel (read_only image2d_t colormap,
 
 	diffuse += 0.025;
 
-	float4 pixel = read_imagef (colormap, sampler, (int2) (x, y));
+	float4 pixel = data->color;
 
 	pixel.xyz *= diffuse;
 
 	if (any (specular > small4))
 	{
-		specular *= speculartmp.xyz;
+		specular *= data->specular.xyz;
 		pixel.xyz += specular;
 	}
 
@@ -269,112 +267,29 @@ void sortByDepth (struct PixelData *data, uchar num, uchar indices[8])
 	{
 		indices[i] = i;
 	}
-	do
+
+	for (i = 1; i < num; i++)
 	{
-		for (i = 1; i < num; i++)
+		uchar item = indices[i];
+		uchar ihole = i;
+		while (ihole > 0 &&
+		       data[indices[i - 1]].depth > data[item].depth)
 		{
-			if (data[indices[i - 1]].depth
-			    > data[indices[i]].depth)
-			{
-				uchar tmp;
-				tmp = indices[i];
-				indices[i] = indices[i - 1];
-				indices[i - 1] = tmp;
-				break;
-			}
+			indices[ihole] = indices[i - 1];
+			ihole--;
 		}
-	} while (i < num);
+		indices[ihole] = item;
+	}
 }
 
-kernel void composition (write_only image2d_t screen,
-       	    		 write_only image2d_t glowmap,
-	      		 read_only image2d_t colormap,
-			 read_only image2d_t depthbuffer,
-			 read_only image2d_t normalmap,
-			 read_only image2d_t specularmap,
-			 read_only image2d_t shadowmap,
-			 read_only image2d_t fragidx,
-			 global uint *fraglist,
-			 unsigned int num_lights,
-			 global struct Light *lights,
-			 struct Info info,
-			 unsigned int num_parameters,
-			 global struct Parameter *parameters)
+void getlightindices (local ushort *light_indices,
+     		      local uint *num_light_indices,
+     		      int boxmin_int, int boxmax_int,
+		      global struct Light *lights, uint num_lights,
+     		      uint offset, float4 sphere, float radius)
 {
-	uint lx = get_local_id (0),
-	    ly = get_local_id (1);
-	uint gx = mul24 (get_group_id (0), get_local_size (0)),
-	     gy = mul24 (get_group_id (1), get_local_size (1));
-
-	uint x = gx + lx,
-	    y = gy + ly;
-	uint offset = mad24 (ly, get_local_size (0), lx);
-
-
-	local float gxf, gyf;
-	local float4 sphere;
-	local float radius;
-	local uint boxmin_int, boxmax_int;
-	local uint num_light_indices;
-
-	switch (offset)
-	{
-	   case 0:
-	   	gxf = native_divide ((float)gx, 
-	       	       		     (float)get_image_width (depthbuffer));
-	   break;
-	   case 1:
-	   	gyf = native_divide ((float)gy, 
-	       	 	             (float)get_image_width (depthbuffer));
-	   break;
-	   case 2:
-		num_light_indices = 0;
-		boxmin_int = 4294967295;
-		boxmax_int = 0;
-	   break;
-	}
-
-	local ushort light_indices[256];
-	float depth;
-	float4 pos;
-
-	pos.x = native_divide ((float)x,
-	       		       (float)get_image_width (depthbuffer));
-     	pos.y = native_divide ((float)y,
-	       		       (float)get_image_height (depthbuffer));
-
-	barrier (CLK_LOCAL_MEM_FENCE);
-
-     	depth = read_imagef (depthbuffer, sampler,
-     	       	 	     (int2) (x, y)).x;
-
-	if (depth < 1.0)
-	{
-		uint d = (uint) (depth * 4294967295.0);
-		atomic_min (&boxmin_int, d);
-		atomic_max (&boxmax_int, d);
-	}	
-
-	barrier (CLK_LOCAL_MEM_FENCE);
-
-	if (offset == 0)
-	{
-		float4 boxmin, boxmax;
-		boxmin.x = gxf;
-		boxmin.y = gyf;
-		boxmin.z = native_divide ((float)boxmin_int, 4294967295.0);
-		getpos (&boxmin, &info);
-		boxmax.x = gxf;
-		boxmax.y = gyf;
-		boxmax.z = native_divide ((float)boxmax_int, 4294967295.0);
-		getpos (&boxmax, &info);
-		radius = 0.5 * fast_distance (boxmin, boxmax);
-		sphere = 0.5 * (boxmin + boxmax);
-	}
-
-	barrier (CLK_LOCAL_MEM_FENCE);
-
-	if (boxmin_int != 4294967295 || boxmax_int != 0) {
+	if (boxmin_int == 4294967295 && boxmax_int == 0)
+	   return;
 
 	for (int pass = 0; pass < ((num_lights+255)>>8); pass++)
 	{
@@ -403,40 +318,82 @@ kernel void composition (write_only image2d_t screen,
 
 			if (d <= r)
 			{
-				uint index = atom_inc (&num_light_indices);
+				uint index = atom_inc (num_light_indices);
 				if (index < 256)
 				   light_indices[index] = (pass<<8) + offset;
 				else
-				   num_light_indices = 255;
+				   *num_light_indices = 255;
 			}
 		}
 	}
 
 	}
+}
+
+kernel void composition (write_only image2d_t screen,
+       	    		 write_only image2d_t glowmap,
+	      		 read_only image2d_t colormap,
+			 read_only image2d_t depthbuffer,
+			 read_only image2d_t normalmap,
+			 read_only image2d_t specularmap,
+			 read_only image2d_t shadowmap,
+			 read_only image2d_t fragidx,
+			 global uint *fraglist,
+			 unsigned int num_lights,
+			 global struct Light *lights,
+			 struct Info info,
+			 unsigned int num_parameters,
+			 global struct Parameter *parameters)
+{
+	uint lx = get_local_id (0),
+	    ly = get_local_id (1);
+	uint offset = mad24 (ly, get_local_size (0), lx);
+	uint gx = mul24 (get_group_id (0), get_local_size (0)),
+	     gy = mul24 (get_group_id (1), get_local_size (1));
+
+	uint x = gx + lx,
+	    y = gy + ly;
+
+	local float gxf, gyf;
+	local float4 sphere;
+	local float radius;
+	local uint boxmin_int, boxmax_int;
+	local uint num_light_indices;
+
+	struct PixelData data[8];
+	uchar indices[8];
+	uchar num;
+
+	switch (offset)
+	{
+	   case 0:
+	   	gxf = native_divide ((float)gx, 
+	       	       		     (float)get_image_width (depthbuffer));
+	   break;
+	   case 1:
+	   	gyf = native_divide ((float)gy, 
+	       	 	             (float)get_image_width (depthbuffer));
+	   break;
+	   case 2:
+		num_light_indices = 0;
+		boxmin_int = 4294967295;
+		boxmax_int = 0;
+	   break;
 	}
 
+	local ushort light_indices[256];
+	float depth;
+	float2 pos;
 
-	barrier (CLK_LOCAL_MEM_FENCE);
-
-	float4 pixel4, pixel3, pixel2, pixel;
-
-/*	float f = ((float) num_light_indices) / 32.0f;
-	pixel = f * ((float4) (1, 1, 1, 1));*/
+	pos.x = native_divide ((float)x,
+	       		       (float)get_image_width (depthbuffer));
+     	pos.y = native_divide ((float)y,
+	       		       (float)get_image_height (depthbuffer));
 
 	uint idx = read_imageui (fragidx, sampler, (int2) (x, y)).x;
 
-	pos.z = depth;
-	pixel = compute_pixel (colormap, pos, normalmap,
-      	       	 	       specularmap, shadowmap, lx, ly,
-		 	       x, y, lights, num_light_indices,
-			       light_indices, &info,
-			       num_parameters, parameters);
-
 	if (idx != (uint) -1)
 	{
-		struct PixelData data[8];
-		uchar indices[8];
-		uchar num;
 		num = 0;
 		while (idx != (uint) -1)
 		{
@@ -451,15 +408,72 @@ kernel void composition (write_only image2d_t screen,
 			idx = fraglist[5 * idx + 4];
 		}
 		sortByDepth (data, num, indices);
-		for (uchar i = 1; i <= num; i++)
-		{
-			pixel = mix (pixel, data[indices[num - i]].color,
-			      	     data[indices[num - i]].color.w);
-//			pixel = (float4) (1.0, 0.0, 0.0, 1.0);
-//			pixel = data[indices[num - 1]].color;
-		}
 	}
 
+	barrier (CLK_LOCAL_MEM_FENCE);
+
+     	depth = read_imagef (depthbuffer, sampler,
+     	       	 	     (int2) (x, y)).x;
+
+	if (depth < 1.0)
+	{
+		uint d = (uint) (depth * 4294967295.0);
+		atomic_min (&boxmin_int, d);
+		atomic_max (&boxmax_int, d);
+	}
+
+	barrier (CLK_LOCAL_MEM_FENCE);
+
+	if (offset == 0)
+	{
+		float4 boxmin, boxmax;
+		boxmin.x = gxf;
+		boxmin.y = gyf;
+		boxmin.z = native_divide ((float)boxmin_int, 4294967295.0);
+		getpos (&boxmin, &info);
+		boxmax.x = gxf;
+		boxmax.y = gyf;
+		boxmax.z = native_divide ((float)boxmax_int, 4294967295.0);
+		getpos (&boxmax, &info);
+		radius = 0.5 * fast_distance (boxmin, boxmax);
+		sphere = 0.5 * (boxmin + boxmax);
+	}
+
+	barrier (CLK_LOCAL_MEM_FENCE);
+
+	getlightindices (light_indices, &num_light_indices, boxmin_int,
+			 boxmax_int, lights, num_lights,
+		         offset, sphere, radius);
+
+	barrier (CLK_LOCAL_MEM_FENCE);
+
+	float4 pixel4, pixel3, pixel2, pixel;
+
+/*	float f = ((float) num_light_indices) / 32.0f;
+	pixel = f * ((float4) (1, 1, 1, 1));*/
+
+	struct PixelData opaquedata;
+	opaquedata.color = read_imagef (colormap, sampler, (int2) (x, y));
+	opaquedata.specular = read_imagef (specularmap, sampler,
+			      		   (int2) (x, y));
+	opaquedata.normal = read_imagef (normalmap, sampler, (int2) (x, y));
+	opaquedata.depth = depth;
+	pixel = compute_pixel (&opaquedata, shadowmap, pos, offset, x, y,
+	       		       lights, num_light_indices, light_indices,
+			       &info, num_parameters, parameters);
+
+	for (uchar i = 1; i <= num; i++)
+	{
+		float4 pixel2;
+
+		pixel2 = compute_pixel (&data[indices[num - i]],
+		       	 	       	shadowmap, pos, offset,
+		       	 	       	x, y, lights,
+					num_lights, 0,
+		       			&info, num_parameters,
+					parameters);
+		pixel = mix (pixel, pixel2, pixel2.w);
+	}
 
 	float luminance = 0.2126 * pixel.x + 0.7152 * pixel.y
 	      		  + 0.0722 * pixel.w;
