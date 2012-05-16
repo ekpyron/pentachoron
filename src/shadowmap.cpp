@@ -117,7 +117,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	geometry.Render (Geometry::Pass::ShadowMap + shadowid * 0x00010000,
 									 program, vmat, true, false);
 	geometry.Render (Geometry::Pass::ShadowMap + shadowid * 0x00010000,
-		program, vmat, true, true);
+									 program, vmat, true, true);
 
 	gl::DepthMask (GL_FALSE);
 

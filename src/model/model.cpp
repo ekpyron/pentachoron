@@ -297,9 +297,9 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 	}
 	else
 	{
-		gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		if (!transparent)
 		{
+			gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 			gl::DepthMask (GL_FALSE);
 			gl::Disable (GL_CULL_FACE);
 		}
@@ -313,8 +313,8 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 		{
 			gl::Enable (GL_CULL_FACE);
 			gl::DepthMask (GL_TRUE);
+			gl::ColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		}
-		gl::ColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		culled++;
 	}
 	if (!shadowpass)
