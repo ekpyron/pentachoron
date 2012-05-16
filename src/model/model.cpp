@@ -252,7 +252,7 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 			(bsphere.center, bsphere.radius))
 		return;
 
-	if (!shadowpass && !transparent)
+	if (!shadowpass)
 	{
 		auto query = queries.find (pass);
 		if (query == queries.end ())
@@ -298,20 +298,26 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 	else
 	{
 		gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		gl::DepthMask (GL_FALSE);
-		gl::Disable (GL_CULL_FACE);
+		if (!transparent)
+		{
+			gl::DepthMask (GL_FALSE);
+			gl::Disable (GL_CULL_FACE);
+		}
 		parent->bboxprogram.Use ();
 		bbox.array.Bind ();
 		bbox.indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
 		gl::DrawElements (GL_TRIANGLES, 36,
 											GL_UNSIGNED_BYTE, NULL);
 		program.Use ();
-		gl::Enable (GL_CULL_FACE);
-		gl::DepthMask (GL_TRUE);
+		if (!transparent)
+		{
+			gl::Enable (GL_CULL_FACE);
+			gl::DepthMask (GL_TRUE);
+		}
 		gl::ColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		culled++;
 	}
-	if (!shadowpass && !transparent)
+	if (!shadowpass)
 		 gl::Query::End (GL_ANY_SAMPLES_PASSED);
 }
 
