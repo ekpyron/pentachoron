@@ -79,9 +79,6 @@ struct Info
 // material parameter
 struct Parameter
 {
-	/*
-	 * specular.x: specular exponent
-	 */
 	struct
 	{
 		float exponent;
@@ -316,32 +313,6 @@ float4 compute_pixel (struct PixelData *data, read_only image2d_t shadowmap,
 	return pixel;
 }
 
-// sorts a list of fragments by their depth
-void sortByDepth (struct PixelData *data, uchar num,
-     		  uchar indices[DEPTHLAYERS])
-{
-	uchar i;
-	// initialize indices
-	for (i = 0; i < num; i++)
-	{
-		indices[i] = i;
-	}
-
-	// perform a insertion sort
-	for (i = 1; i < num; i++)
-	{
-		uchar item = indices[i];
-		uchar ihole = i;
-		while (ihole > 0 &&
-		       data[indices[i - 1]].depth > data[item].depth)
-		{
-			indices[ihole] = indices[i - 1];
-			ihole--;
-		}
-		indices[ihole] = item;
-	}
-}
-
 // determine whether a light affects a given bounding sphere
 bool culllight (global struct Light *light, float3 sphere, float radius)
 {
@@ -438,7 +409,6 @@ kernel void composition (write_only image2d_t screen,
 	local uint num_light_indices;
 
 	struct PixelData data[DEPTHLAYERS];
-	uchar indices[DEPTHLAYERS];
 	uchar num;
 
 	// precompute some values needed later
@@ -460,6 +430,7 @@ kernel void composition (write_only image2d_t screen,
 	}
 
 	local ushort light_indices[256];
+	uint indices[DEPTHLAYERS];
 	float depth;
 	float2 pos;
 
@@ -475,60 +446,51 @@ kernel void composition (write_only image2d_t screen,
 
 	num = 0;
 	// store the first up to DEPTHLAYERS fragments from the list
-	while (idx != (uint) -1 && num < DEPTHLAYERS)
+	while (idx != (uint) -1)
 	{
-		// obtain depth
+		// fetch depth
 		float d = as_float (fraglist[5 * idx + 3]);
-		if (d >= 1.0)
+
+		// insertion of the current fragment at the right place
+
+		// still place in the array?
+		if (num < DEPTHLAYERS)
 		{
+			num++;
+		}
+		// if not check whether to override the last entry
+		else if (as_float (fraglist[5 * indices[num - 1] + 3]) <= d)
+		{
+			// discard the current fragment and
+			// continue with the next one
 			idx = fraglist[5 * idx + 4];
 			continue;
 		}
-		// obtain per-fragment gbuffer data
-		data[num].color = unpackUnorm4x8 (fraglist[5 * idx + 0]);
-		data[num].specular = unpackUnorm4x8 (fraglist[5 * idx + 1]);
-		data[num].normal = unpackUnorm4x8 (fraglist[5 * idx + 2]);
-		data[num].depth = d;
-		num++;
-		// get next index
+
+		// move the indices in the list to the right
+		// as long as the one to the left has a smaller depth
+		// than the fragment we're processing
+		uint i = num - 1;
+		while (i > 0 && d < as_float (fraglist[5 * indices[i - 1] + 3]))
+		{
+			indices[i] = indices[i - 1];
+			i--;
+		}
+		// store the index of this fragment in the resulting hole
+		// in the list
+		indices[i] = idx;
+
+		// fetch next index
 		idx = fraglist[5 * idx + 4];
 	}
-	// sort them
-	if (num > 0)
-	   sortByDepth (data, num, indices);
-	// if there are more fragments in the list,
-	// insert them in the sorted list
-	while (idx != (uint) -1)
+	// load the gbuffer data for every fragment in the list
+	for (uchar i = 0; i < num; i++)
 	{
-		float d = as_float (fraglist[5 * idx + 3]);
-		uchar item = indices[num - 1];
-
-		// check against the depth of the last value in the list
-		if (d < data[item].depth)
-		{
-			// replace the last value
-			data[item].color = unpackUnorm4x8
-				      	   (fraglist[5 * idx + 0]);
-			data[item].specular = unpackUnorm4x8
-					      (fraglist[5 * idx + 1]);
-			data[item].normal = unpackUnorm4x8
-				   	    (fraglist[5 * idx + 2]);
-			data[item].depth = d;
-
-			// move the new value to it's correct position
-			// in the list
-			uchar i = num - 1;
-			uchar ihole = i;
-			while (ihole > 0 &&
-			       data[indices[i-1]].depth > data[item].depth)
-			{
-				indices[ihole] = indices[i - 1];
-				ihole--;
-			}
-			indices[ihole] = item;
-		}
-		// next fragment
-		idx = fraglist[5 * idx + 4];
+		idx = indices[i];
+		data[i].color = unpackUnorm4x8 (fraglist[5 * idx + 0]);
+		data[i].specular = unpackUnorm4x8 (fraglist[5 * idx + 1]);
+		data[i].normal = unpackUnorm4x8 (fraglist[5 * idx + 2]);
+		data[i].depth = as_float (fraglist[5 * idx + 3]);
 	}
 
 	barrier (CLK_LOCAL_MEM_FENCE);
@@ -615,7 +577,7 @@ kernel void composition (write_only image2d_t screen,
 
 		// compute the color for a depth layer
 		// (back to front)
-		pixel2 = compute_pixel (&data[indices[num - i - 1]],
+		pixel2 = compute_pixel (&data[num - i - 1],
 		       	 	       	shadowmap, pos, lights,
 					num_light_indices, light_indices,
 					&info, num_parameters,
