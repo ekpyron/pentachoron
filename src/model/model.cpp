@@ -285,11 +285,15 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 
 	if (result == GL_TRUE)
 	{
+		if (transparent)
+			 gl::Disable (GL_CULL_FACE);
 		for (Mesh &mesh : meshes)
 		{
 			if (transparent == mesh.IsTransparent ())
 				 mesh.Render (program, shadowpass);
 		}
+		if (transparent)
+			 gl::Enable (GL_CULL_FACE);
 	}
 	else
 	{
