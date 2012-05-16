@@ -1,28 +1,33 @@
 #version 420 core
 
+// image definitions
 layout(binding = 0, size1x32) writeonly uniform uimageBuffer fraglist;
 layout(binding = 1, size1x32) uniform uimage2D fragidx;
+layout(binding = 2, size1x32) uniform uimageBuffer counter;
 
-layout(binding = 0) uniform atomic_uint counter;
-
+// texture input
 layout(binding = 0) uniform sampler2D diffusemap;
 layout(binding = 1) uniform sampler2D normalmap;
 layout(binding = 2) uniform sampler2D specularmap;
 layout(binding = 3) uniform sampler2D parametermap;
 
+// uniform input
 uniform bool diffuse_enabled;
 uniform bool normalmap_enabled;
 uniform bool specularmap_enabled;
 uniform bool parametermap_enabled;
 uniform uvec2 viewport;
+
+// texture coordinates
 in vec2 uv;
 
+// tangent space base vectors
 smooth in vec3 fTangent;
 smooth in vec3 fBinormal;
 smooth in vec3 fNormal;
 
-const float small = 0.0000001;
-
+// early depth reject assures only visible
+// fragments will be written to the list
 layout (early_fragment_tests) in;
 
 void main (void)
@@ -31,24 +36,28 @@ void main (void)
 	uint depth;
 	ivec2 p = ivec2 (gl_FragCoord.xy);
 
+	// fetch diffuse color
 	if (diffuse_enabled)
 		color = texture2D (diffusemap, uv);
 	else
-		color = vec4 (1.0, 1.0, 1.0, 1.0);
+		color = vec4 (0.0, 0.0, 0.0, 1.0);
 
+	// fetch specular color
 	if (specularmap_enabled)
 		specular.xyz = texture2D (specularmap, uv).xyz;
 	else
 		specular.xyz = vec3 (0.0, 0.0, 0.0);
 
+	// fetch normal
 	if (normalmap_enabled)
 	{
 		vec3 n;
 		mat3x3 tangentmat;
-		tangentmat = mat3x3 (fTangent, fBinormal, fNormal);
-
 		n.xy = texture2D (normalmap, uv).xy * 2.0 - 1.0;
+		// reconstruct z coordinate
 		n.z = sqrt (1.0 - n.x * n.x - n.y * n.y);
+		// convert to tangent space
+		tangentmat = mat3x3 (fTangent, fBinormal, fNormal);
 		normal.xyz = (tangentmat * n) * 0.5 + 0.5;
 	}
 	else
@@ -56,6 +65,7 @@ void main (void)
 		normal.xyz = fNormal * 0.5 + 0.5;
 	}
 
+	// fetch material parameter information
 	if (parametermap_enabled)
 	{
 		specular.w = texture2D (parametermap, uv).r;
@@ -65,12 +75,24 @@ void main (void)
 		specular.w = 0;
 	}
 
-	depth = floatBitsToUint (gl_FragCoord.z);
+	// decide which counter to use
+	int counterid;
+	counterid = int (gl_FragCoord.x) & 7;
+	counterid += 8 * (int (gl_FragCoord.y) & 7);
 
-	int idx = int (atomicCounterIncrement (counter));
+	// increase counter
+	int idx = int (imageAtomicAdd (counter, counterid, 1));
+	// compute linear buffer index
+	idx *= 64;
+	idx += counterid;
 
+	// replace the starting index
 	uint next = imageAtomicExchange (fragidx, p, idx);
 
+	// convert depth to an integer
+	depth = floatBitsToUint (gl_FragCoord.z);
+
+	// store data to linear buffer
 	imageStore (fraglist, idx * 5 + 0, uvec4 (packUnorm4x8 (color)));
 	imageStore (fraglist, idx * 5 + 1, uvec4 (packUnorm4x8 (specular)));
 	imageStore (fraglist, idx * 5 + 2, uvec4 (packUnorm4x8 (normal)));

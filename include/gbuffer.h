@@ -57,6 +57,7 @@ private:
 	 gl::Program transparencyprog;
 	 gl::Sampler depthsampler;
 
+	 gl::Texture countertex;
 	 gl::Buffer counter;
 
 	 Renderer *renderer;
