@@ -86,6 +86,16 @@ public:
 		* \param threshold the luminance threshold
 		*/
 	 void SetLuminanceThreshold (float threshold);
+	 /** Set mode.
+		* Sets the composition mode.
+		* \param mode Composition mode to use.
+		*/
+	 void SetMode (GLuint mode);
+	 /** Get mode.
+		* Obtains the composition mode.
+		* \returns the composition mode
+		*/
+	 GLuint GetMode (void);
 	 /** Get screen texture.
 		* Returns a reference to the screen texture.
 		* \returns a referene to the screen texture
@@ -157,6 +167,10 @@ private:
 		* OpenCL memory object referring to the edge map.
 		*/
 	 cl::Memory edgemem;
+	 /** Composition mode.
+		* Stores the mode of composition.
+		*/
+	 GLuint mode;
 	 /** Parent renderer.
 		* The Renderer this class belongs to.
 		*/

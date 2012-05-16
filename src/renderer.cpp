@@ -96,6 +96,7 @@ bool Renderer::Init (void)
 			light.spot.penumbra_cosine = cosf (light.spot.penumbra_angle);
 			light.specular.color = glm::vec3 (light.color);
 			light.attenuation = glm::vec4 (0.0f, 0.0f, 0.07f, 50.0f);
+			light.CalculateFrustum ();
 			lights.push_back (light);
 		}
 	}

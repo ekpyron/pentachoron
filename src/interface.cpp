@@ -54,6 +54,8 @@ const std::vector<Menu> menus = {
 				&Interface::EditAntialiasing, false },
 			{ "Rendermode: ", &Interface::PrintRendermode,
 				&Interface::ToggleRendermode, false },
+			{ "Compositionmode: ", &Interface::PrintCompositionmode,
+				&Interface::ToggleCompositionmode, false },
 			{ "Exit", NULL, &Interface::Exit, false }
 		}
 	},
@@ -216,6 +218,7 @@ void Interface::AddLight (int what)
 		light.spot.penumbra_cosine = cosf (light.spot.penumbra_angle);
 		light.specular.color = glm::vec3 (1, 1, 1);
 		light.attenuation = glm::vec4 (0.0f, 0.0f, 0.007f, 50.0f);
+		light.CalculateFrustum ();
 		renderer->lights.push_back (light);
 
 		renderer->lightmem = renderer->clctx.CreateBuffer
@@ -328,6 +331,7 @@ void Interface::RandomizeLights (int what)
 			};			
 			light.color = colors[rand () % 6];
 			light.specular.color = glm::vec3 (light.color);
+			light.CalculateFrustum ();
 		}
 		renderer->queue.EnqueueWriteBuffer
 			 (renderer->lightmem, CL_TRUE, 0,
@@ -382,6 +386,15 @@ void Interface::ToggleRendermode (int what)
 	if (rendermode >= NUM_RENDERMODES)
 		 rendermode = 0;
 	renderer->finalpass.SetRenderMode (rendermode);
+}
+
+void Interface::ToggleCompositionmode (int what)
+{
+	GLint mode = renderer->composition.GetMode ();
+	mode += what;
+	if (mode < 0)
+		 mode = 0;
+	renderer->composition.SetMode (mode);
 }
 
 void Interface::EditToneMapping (int what)
@@ -496,6 +509,11 @@ void Interface::PrintRendermode (void)
 	font.Print (rendermodes[renderer->finalpass.GetRenderMode ()]);
 }
 
+void Interface::PrintCompositionmode (void)
+{
+	font.Print (renderer->composition.GetMode ());
+}
+
 void Interface::SelectShadow (int what)
 {
 	active_shadow += what;
@@ -593,37 +611,37 @@ void Interface::ToggleSoftShadow (int what)
 void Interface::MoveLightX (int what)
 {
 	renderer->lights[active_light].position.x += what * timefactor;
+	renderer->lights[active_light].CalculateFrustum ();
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].position.x)
+			intptr_t (&renderer->lights[active_light])
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].position.x),
-			&renderer->lights[active_light].position.x, 0, NULL, NULL);
+			sizeof (renderer->lights[active_light]),
+			&renderer->lights[active_light], 0, NULL, NULL);
 }
 
 void Interface::MoveLightY (int what)
 {
 	renderer->lights[active_light].position.y += what * timefactor;
+	renderer->lights[active_light].CalculateFrustum ();
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].position.y)
+			intptr_t (&renderer->lights[active_light])
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].position.y),
-			&renderer->lights[active_light].position.y,
-			0, NULL, NULL);
+			sizeof (renderer->lights[active_light]),
+			&renderer->lights[active_light], 0, NULL, NULL);
 }
 
 void Interface::MoveLightZ (int what)
 {
 	renderer->lights[active_light].position.z += what * timefactor;
+	renderer->lights[active_light].CalculateFrustum ();
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].position.z)
+			intptr_t (&renderer->lights[active_light])
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].position.z),
-			&renderer->lights[active_light].position.z,
-			0, NULL, NULL);
-
+			sizeof (renderer->lights[active_light]),
+			&renderer->lights[active_light], 0, NULL, NULL);
 }
 
 void Interface::MoveLightDirX (int what)
@@ -631,13 +649,13 @@ void Interface::MoveLightDirX (int what)
 	renderer->lights[active_light].direction.x += what * timefactor;
 	renderer->lights[active_light].direction
 		 = glm::normalize (renderer->lights[active_light].direction);
+	renderer->lights[active_light].CalculateFrustum ();
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].direction)
+			intptr_t (&renderer->lights[active_light])
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].direction),
-			&renderer->lights[active_light].direction,
-			0, NULL, NULL);
+			sizeof (renderer->lights[active_light]),
+			&renderer->lights[active_light], 0, NULL, NULL);
 }
 
 void Interface::MoveLightDirY (int what)
@@ -645,13 +663,13 @@ void Interface::MoveLightDirY (int what)
 	renderer->lights[active_light].direction.y += what * timefactor;
 	renderer->lights[active_light].direction
 		 = glm::normalize (renderer->lights[active_light].direction);
+	renderer->lights[active_light].CalculateFrustum ();
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].direction)
+			intptr_t (&renderer->lights[active_light])
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].direction),
-			&renderer->lights[active_light].direction,
-			0, NULL, NULL);
+			sizeof (renderer->lights[active_light]),
+			&renderer->lights[active_light], 0, NULL, NULL);
 }
 
 void Interface::MoveLightDirZ (int what)
@@ -659,13 +677,13 @@ void Interface::MoveLightDirZ (int what)
 	renderer->lights[active_light].direction.z += what * timefactor;
 	renderer->lights[active_light].direction
 		 = glm::normalize (renderer->lights[active_light].direction);
+	renderer->lights[active_light].CalculateFrustum ();
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].direction)
+			intptr_t (&renderer->lights[active_light])
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].direction),
-			&renderer->lights[active_light].direction,
-			0, NULL, NULL);
+			sizeof (renderer->lights[active_light]),
+			&renderer->lights[active_light], 0, NULL, NULL);
 }
 
 void Interface::EditDiffuseR (int what)
@@ -771,13 +789,13 @@ void Interface::EditSpotAngle (int what)
 		 = cosf (renderer->lights[active_light].spot.angle);
 	renderer->lights[active_light].spot.tangent
 		 = tanf (renderer->lights[active_light].spot.angle);
+	renderer->lights[active_light].CalculateFrustum ();
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].spot)
+			intptr_t (&renderer->lights[active_light])
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].spot),
-			&renderer->lights[active_light].spot,
-			0, NULL, NULL);
+			sizeof (renderer->lights[active_light]),
+			&renderer->lights[active_light], 0, NULL, NULL);
 }
 
 void Interface::EditSpotPenumbraAngle (int what)
@@ -853,13 +871,13 @@ void Interface::EditMaxDistance (int what)
 	renderer->lights[active_light].attenuation.w += what * timefactor * 0.1;
 	if (renderer->lights[active_light].attenuation.w < 0)
 		 renderer->lights[active_light].attenuation.w = 0;
+	renderer->lights[active_light].CalculateFrustum ();
 	renderer->queue.EnqueueWriteBuffer
 		 (renderer->lightmem, CL_TRUE,
-			intptr_t (&renderer->lights[active_light].attenuation.w)
+			intptr_t (&renderer->lights[active_light])
 			- intptr_t (&renderer->lights[0]),
-			sizeof (renderer->lights[active_light].attenuation.w),
-			&renderer->lights[active_light].attenuation.w,
-			0, NULL, NULL);
+			sizeof (renderer->lights[active_light]),
+			&renderer->lights[active_light], 0, NULL, NULL);
 }
 
 void Interface::EditImageKey (int what)

@@ -39,6 +39,7 @@ public:
 	 void EditShadows (int what);
 	 void EditGlow (int what);
 	 void ToggleRendermode (int what);
+	 void ToggleCompositionmode (int what);
 	 void ToggleSoftShadow (int what);
 	 void EditToneMapping (int what);
 	 void EditGlowSize (int what);
@@ -90,6 +91,7 @@ public:
 	 void EditLuminanceThreshold (int what);
 
 	 void PrintRendermode (void);
+	 void PrintCompositionmode (void);
 	 void PrintActiveLight (void);
 	 void PrintActiveShadow (void);
 	 void PrintSoftShadow (void);

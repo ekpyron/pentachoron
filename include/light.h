@@ -39,6 +39,15 @@ typedef struct _Light
 			glm::vec3 color;
 			float padding;
 	 } specular;
+	 struct
+	 {
+			glm::vec4 left;
+			glm::vec4 right;
+			glm::vec4 bottom;
+			glm::vec4 top;
+			glm::vec4 near;
+			glm::vec4 far;
+	 } frustum;
 	 /*
 		* attenuation.x: constant attenuation
 		* attenuation.y: linear attenuation
@@ -46,6 +55,8 @@ typedef struct _Light
 		* attenuation.w: max distance
 		*/
 	 glm::vec4 attenuation;
+
+	 void CalculateFrustum (void);
 } Light;
 
 

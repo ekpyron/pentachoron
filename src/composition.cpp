@@ -153,6 +153,20 @@ const gl::Texture &Composition::GetEdgeMap (void)
 	return edgemap;
 }
 
+#define NUM_COMPOSITIONMODES   3
+
+void Composition::SetMode (GLuint m)
+{
+	mode = m;
+	if (mode >= NUM_COMPOSITIONMODES)
+		 mode = NUM_COMPOSITIONMODES - 1;
+}
+
+GLuint Composition::GetMode (void)
+{
+	return mode;
+}
+
 void Composition::Frame (float timefactor)
 {
 	typedef struct Info
@@ -165,7 +179,7 @@ void Composition::Frame (float timefactor)
 		 GLfloat luminance_threshold;
 		 GLfloat shadow_alpha;
 		 GLuint glowsize;
-		 GLfloat padding;
+		 GLuint mode;
 	} Info;
 	std::vector<cl::Memory> mem = { screenmem, glowmem,
 																	renderer->gbuffer.colormem,
@@ -193,6 +207,7 @@ void Composition::Frame (float timefactor)
 	info.luminance_threshold = luminance_threshold;
 	info.shadow_alpha = shadow_alpha;
 	info.glowsize = glow.GetSize ();
+	info.mode = mode;
 
 	composition.SetArg (9, sizeof (cl_uint), &num_lights);
 	composition.SetArg (10, renderer->lightmem);
