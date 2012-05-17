@@ -189,7 +189,6 @@ bool GBuffer::Init (void)
 		 (CL_MEM_READ_ONLY, fraglist);
 
 	counter.Data (sizeof (GLuint) * 64, NULL, GL_DYNAMIC_DRAW);
-	countertex.Buffer (GL_R32UI, counter);
 
 	return true;
 }
@@ -259,7 +258,7 @@ void GBuffer::Render (Geometry &geometry)
 
 	fraglisttex.BindImage (0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);
 	fragidx.BindImage (1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32I);
-	countertex.BindImage (2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	counter.BindBase (GL_ATOMIC_COUNTER_BUFFER, 0);
 	geometry.Render (Geometry::Pass::GBufferTransparency,
 									 transparencyprog, renderer->camera.GetViewMatrix ());
 
@@ -268,7 +267,8 @@ void GBuffer::Render (Geometry &geometry)
 	ptr = (GLuint*) counter.Map (GL_READ_ONLY);
 	for (auto i = 0; i < 64; i++)
 	{
-		count += ptr[i];
+		if (ptr[i] * 64 + i > count)
+			 count = ptr[i] * 64 + i;
 	}
 	counter.Unmap ();
 
@@ -285,7 +285,6 @@ void GBuffer::Render (Geometry &geometry)
 		gl::ClearBufferfv (GL_COLOR, 0, (float[]) {1.0f, 0.0f, 0.0f, 0.0f} );
 		gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
 		
-
 		geometry.Render (Geometry::Pass::GBufferDepthOnly,
 										 program, renderer->camera.GetViewMatrix ());
 	}

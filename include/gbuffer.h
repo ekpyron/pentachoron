@@ -63,7 +63,6 @@ private:
 	 gl::Program depthonlyprog;
 	 gl::Sampler depthsampler;
 
-	 gl::Texture countertex;
 	 gl::Buffer counter;
 
 	 Renderer *renderer;
