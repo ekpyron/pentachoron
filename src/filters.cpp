@@ -202,9 +202,14 @@ Blur::Blur (Blur &&blur)
 	: num_weights (blur.num_weights), source (blur.source),
 		destination (blur.destination), weights (std::move (blur.weights)),
 		parent (blur.parent), storage (std::move (blur.storage)),
-		size (blur.size), width (blur.width), height (blur.height),
-		offsets (std::move (blur.offsets))
+		size (blur.size), offsets (std::move (blur.offsets))
 {
+#ifdef DEBUG
+	if (parent)
+		 parent->renderer->memory -= width * height * 4 * 4;
+#endif
+	width = blur.width;
+	height = blur.height;
 	blur.size = 0;
 	blur.num_weights = 0;
 	blur.width = 0;
@@ -213,10 +218,18 @@ Blur::Blur (Blur &&blur)
 
 Blur::~Blur (void)
 {
+#ifdef DEBUG
+	if (parent)
+		 parent->renderer->memory -= width * height * 4 * 4;
+#endif
 }
 
 Blur &Blur::operator= (Blur &&blur)
 {
+#ifdef DEBUG
+	if (parent)
+		 parent->renderer->memory -= width * height * 4 * 4;
+#endif
 	width = blur.width;
 	height = blur.height;
 	num_weights = blur.num_weights;
