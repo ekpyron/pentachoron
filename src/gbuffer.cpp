@@ -188,7 +188,12 @@ bool GBuffer::Init (void)
 	fraglistmem = renderer->clctx.CreateFromGLBuffer
 		 (CL_MEM_READ_ONLY, fraglist);
 
-	counter.Data (sizeof (GLuint) * 64, NULL, GL_DYNAMIC_DRAW);
+	const GLuint counters[64]
+		 = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	counter.Data (sizeof (GLuint) * 64, counters, GL_DYNAMIC_DRAW);
 
 	return true;
 }
@@ -246,35 +251,21 @@ void GBuffer::Render (Geometry &geometry)
 	transparencyfb.Bind (GL_FRAMEBUFFER);
 	gl::Viewport (0, 0, width, height);
 
-	const GLuint counters[64] = { 0, 0, 0, 0, 0, 0, 0, 0,
-																0, 0, 0, 0, 0, 0, 0, 0,
-																0, 0, 0, 0, 0, 0, 0, 0,
-																0, 0, 0, 0, 0, 0, 0, 0,
-																0, 0, 0, 0, 0, 0, 0, 0,
-																0, 0, 0, 0, 0, 0, 0, 0,
-																0, 0, 0, 0, 0, 0, 0, 0,
-																0, 0, 0, 0, 0, 0, 0, 0 };
-	counter.Data (sizeof (GLuint) * 64, counters, GL_DYNAMIC_DRAW);
-
 	fraglisttex.BindImage (0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);
 	fragidx.BindImage (1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32I);
 	counter.BindBase (GL_ATOMIC_COUNTER_BUFFER, 0);
 	geometry.Render (Geometry::Pass::GBufferTransparency,
 									 transparencyprog, renderer->camera.GetViewMatrix ());
 
-#ifdef DEBUG
-	GLuint *ptr, count = 0;
-	ptr = (GLuint*) counter.Map (GL_READ_ONLY);
+	GLuint *ptr = (GLuint*) counter.MapRange (0, sizeof (GLuint) * 64,
+																						GL_MAP_WRITE_BIT
+																						| GL_MAP_INVALIDATE_BUFFER_BIT
+																						| GL_MAP_UNSYNCHRONIZED_BIT);
 	for (auto i = 0; i < 64; i++)
 	{
-		if (ptr[i] * 64 + i > count)
-			 count = ptr[i] * 64 + i;
+		 ptr[i] = 0;
 	}
 	counter.Unmap ();
-
-	linearbuffer_usage = float (count * 5 * 4)
-		 / float (width * height * 4 * 4 * 4);
-#endif
 
 	depthonlyprog.Use ();
 
