@@ -19,8 +19,7 @@
 
 Composition::Composition (Renderer *parent)
 	: renderer (parent), glow (parent), shadow_alpha (0.7),
-		luminance_threshold (0.75),
-		antialiasing (0)
+		luminance_threshold (0.75)
 {
 }
 
@@ -42,10 +41,6 @@ bool Composition::Init (void)
 									renderer->gbuffer.GetWidth (),
 									renderer->gbuffer.GetHeight (),
 									0, GL_RGBA, GL_FLOAT, NULL);
-	edgemap.Image2D (GL_TEXTURE_2D, 0, GL_R16F,
-									 renderer->gbuffer.GetWidth (),
-									 renderer->gbuffer.GetHeight (),
-									 0, GL_RED, GL_FLOAT, NULL);
 	glowmap.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
 								renderer->gbuffer.GetWidth (),
 								renderer->gbuffer.GetHeight (),
@@ -66,12 +61,8 @@ bool Composition::Init (void)
 
 	screenmem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, screen);
-	edgemem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, edgemap);
 	glowmem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, glowmap);
-
-	SetAntialiasing (antialiasing);
 
 	composition.SetArg (0, screenmem);
 	composition.SetArg (1, glowmem);
@@ -126,26 +117,6 @@ float Composition::GetShadowAlpha (void)
 	return shadow_alpha;
 }
 
-void Composition::SetAntialiasing (GLuint size)
-{
-	if (size > 0)
-	{
-		freichen =  renderer->filters.CreateFreiChen
-			 (screenmem, edgemem, renderer->gbuffer.GetWidth (),
-				renderer->gbuffer.GetHeight ());
-	}
-	else
-	{
-		freichen = FreiChen ();
-	}
-	antialiasing = size;
-}
-
-GLuint Composition::GetAntialiasing (void)
-{
-	return antialiasing;
-}
-
 const gl::Texture &Composition::GetScreen (void)
 {
 	return screen;
@@ -154,11 +125,6 @@ const gl::Texture &Composition::GetScreen (void)
 const gl::Texture &Composition::GetGlowMap (void)
 {
 	return glow.GetMap ();
-}
-
-const gl::Texture &Composition::GetEdgeMap (void)
-{
-	return edgemap;
 }
 
 #define NUM_COMPOSITIONMODES   3
@@ -234,10 +200,5 @@ void Composition::Frame (float timefactor)
 	{
 		glowmap.GenerateMipmap (GL_TEXTURE_2D);
 		glow.Apply ();
-	}
-
-	if (antialiasing > 0)
-	{
-		 freichen.Apply ();
 	}
 }

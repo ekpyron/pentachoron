@@ -288,16 +288,18 @@ void Interface::EditGlowSize (int what)
 
 void Interface::EditAntialiasing (int what)
 {
-	GLint size = renderer->composition.GetAntialiasing ();
-
-	size += what;
-	if (size >= 0)
-		 renderer->composition.SetAntialiasing (size);
+	if (!what)
+	{
+		renderer->SetAntialiasing (!renderer->GetAntialiasing ());
+	}
 }
 
 void Interface::PrintAntialiasing (void)
 {
-	font.Print (renderer->composition.GetAntialiasing ());
+	if (renderer->GetAntialiasing ())
+		 font.Print ("on");
+	else
+		 font.Print ("off");
 }
 
 void Interface::PrintGlowSize (void)
@@ -375,7 +377,7 @@ void Interface::EditGlow (int what)
 	}
 }
 
-#define NUM_RENDERMODES 8
+#define NUM_RENDERMODES 7
 
 void Interface::ToggleRendermode (int what)
 {
@@ -502,8 +504,7 @@ void Interface::PrintRendermode (void)
 		"specular buffer",
 		"depth buffer",
 		"shadow projection",
-		"glow",
-		"edges"
+		"glow"
 	};
 
 	font.Print (rendermodes[renderer->finalpass.GetRenderMode ()]);

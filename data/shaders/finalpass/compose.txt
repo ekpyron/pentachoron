@@ -2,10 +2,8 @@
 layout(location = 0) out vec4 output;
 layout(binding = 0) uniform sampler2D colorbuffer;
 layout(binding = 1) uniform sampler2D glowbuffer;
-layout(binding = 2) uniform sampler2D edgemap;
-layout(binding = 3) uniform sampler2D depthmap;
+layout(binding = 2) uniform sampler2D depthmap;
 uniform uvec2 viewport;
-uniform int antialiasing;
 uniform bool glow;
 uniform float farClipPlane;
 uniform float nearClipPlane;
@@ -88,55 +86,7 @@ void main (void)
 	vec4 color;
 	float edge;
 	vec2 coord = gl_FragCoord.xy / viewport;
-	if (antialiasing > 0)
-	{
-		float depth = getdepth (coord);
-		vec2 f = vec2 (1.0, 1.0) / viewport;
-		float edgyness;
-		edgyness = getdepth (coord + f * ivec2 (-1, -1))
-			   - depth;
-		edgyness += getdepth (coord + f * ivec2 (0, -1))
-			    - depth;
-		edgyness += getdepth (coord + f * ivec2 (1, -1))
-			    - depth;
-		edgyness += getdepth (coord + f * ivec2 (-1, 0))
-			    - depth;
-		edgyness += getdepth (coord + f * ivec2 (1, 0))
-			    - depth;
-		edgyness += getdepth (coord + f * ivec2 (-1, 1))
-			    - depth;
-		edgyness += getdepth (coord + f * ivec2 (0, 1))
-			    - depth;
-		edgyness += getdepth (coord + f * ivec2 (-1, 1))
-			    - depth;
-
-		edgyness *= 25;
-
-		edgyness += texture (edgemap, coord).r * 2;
-		if (edgyness > 0.25)
-		{
-		   float factor = 1.0 / float ((antialiasing * 2 + 1)
-		   	 	      	      * (antialiasing * 2 + 1));
-		   color = vec4 (0, 0, 0, 0);
-		   for (int y = -antialiasing; y <= antialiasing; y++)
-		   {
-			for (int x = -antialiasing; x <= antialiasing; x++)
-			{
-		                vec2 offset = vec2 (x, y) / viewport;
-				color += texture (colorbuffer, coord + offset)
-				      	 * factor;
-			}
-		   }
-		}
-		else
-		{
-			color = texture (colorbuffer, coord);
-		}
-	}
-	else
-	{
-		color = texture (colorbuffer, coord);
-	}
+	color = texture (colorbuffer, coord);
 
 	if (glow)
 	{

@@ -296,7 +296,6 @@ void FinalPass::Render (void)
 		program["tonemapping.mode"] = tonemapping.mode;
 		program["tonemapping.sigma"] = powf (tonemapping.sigma, tonemapping.n);
 		program["tonemapping.n"] = tonemapping.n;
-		program["antialiasing"] = (GLint) renderer->composition.GetAntialiasing ();
 		program["glow"] = renderer->composition.GetGlowSize () > 0;
 	}
 	gl::Viewport (0, 0, viewport.x, viewport.y);
@@ -312,10 +311,7 @@ void FinalPass::Render (void)
 		renderer->windowgrid.sampler.Bind (1);
 		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 		renderer->windowgrid.sampler.Bind (2);
-		renderer->composition.GetEdgeMap ().Bind (GL_TEXTURE2,
-																				GL_TEXTURE_2D);
-		renderer->windowgrid.sampler.Bind (3);
-		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE3, GL_TEXTURE_2D);
+		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE2, GL_TEXTURE_2D);
 		pipelines[0].Bind ();
 		break;
 	case 1:
@@ -348,12 +344,6 @@ void FinalPass::Render (void)
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[4].Bind ();
-		break;
-	case 7:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->composition.GetEdgeMap ().Bind (GL_TEXTURE0,
-																							GL_TEXTURE_2D);
-		pipelines[6].Bind ();
 		break;
 	default:
 		throw std::runtime_error ("Invalid render mode.");

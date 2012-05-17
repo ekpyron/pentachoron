@@ -269,15 +269,18 @@ void GBuffer::Render (Geometry &geometry)
 
 	depthonlyprog.Use ();
 
-	for (auto i = 1; i < 4; i++)
+	if (renderer->GetAntialiasing ())
 	{
-		framebuffer[i].Bind (GL_FRAMEBUFFER);
-		gl::Viewport (0, 0, width, height);
-		gl::ClearBufferfv (GL_COLOR, 0, (float[]) {1.0f, 0.0f, 0.0f, 0.0f} );
-		gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
-		
-		geometry.Render (Geometry::Pass::GBufferDepthOnly,
-										 program, renderer->camera.GetViewMatrix ());
+		for (auto i = 1; i < 4; i++)
+		{
+			framebuffer[i].Bind (GL_FRAMEBUFFER);
+			gl::Viewport (0, 0, width, height);
+			gl::ClearBufferfv (GL_COLOR, 0, (float[]) {1.0f, 0.0f, 0.0f, 0.0f} );
+			gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
+			
+			geometry.Render (Geometry::Pass::GBufferDepthOnly,
+											 program, renderer->camera.GetViewMatrix ());
+		}
 	}
 
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);

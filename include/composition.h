@@ -57,15 +57,6 @@ public:
 		* Sets the size of the current glow effect.
 		*/
 	 void SetGlowSize (GLuint size);
-	 /** Get antialiasing.
-		* Obtains the current level of antialiasing.
-		* \return current antialiasing level.
-		*/
-	 GLuint GetAntialiasing (void);
-	 /** Set antialiasing.
-		* Sets the current level of antialiasing.
-		*/
-	 void SetAntialiasing (GLuint size);
 	 /** Get shadow alpha.
 		* Obtains the transparency factor of the shadows.
 		* \returns shadow transparency factor.
@@ -106,11 +97,6 @@ public:
 		* \returns a referene to the glow map
 		*/
 	 const gl::Texture &GetGlowMap (void);
-	 /** Get edge map.
-		* Returns a reference to the edge map.
-		* \returns a referene to the edge map
-		*/
-	 const gl::Texture &GetEdgeMap (void);
 private:
 	 /** Screen texture.
 		* A texture storing the combined, lit pixel value to be
@@ -125,11 +111,6 @@ private:
 		* A texture storing the parts of the screen that is supposed to glow.
 		*/
 	 gl::Texture glowmap;
-	 /** Edge map.
-		* A texture storing a map which highlights the edges in the
-		* screen texture intended for anti-aliasing.
-		*/
-	 gl::Texture edgemap;
 	 /** Shadow alpha.
 		* This value specifies the degree of transparency of the shadows.
 		*/
@@ -139,14 +120,6 @@ private:
 		* written to the glow map.
 		*/
 	 GLfloat luminance_threshold;
-	 /** Antialiasing.
-		* Stores the currently used level of antialiasing.
-		*/
-	 GLuint antialiasing;
-	 /** Frei Chen filter.
-		* A Frei Chen filter object used for edge detection.
-		*/
-	 FreiChen freichen;
 	 /** OpenCL program.
 		* The OpenCL program containing the composition kernel.
 		*/
@@ -163,10 +136,6 @@ private:
 		* OpenCL memory object referring to the glow map.
 		*/
 	 cl::Memory glowmem;
-	 /** Edge map (OpenCL memory object).
-		* OpenCL memory object referring to the edge map.
-		*/
-	 cl::Memory edgemem;
 	 /** Composition mode.
 		* Stores the mode of composition.
 		*/
