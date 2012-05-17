@@ -31,8 +31,7 @@ public:
 	 ~Geometry (void);
 	 bool Init (void);
 	 void Render (GLuint pass, const gl::Program &program,
-								const glm::mat4 &viewmat,
-								bool shadowpass, bool transparent);
+								const glm::mat4 &viewmat);
 	 const Material &GetMaterial (const std::string &name);
 
 	 class Pass
@@ -40,7 +39,9 @@ public:
 		 public:
 		 static constexpr GLuint GBuffer = 0x00000000;
 		 static constexpr GLuint GBufferTransparency = 0x10000000;
-		 static constexpr GLuint ShadowMap = 0x20000000;
+		 static constexpr GLuint GBufferDepthOnly = 0x20000000;
+		 static constexpr GLuint ShadowMap = 0x30000000;
+		 static constexpr GLuint Mask = 0xF0000000;
 	 };
 
 private:

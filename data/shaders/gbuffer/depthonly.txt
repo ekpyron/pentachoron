@@ -1,0 +1,10 @@
+#version 420 core
+
+layout (location = 0) out float depth;
+
+layout (early_fragment_tests) in;
+
+void main (void)
+{
+	depth = gl_FragCoord.z;
+}

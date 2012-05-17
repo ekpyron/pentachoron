@@ -115,14 +115,16 @@ bool Geometry::Init (void)
 
 void Geometry::Render (GLuint p,
 											 const gl::Program &program,
-											 const glm::mat4 &viewmat,
-											 bool shadowpass, bool transparent)
+											 const glm::mat4 &viewmat)
 {
-	if (!shadowpass)
+	switch (p & Pass::Mask)
 	{
+	case Pass::GBuffer:
+	case Pass::GBufferTransparency:
 		sampler.Bind (0);
 		sampler.Bind (1);
 		sampler.Bind (2);
+		break;
 	}
 
 	GLuint pass = p;
@@ -140,12 +142,12 @@ void Geometry::Render (GLuint p,
 			bboxprogram["projmat"] = renderer->culling.GetProjMatrix ();
 			if ((x&1) + (z&1) == 0)
 			{
-				kitty.Render (pass, program, shadowpass, transparent);
-				headglass.Render (pass, program, shadowpass, transparent);
+				kitty.Render (pass, program);
+				headglass.Render (pass, program);
 			}
 			else
 			{
-				box.Render (pass, program, shadowpass, transparent);
+				box.Render (pass, program);
 			}
 			pass++;
 		}
@@ -155,5 +157,5 @@ void Geometry::Render (GLuint p,
 	bboxprogram["mvmat"] = viewmat;
 	renderer->culling.SetModelViewMatrix (viewmat);
 
-	grid.Render (pass, program, shadowpass, transparent);
+	grid.Render (pass, program);
 }

@@ -64,6 +64,28 @@ bool GBuffer::Init (void)
 		}
 
 		fshader = gl::Shader (GL_FRAGMENT_SHADER);
+		if (!ReadFile (MakePath ("shaders", "gbuffer", "depthonly.txt"), src))
+			 return false;
+		fshader.Source (src);
+		if (!fshader.Compile ())
+		{
+			(*logstream) << "Cannot compile "
+									 << MakePath ("shaders", "gbuffer", "depthonly.txt")
+									 << ":" << std::endl << fshader.GetInfoLog () << std::endl;
+			return false;
+		}
+
+		depthonlyprog.Attach (vshader);
+		depthonlyprog.Attach (fshader);
+		if (!depthonlyprog.Link ())
+		{
+			(*logstream) << "Cannot link the gbuffer depth only shader:"
+									 << std::endl << depthonlyprog.GetInfoLog ()
+									 << std::endl;
+			return false;
+		}
+
+		fshader = gl::Shader (GL_FRAGMENT_SHADER);
 		if (!ReadFile (MakePath ("shaders", "gbuffer", "transparency.txt"), src))
 			 return false;
 		fshader.Source (src);
@@ -107,25 +129,34 @@ bool GBuffer::Init (void)
 	specularbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
 													0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	
-	depthtexture.Image2D (GL_TEXTURE_2D, 0, GL_R32F, width, height,
-												0, GL_RED, GL_FLOAT, NULL);
+	for (auto i = 0; i < 4; i++)
+		 depthtexture[i].Image2D (GL_TEXTURE_2D, 0, GL_R32F, width, height,
+															0, GL_RED, GL_FLOAT, NULL);
 
 #ifdef DEBUG
-	renderer->memory += width * height * (4 + 4 + 4 + 4 + 4);
+	renderer->memory += width * height * (4 * 4 + 4 + 4 + 4 + 4);
 #endif
 
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+	framebuffer[0].Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 												 colorbuffer, 0);
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+	framebuffer[0].Texture2D (GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
 												 normalbuffer, 0);
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+	framebuffer[0].Texture2D (GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
 												 specularbuffer, 0);
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
-												 depthtexture, 0);
-	framebuffer.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
+	framebuffer[0].Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
+												 depthtexture[0], 0);
+	framebuffer[0].Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
 		
-	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+	framebuffer[0].DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
 					 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
+
+	for (auto i = 1; i < 4; i++)
+	{
+		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+															depthtexture[i], 0);
+		framebuffer[i].Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
+		framebuffer[i].DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
+	}
 
 	fragidx.Image2D (GL_TEXTURE_2D, 0, GL_R32I, width, height,
 									 0, GL_RED_INTEGER, GL_INT, NULL);
@@ -144,7 +175,7 @@ bool GBuffer::Init (void)
 	transparencyclearfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
 	depthmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, depthtexture);
+		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, depthtexture[0]);
 	colormem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, colorbuffer);
 	normalmem = renderer->clctx.CreateFromGLTexture2D
@@ -192,7 +223,7 @@ void GBuffer::Render (Geometry &geometry)
 
 	program.Use ();
 
-	framebuffer.Bind (GL_FRAMEBUFFER);
+	framebuffer[0].Bind (GL_FRAMEBUFFER);
 	gl::Viewport (0, 0, width, height);
 		
 	gl::ClearBufferfv (GL_COLOR, 0, (float[]) {0.0f, 0.0f, 0.0f, 1.0f} );
@@ -202,8 +233,7 @@ void GBuffer::Render (Geometry &geometry)
 	gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
 
 	geometry.Render (Geometry::Pass::GBuffer,
-									 program, renderer->camera.GetViewMatrix (),
-									 false, false);
+									 program, renderer->camera.GetViewMatrix ());
 
 	transparencyprog.Use ();
 
@@ -231,8 +261,7 @@ void GBuffer::Render (Geometry &geometry)
 	fragidx.BindImage (1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32I);
 	countertex.BindImage (2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 	geometry.Render (Geometry::Pass::GBufferTransparency,
-									 transparencyprog, renderer->camera.GetViewMatrix (),
-									 false, true);
+									 transparencyprog, renderer->camera.GetViewMatrix ());
 
 #ifdef DEBUG
 	GLuint *ptr, count = 0;
@@ -246,6 +275,20 @@ void GBuffer::Render (Geometry &geometry)
 	linearbuffer_usage = float (count * 5 * 4)
 		 / float (width * height * 4 * 4 * 4);
 #endif
+
+	depthonlyprog.Use ();
+
+	for (auto i = 1; i < 4; i++)
+	{
+		framebuffer[i].Bind (GL_FRAMEBUFFER);
+		gl::Viewport (0, 0, width, height);
+		gl::ClearBufferfv (GL_COLOR, 0, (float[]) {1.0f, 0.0f, 0.0f, 0.0f} );
+		gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
+		
+
+		geometry.Render (Geometry::Pass::GBufferDepthOnly,
+										 program, renderer->camera.GetViewMatrix ());
+	}
 
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	gl::Program::UseNone ();

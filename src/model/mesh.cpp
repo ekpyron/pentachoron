@@ -215,23 +215,24 @@ bool Mesh::IsTransparent (void) const
 	return material->IsTransparent ();
 }
 
-void Mesh::Render (const gl::Program &program,
-									 bool shadowpass)
+void Mesh::Render (const gl::Program &program, GLuint passtype)
 {
-	if (shadowpass && !shadows)
+	if (passtype == Geometry::Pass::ShadowMap && !shadows)
 		 return;
 	if (!parent.parent->renderer->culling.IsVisible
 			(bsphere.center, bsphere.radius))
 		return;
 
-	if (!shadowpass)
+	switch (passtype)
 	{
+	case Geometry::Pass::ShadowMap:
+	case Geometry::Pass::GBufferDepthOnly:
+		shadowpassarray.Bind ();
+		break;
+	default:
 		material->Use (program);
 		vertexarray.Bind ();
-	}
-	else
-	{
-		shadowpassarray.Bind ();
+		break;
 	}
 	indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
 		

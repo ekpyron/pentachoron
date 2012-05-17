@@ -243,18 +243,25 @@ bool Model::Load (const std::string &filename)
 	return true;
 }
 
-void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
-										bool transparent)
+void Model::Render (GLuint pass, const gl::Program &program)
 {
 	GLuint result = GL_TRUE;
+	GLuint passtype;
 
 	if (!parent->renderer->culling.IsVisible
 			(bsphere.center, bsphere.radius))
 		return;
 
-	if (!shadowpass)
+	passtype = pass & Geometry::Pass::Mask;
+
+	bool shadowpass = (passtype == Geometry::Pass::ShadowMap);
+
+	std::map<GLuint, gl::Query>::iterator query;
+	switch (passtype)
 	{
-		auto query = queries.find (pass);
+	case Geometry::Pass::GBuffer:
+	case Geometry::Pass::GBufferTransparency:
+		query = queries.find (pass);
 		if (query == queries.end ())
 		{
 			auto ret = queries.insert (std::pair<GLuint, gl::Query>
@@ -281,23 +288,43 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 		}
 
 		query->second.Begin (GL_ANY_SAMPLES_PASSED);
+		break;
+	case Geometry::Pass::GBufferDepthOnly:
+		GLuint p;
+		p = (pass & (~Geometry::Pass::Mask)) | Geometry::Pass::GBuffer;
+		query = queries.find (pass);
+		if (query != queries.end ())
+		{
+			if (query->second.IsValid ())
+			{
+				query->second.Get (GL_QUERY_RESULT_AVAILABLE, &result);
+				if (result == GL_TRUE)
+				{
+					query->second.Get (GL_QUERY_RESULT, &result);
+				}
+				else result = GL_TRUE;
+			}
+		}
+		break;
 	}
 
 	if (result == GL_TRUE)
 	{
-		if (transparent)
+		if (passtype == Geometry::Pass::GBufferTransparency)
 			 gl::Disable (GL_CULL_FACE);
 		for (Mesh &mesh : meshes)
 		{
-			if (transparent == mesh.IsTransparent ())
-				 mesh.Render (program, shadowpass);
+			if (((passtype == Geometry::Pass::GBufferTransparency)
+					 == mesh.IsTransparent ())
+					|| (passtype == Geometry::Pass::ShadowMap))
+				 mesh.Render (program, passtype);
 		}
-		if (transparent)
+		if (passtype == Geometry::Pass::GBufferTransparency)
 			 gl::Enable (GL_CULL_FACE);
 	}
 	else
 	{
-		if (!transparent)
+		if (passtype != Geometry::Pass::GBufferTransparency)
 		{
 			gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 			gl::DepthMask (GL_FALSE);
@@ -309,7 +336,7 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 		gl::DrawElements (GL_TRIANGLES, 36,
 											GL_UNSIGNED_BYTE, NULL);
 		program.Use ();
-		if (!transparent)
+		if (passtype != Geometry::Pass::GBufferTransparency)
 		{
 			gl::Enable (GL_CULL_FACE);
 			gl::DepthMask (GL_TRUE);
@@ -317,8 +344,13 @@ void Model::Render (GLuint pass, const gl::Program &program, bool shadowpass,
 		}
 		culled++;
 	}
-	if (!shadowpass)
+	switch (passtype)
+	{
+	case Geometry::Pass::GBuffer:
+	case Geometry::Pass::GBufferTransparency:
 		 gl::Query::End (GL_ANY_SAMPLES_PASSED);
+		 break;
+	}
 }
 
 GLuint Model::culled = 0;

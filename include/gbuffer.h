@@ -36,7 +36,7 @@ public:
 	 cl::Memory normalmem;
 	 gl::Texture specularbuffer;
 	 cl::Memory specularmem;
-	 gl::Texture depthtexture;
+	 gl::Texture depthtexture[4];
 	 gl::Renderbuffer depthbuffer;
 	 cl::Memory depthmem;
 	 GLuint GetWidth (void);
@@ -54,12 +54,13 @@ public:
 private:
 	 GLuint width, height;
 
-	 gl::Framebuffer framebuffer;
+	 gl::Framebuffer framebuffer[4];
 	 gl::Framebuffer transparencyfb;
 	 gl::Framebuffer transparencyclearfb;
 
 	 gl::Program program;
 	 gl::Program transparencyprog;
+	 gl::Program depthonlyprog;
 	 gl::Sampler depthsampler;
 
 	 gl::Texture countertex;

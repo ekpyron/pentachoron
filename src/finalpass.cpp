@@ -315,7 +315,7 @@ void FinalPass::Render (void)
 		renderer->composition.GetEdgeMap ().Bind (GL_TEXTURE2,
 																				GL_TEXTURE_2D);
 		renderer->windowgrid.sampler.Bind (3);
-		renderer->gbuffer.depthtexture.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
+		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE3, GL_TEXTURE_2D);
 		pipelines[0].Bind ();
 		break;
 	case 1:
@@ -335,7 +335,7 @@ void FinalPass::Render (void)
 		break;
 	case 4:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[5].Bind ();
 		break;
 	case 5:

@@ -32,8 +32,7 @@ public:
 	 Model &operator= (Model &&model);
 	 Model &operator= (const Model&) = delete;
 	 bool Load (const std::string &filename);
-	 void Render (GLuint pass, const gl::Program &program, bool shadowpass,
-								bool transparent);
+	 void Render (GLuint pass, const gl::Program &program);
 	 static GLuint culled;
 private:
 	 std::vector<Material> materials;

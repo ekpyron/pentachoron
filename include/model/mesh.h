@@ -32,7 +32,7 @@ public:
 	 ~Mesh (void);
 	 Mesh &operator= (Mesh &&mesh);
 	 Mesh &operator= (const Mesh&) = delete;
-	 void Render (const gl::Program &program, bool shadowpass);
+	 void Render (const gl::Program &program, GLuint passtype);
 	 bool IsTransparent (void) const;
 	 static GLuint culled;
 private:
