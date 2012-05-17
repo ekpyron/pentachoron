@@ -112,6 +112,10 @@ Blur Filters::CreateBlur (cl::Memory &source, cl::Memory &destination,
 																					 CL_FLOAT,
 																					 width, height, 0,
 																					 NULL);
+
+#ifdef DEBUG
+	renderer->memory += width * height * 4 * 4;
+#endif
 																					 
 
 	weights = renderer->clctx.CreateBuffer (CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,

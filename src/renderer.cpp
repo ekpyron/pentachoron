@@ -20,6 +20,9 @@
 Renderer::Renderer (void)
 	: geometry (this), shadowmap (this),
 		finalpass (this), gbuffer (this), filters (this),
+#ifdef DEBUG
+		memory (0),
+#endif
 		interface (this), composition (this)
 {
 }

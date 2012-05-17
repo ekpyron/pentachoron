@@ -50,8 +50,16 @@ bool Composition::Init (void)
 								renderer->gbuffer.GetWidth (),
 								renderer->gbuffer.GetHeight (),
 								0, GL_RGBA, GL_FLOAT, NULL);
+
 	glowmap.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
 	glowmap.GenerateMipmap (GL_TEXTURE_2D);
+
+#ifdef DEBUG
+	renderer->memory += renderer->gbuffer.GetWidth ()
+		 * renderer->gbuffer.GetHeight () * (4 * 2 + 4 * 2 + 4);
+	renderer->memory += (renderer->gbuffer.GetWidth () >> 1) *
+		 (renderer->gbuffer.GetHeight () >> 1) * 4;
+#endif
 
 	if (!glow.Init (glowmap, 1))
 		 return false;

@@ -71,12 +71,16 @@ bool ShadowMap::Init (void)
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
 	shadowmap.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
-										 0, GL_RG, GL_UNSIGNED_BYTE, NULL);
+										 0, GL_RG, GL_FLOAT, NULL);
 
 	shadowmapmem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_RECTANGLE, 0, shadowmap);
 
 	depthbuffer.Storage (GL_DEPTH_COMPONENT32, width, height);
+
+#ifdef DEBUG
+	renderer->memory += width * height * (2 * 4 + 4);
+#endif
 
 	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 												 shadowmap, 0);

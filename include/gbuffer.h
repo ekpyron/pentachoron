@@ -46,6 +46,11 @@ public:
 	 cl::Memory fraglistmem;
 	 gl::Texture fragidx;
 	 cl::Memory fragidxmem;
+
+#ifdef DEBUG
+	 float linearbuffer_usage;
+#endif
+
 private:
 	 GLuint width, height;
 

@@ -110,6 +110,10 @@ bool GBuffer::Init (void)
 	depthtexture.Image2D (GL_TEXTURE_2D, 0, GL_R32F, width, height,
 												0, GL_RED, GL_FLOAT, NULL);
 
+#ifdef DEBUG
+	renderer->memory += width * height * (4 + 4 + 4 + 4 + 4);
+#endif
+
 	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 												 colorbuffer, 0);
 	framebuffer.Texture2D (GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
@@ -127,6 +131,10 @@ bool GBuffer::Init (void)
 									 0, GL_RED_INTEGER, GL_INT, NULL);
 	fraglist.Data (width * height * 4 * 4 * 4, NULL, GL_DYNAMIC_COPY);
 	fraglisttex.Buffer (GL_R32UI, fraglist);
+
+#ifdef DEBUG
+	renderer->memory += width * height * (4 * 4 * 4 + 4);
+#endif
 
 	transparencyfb.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
 	transparencyfb.DrawBuffers ({ });
@@ -225,6 +233,19 @@ void GBuffer::Render (Geometry &geometry)
 	geometry.Render (Geometry::Pass::GBufferTransparency,
 									 transparencyprog, renderer->camera.GetViewMatrix (),
 									 false, true);
+
+#ifdef DEBUG
+	GLuint *ptr, count = 0;
+	ptr = (GLuint*) counter.Map (GL_READ_ONLY);
+	for (auto i = 0; i < 64; i++)
+	{
+		count += ptr[i];
+	}
+	counter.Unmap ();
+
+	linearbuffer_usage = float (count * 5 * 4)
+		 / float (width * height * 4 * 4 * 4);
+#endif
 
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	gl::Program::UseNone ();

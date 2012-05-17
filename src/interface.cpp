@@ -1203,6 +1203,10 @@ void Interface::Frame (float tf)
 		font.Print ("FPS: ", fps);
 		font.Print ("\nOcclusion culled: ", Model::culled);
 		font.Print ("\nFrustum culled: ", renderer->culling.culled);
+#ifdef DEBUG
+		font.Print ("\nBuffer usage: ", renderer->gbuffer.linearbuffer_usage);
+		font.Print ("\nMem: ", renderer->memory >> 20, " MB");
+#endif
 	}
 	if (glfwGetKey ('A'))
 	{

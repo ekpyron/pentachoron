@@ -33,6 +33,10 @@ bool Glow::Init (gl::Texture &glowmap, GLuint mipmap_level)
 	map.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F, width, height,
 							 0, GL_RGBA, GL_FLOAT, NULL);
 
+#ifdef DEBUG
+	renderer->memory += width * height * 4 * 2;
+#endif
+
 	source.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 										glowmap, mipmap_level);
 	destination.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,

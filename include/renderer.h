@@ -43,6 +43,9 @@ public:
 	 void Frame (void);
 	 void OnKeyDown (int key);
 	 void OnKeyUp (int key);
+#ifdef DEBUG
+	 unsigned long memory;
+#endif
 private:
 	 Camera camera;
 
