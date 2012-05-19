@@ -86,6 +86,11 @@ bool ShadowPass::Init (void)
 	fprogram["viewport"] = glm::uvec2 (renderer->gbuffer.GetWidth (),
 																		 renderer->gbuffer.GetHeight ());
 
+	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_REPEAT);
+	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_REPEAT);
+
 	return true;
 }
 
@@ -118,7 +123,7 @@ void ShadowPass::Render (GLuint shadowid, Geometry &geometry,
 
 	pipeline.Bind ();
 
-	renderer->windowgrid.sampler.Bind (0);
+	sampler.Bind (0);
 	shadowmap.shadowmap.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	renderer->windowgrid.sampler.Bind (1);
 	renderer->gbuffer.depthtexture.Bind (GL_TEXTURE1, GL_TEXTURE_2D);

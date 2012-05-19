@@ -38,6 +38,7 @@ public:
 	 void SetSoftShadows (bool softshadow);
 	 bool GetSoftShadows (void);
 private:
+	 gl::Sampler sampler;
 	 gl::Texture shadowmask;
 	 cl::Memory shadowmaskmem;
 	 gl::Framebuffer framebuffer;
