@@ -19,6 +19,8 @@
 
 #include <common.h>
 
+class Renderer;
+
 /** Culling class.
  * This class handles frustum culling.
  */
@@ -27,7 +29,7 @@ class Culling
 public:
 	 /** Constructor.
 		*/
-	 Culling (void);
+	 Culling (Renderer *parent);
 	 /** Destructor
 		*/
 	 ~Culling (void);
@@ -78,6 +80,10 @@ private:
 		* Stores the model view matrix used for culling.
 		*/
 	 glm::mat4 mvmat;
+	 /** Parnent.
+		* Parent Renderer.
+		*/
+	 Renderer *renderer;
 };
 
 #endif /* !defined CULLING_H */

@@ -113,6 +113,11 @@ bool Geometry::Init (void)
 	return true;
 }
 
+void Geometry::SetProjMatrix (const glm::mat4 &projmat)
+{
+			bboxprogram["projmat"] = projmat;
+}
+
 void Geometry::Render (GLuint p,
 											 const gl::Program &program,
 											 const glm::mat4 &viewmat)
@@ -139,7 +144,6 @@ void Geometry::Render (GLuint p,
 			program["mvmat"] = mvmat;
 			bboxprogram["mvmat"] = mvmat;
 			renderer->culling.SetModelViewMatrix (mvmat);
-			bboxprogram["projmat"] = renderer->culling.GetProjMatrix ();
 			if ((x&1) + (z&1) == 0)
 			{
 				kitty.Render (pass, program);

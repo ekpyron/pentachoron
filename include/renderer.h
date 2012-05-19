@@ -88,6 +88,8 @@ private:
 	 friend class Model;
 	 friend class Mesh;
 	 friend class Glow;
+	 friend class Culling;
+	 friend class Camera;
 };
 
 #endif /* !defined RENDERER_H */

@@ -23,7 +23,8 @@ Renderer::Renderer (void)
 #ifdef DEBUG
 		memory (0),
 #endif
-		interface (this), composition (this), antialiasing (0)
+		interface (this), composition (this), antialiasing (0),
+		culling (this), camera (this)
 {
 }
 

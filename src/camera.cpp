@@ -15,10 +15,12 @@
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "camera.h"
+#include "renderer.h"
 
-Camera::Camera (void)
+Camera::Camera (Renderer *parent)
 	: center (0, 0, 0), horizontal_angle (0), viewport (glm::ivec2 (0, 0)),
-		nearClipPlane (0.1f), farClipPlane (1000.0f), up_angle (0)
+		nearClipPlane (0.1f), farClipPlane (1000.0f), up_angle (0),
+		renderer (parent)
 {
 }
 
@@ -38,6 +40,7 @@ void Camera::Resize (int w, int h)
 
 	projmat = glm::perspective (45.0f, float (viewport.x) / float (viewport.y),
 															nearClipPlane, farClipPlane);
+	renderer->gbuffer.SetProjMatrix (projmat);
 }
 
 glm::vec3 Camera::GetEye (void) const

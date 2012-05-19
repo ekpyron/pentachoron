@@ -189,6 +189,16 @@ bool GBuffer::Init (void)
 				 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	counter.Data (sizeof (GLuint) * 64, counters, GL_DYNAMIC_DRAW);
 
+	program["viewport"] = glm::uvec2 (width, height);
+	program["farClipPlane"] = renderer->camera.GetFarClipPlane ();
+	program["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+	transparencyprog["viewport"] = glm::uvec2 (width, height);
+	transparencyprog["farClipPlane"] = renderer->camera.GetFarClipPlane ();
+	transparencyprog["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+	sraaprog["viewport"] = glm::uvec2 (width, height);
+	sraaprog["farClipPlane"] = renderer->camera.GetFarClipPlane ();
+	sraaprog["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+
 	GL_CHECK_ERROR;
 
 	return true;
@@ -237,23 +247,16 @@ GLuint GBuffer::GetHeight (void)
 	return height;
 }
 
+void GBuffer::SetProjMatrix (const glm::mat4 &projmat)
+{
+	program["projmat"] = projmat;
+	transparencyprog["projmat"] = projmat;
+	sraaprog["projmat"] = projmat;	
+}
+
 void GBuffer::Render (Geometry &geometry)
 {
-	program["projmat"] = renderer->camera.GetProjMatrix ();
-	program["viewport"] = glm::uvec2 (width, height);
 	renderer->culling.SetProjMatrix (renderer->camera.GetProjMatrix ());
-	program["farClipPlane"] = renderer->camera.GetFarClipPlane ();
-	program["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
-
-	transparencyprog["projmat"] = renderer->camera.GetProjMatrix ();
-	transparencyprog["viewport"] = glm::uvec2 (width, height);
-	transparencyprog["farClipPlane"] = renderer->camera.GetFarClipPlane ();
-	transparencyprog["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
-
-	sraaprog["projmat"] = renderer->camera.GetProjMatrix ();
-	sraaprog["viewport"] = glm::uvec2 (width, height);
-	sraaprog["farClipPlane"] = renderer->camera.GetFarClipPlane ();
-	sraaprog["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
 
 	gl::Enable (GL_DEPTH_TEST);
 	gl::DepthMask (GL_TRUE);

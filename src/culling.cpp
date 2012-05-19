@@ -15,8 +15,10 @@
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "culling.h"
+#include "renderer.h"
 
-Culling::Culling (void)
+Culling::Culling (Renderer *parent)
+	: renderer (parent)
 {
 }
 
@@ -33,6 +35,7 @@ void Culling::Frame (void)
 void Culling::SetProjMatrix (const glm::mat4 &mat)
 {
 	projmat = mat;
+	renderer->geometry.SetProjMatrix (mat);
 }
 
 const glm::mat4 &Culling::GetProjMatrix (void)

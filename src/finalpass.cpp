@@ -68,6 +68,11 @@ bool FinalPass::Init (void)
 		pipelines.back ().UseProgramStages (GL_VERTEX_SHADER_BIT,
 																				renderer->windowgrid.vprogram);
 		pipelines.back ().UseProgramStages (GL_FRAGMENT_SHADER_BIT, fprogram);
+
+		fprogram["gbufferdim"] = glm::uvec2 (renderer->gbuffer.GetWidth (),
+																				 renderer->gbuffer.GetHeight ());
+		fprogram["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+		fprogram["farClipPlane"] = renderer->camera.GetFarClipPlane ();
 	}
 
 	return true;
@@ -280,6 +285,7 @@ const std::vector<glm::mat3x3> XYZ2RGB = {
 void FinalPass::Render (void)
 {
 	glm::uvec2 viewport;
+	GLuint program;
 	const char *tonemapNames[] = {
 		"tonemapDefault",
 		"tonemapReinhard",
@@ -288,25 +294,6 @@ void FinalPass::Render (void)
 		"tonemapExponential"
 	};
 	viewport = renderer->camera.GetViewport ();
-	for (gl::Program &program : fprograms)
-	{
-		program["viewport"] = viewport;
-		program["gbufferdim"] = glm::uvec2 (renderer->gbuffer.GetWidth (),
-																				renderer->gbuffer.GetHeight ());
-		program["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
-		program["farClipPlane"] = renderer->camera.GetFarClipPlane ();
-		program["tonemapping.image_key"] = tonemapping.image_key;
-		program["tonemapping.white_threshold"] = tonemapping.white_threshold;
-		if (tonemapping.rgb_working_space >= RGB2XYZ.size ())
-			 tonemapping.rgb_working_space = 0;
-		program["tonemapping.RGB2XYZ"] = RGB2XYZ[tonemapping.rgb_working_space];
-		program["tonemapping.XYZ2RGB"] = XYZ2RGB[tonemapping.rgb_working_space];
-
-		program["tonemapping.sigma"] = powf (tonemapping.sigma, tonemapping.n);
-		program["tonemapping.n"] = tonemapping.n;
-		program["glow"] = renderer->composition.GetGlowSize () > 0;
-		program["antialiasing"] = renderer->GetAntialiasing ();
-	}
 	gl::Viewport (0, 0, viewport.x, viewport.y);
 
 	gl::ClearColor (0, 0, 0, 0);
@@ -328,49 +315,70 @@ void FinalPass::Render (void)
 			renderer->gbuffer.msnormalbuffer.Bind (GL_TEXTURE3,
 																						 GL_TEXTURE_2D_MULTISAMPLE);
 		}
-		pipelines[0].Bind ();
-
-		GLuint idx;
-		idx = fprograms[0].GetSubroutineIndex (GL_FRAGMENT_SHADER,
-																					 tonemapNames[tonemapping.mode]);
-		gl::UniformSubroutinesuiv (GL_FRAGMENT_SHADER, 1, &idx);
-
+		program = 0;
 		break;
 	case 1:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->gbuffer.colorbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[2].Bind ();
+		program = 2;
 		break;
 	case 2:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->gbuffer.normalbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[1].Bind ();
+		program = 1;
 		break;
 	case 3:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->gbuffer.specularbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[2].Bind ();
+		program = 2;
 		break;
 	case 4:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->gbuffer.depthtexture.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[5].Bind ();
+		program = 5;
 		break;
 	case 5:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->shadowmap.shadowmap.Bind (GL_TEXTURE0,
 																				GL_TEXTURE_2D);
-		pipelines[3].Bind ();
+		program = 3;
 		break;
 	case 6:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		pipelines[4].Bind ();
+		program = 4;
 		break;
 	default:
 		throw std::runtime_error ("Invalid render mode.");
 		break;
 	}
+
+	pipelines[program].Bind ();
+
+	if (program == 0)
+	{
+		GLuint idx;
+		idx = fprograms[0].GetSubroutineIndex (GL_FRAGMENT_SHADER,
+																					 tonemapNames[tonemapping.mode]);
+		gl::UniformSubroutinesuiv (GL_FRAGMENT_SHADER, 1, &idx);
+	}
+
+	fprograms[program]["viewport"] = viewport;
+	fprograms[program]["tonemapping.image_key"] = tonemapping.image_key;
+	fprograms[program]["tonemapping.white_threshold"]
+		 = tonemapping.white_threshold;
+	if (tonemapping.rgb_working_space >= RGB2XYZ.size ())
+		 tonemapping.rgb_working_space = 0;
+	fprograms[program]["tonemapping.RGB2XYZ"]
+		 = RGB2XYZ[tonemapping.rgb_working_space];
+	fprograms[program]["tonemapping.XYZ2RGB"]
+		 = XYZ2RGB[tonemapping.rgb_working_space];
+
+	fprograms[program]["tonemapping.sigma"]
+		 = powf (tonemapping.sigma, tonemapping.n);
+	fprograms[program]["tonemapping.n"] = tonemapping.n;
+	fprograms[program]["glow"] = renderer->composition.GetGlowSize () > 0;
+	fprograms[program]["antialiasing"] = renderer->GetAntialiasing ();
 
 	gl::Disable (GL_DEPTH_TEST);
 

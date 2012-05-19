@@ -50,6 +50,7 @@ public:
 	 GLuint GetHeight (void);
 
 	 void SetAntialiasing (GLuint samples);
+	 void SetProjMatrix (const glm::mat4 &projmat);
 	 gl::Texture fraglisttex;
 	 gl::Buffer fraglist;
 	 cl::Memory fraglistmem;

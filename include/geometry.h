@@ -33,6 +33,7 @@ public:
 	 void Render (GLuint pass, const gl::Program &program,
 								const glm::mat4 &viewmat);
 	 const Material &GetMaterial (const std::string &name);
+	 void SetProjMatrix (const glm::mat4 &projmat);
 
 	 class Pass
 	 {
