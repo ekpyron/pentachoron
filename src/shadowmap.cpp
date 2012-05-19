@@ -87,7 +87,7 @@ bool ShadowMap::Init (void)
 	framebuffer.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
 	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
-	blur = renderer->filters.CreateBlur (shadowmapmem, width, height, 8);
+	blur = renderer->filters.CreateBlur (shadowmapmem, width, height, 4);
 
 	return true;
 }
