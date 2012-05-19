@@ -280,6 +280,13 @@ const std::vector<glm::mat3x3> XYZ2RGB = {
 void FinalPass::Render (void)
 {
 	glm::uvec2 viewport;
+	const char *tonemapNames[] = {
+		"tonemapDefault",
+		"tonemapReinhard",
+		"tonemapLogarithmic",
+		"tonemapURQ",
+		"tonemapExponential"
+	};
 	viewport = renderer->camera.GetViewport ();
 	for (gl::Program &program : fprograms)
 	{
@@ -295,7 +302,6 @@ void FinalPass::Render (void)
 		program["tonemapping.RGB2XYZ"] = RGB2XYZ[tonemapping.rgb_working_space];
 		program["tonemapping.XYZ2RGB"] = XYZ2RGB[tonemapping.rgb_working_space];
 
-		program["tonemapping.mode"] = tonemapping.mode;
 		program["tonemapping.sigma"] = powf (tonemapping.sigma, tonemapping.n);
 		program["tonemapping.n"] = tonemapping.n;
 		program["glow"] = renderer->composition.GetGlowSize () > 0;
@@ -323,6 +329,12 @@ void FinalPass::Render (void)
 																						 GL_TEXTURE_2D_MULTISAMPLE);
 		}
 		pipelines[0].Bind ();
+
+		GLuint idx;
+		idx = fprograms[0].GetSubroutineIndex (GL_FRAGMENT_SHADER,
+																					 tonemapNames[tonemapping.mode]);
+		gl::UniformSubroutinesuiv (GL_FRAGMENT_SHADER, 1, &idx);
+
 		break;
 	case 1:
 		renderer->windowgrid.sampler.Bind (0);

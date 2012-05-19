@@ -17,66 +17,93 @@ uniform struct
 	float white_threshold;
 	mat3x3 RGB2XYZ;
 	mat3x3 XYZ2RGB;
-	unsigned int mode;
 	float sigma;
 	float n;
 } tonemapping;
 
-float luminance (vec3 color)
+subroutine vec4 tonemapType (vec4 color);
+subroutine uniform tonemapType tonemap;
+
+vec3 RGB2Yxy (vec3 color)
 {
-	return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
-}
-
-vec4 tonemap (vec4 color)
-{
-	if (tonemapping.mode == 0)
-	   return color;
-
-	float avgLuminance = 0.5;
-
-	float exposure = tonemapping.image_key / avgLuminance;
-
 	vec3 XYZ;
 
-	XYZ = tonemapping.RGB2XYZ * color.xyz;
+	XYZ = tonemapping.RGB2XYZ * color;
 
 	vec3 Yxy;
 	Yxy.r = XYZ.g;
 	Yxy.g = XYZ.r / (XYZ.r + XYZ.g + XYZ.b);
 	Yxy.b = XYZ.g / (XYZ.r + XYZ.g + XYZ.b);
+	return Yxy;
+}
 
-	float Lp = Yxy.r * exposure / avgLuminance;
-
-	Lp = pow (Lp, tonemapping.n);
-
-	switch (tonemapping.mode)
-	{
-		case 1:
-		     Yxy.r = (Lp * (1.0f + Lp
-		     	     / (tonemapping.white_threshold
-			        * tonemapping.white_threshold)))
-	      		     / (tonemapping.sigma + Lp);
-
-		break;
-		case 2:
-		     Yxy.r = log (1 + Lp)
-		     	     / log (1 + tonemapping.white_threshold);
-		break;
-		case 3:
-		     Yxy.r = tonemapping.sigma * Lp
-		     	     / (tonemapping.sigma * Lp - Lp
-			        + tonemapping.white_threshold);
-		break;
-		case 4:
-		     Yxy.r = 1 - exp (-Lp);
-		break;
-	}
-
+vec3 Yxy2RGB (vec3 Yxy)
+{
+	vec3 XYZ;
 	XYZ.r = Yxy.r * Yxy.g / Yxy.b;
 	XYZ.g = Yxy.r;
 	XYZ.b = Yxy.r * (1 - Yxy.g - Yxy.b) / Yxy.b;
 
-	return vec4 (tonemapping.XYZ2RGB * XYZ, 1.0);
+	return tonemapping.XYZ2RGB * XYZ;
+}
+
+subroutine (tonemapType) vec4 tonemapDefault (vec4 color)
+{
+	return color;
+}
+
+subroutine (tonemapType) vec4 tonemapReinhard (vec4 color)
+{
+	float avgLuminance = 0.5;
+	float exposure = tonemapping.image_key / avgLuminance;
+	vec3 Yxy;
+	Yxy = RGB2Yxy (color.xyz);
+	float Lp = Yxy.r * exposure / avgLuminance;
+	Lp = pow (Lp, tonemapping.n);
+	Yxy.r = (Lp * (1.0f + Lp
+     	      	/ (tonemapping.white_threshold
+		  * tonemapping.white_threshold)))
+	      	/ (tonemapping.sigma + Lp);
+	return vec4 (Yxy2RGB (Yxy), 1.0);
+}
+
+subroutine (tonemapType) vec4 tonemapLogarithmic (vec4 color)
+{
+	float avgLuminance = 0.5;
+	float exposure = tonemapping.image_key / avgLuminance;
+	vec3 Yxy;
+	Yxy = RGB2Yxy (color.xyz);
+	float Lp = Yxy.r * exposure / avgLuminance;
+	Lp = pow (Lp, tonemapping.n);
+	Yxy.r = log (1 + Lp)
+	      	/ log (1 + tonemapping.white_threshold);
+	return vec4 (Yxy2RGB (Yxy), 1.0);
+}
+
+subroutine (tonemapType) vec4 tonemapURQ (vec4 color)
+{
+	float avgLuminance = 0.5;
+	float exposure = tonemapping.image_key / avgLuminance;
+	vec3 Yxy;
+	Yxy = RGB2Yxy (color.xyz);
+	float Lp = Yxy.r * exposure / avgLuminance;
+	Lp = pow (Lp, tonemapping.n);
+	Yxy.r = tonemapping.sigma * Lp
+		/ (tonemapping.sigma * Lp - Lp
+		   + tonemapping.white_threshold);
+	return vec4 (Yxy2RGB (Yxy), 1.0);
+}
+
+subroutine (tonemapType) vec4 tonemapExponential (vec4 color)
+{
+	float avgLuminance = 0.5;
+	float exposure = tonemapping.image_key / avgLuminance;
+	vec3 Yxy;
+	Yxy = RGB2Yxy (color.xyz);
+	float Lp = Yxy.r * exposure / avgLuminance;
+	Lp = pow (Lp, tonemapping.n);
+        Yxy.r = 1 - exp (-Lp);
+	return vec4 (Yxy2RGB (Yxy), 1.0);
 }
 
 void main (void)
