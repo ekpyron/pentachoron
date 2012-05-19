@@ -67,7 +67,6 @@ struct Info
 {
 	float4 projinfo;
 	float4 vmatinv[4];
-	float4 shadowmat[4];
 	float4 eye;
 	float4 center;
 	float luminance_threshold;
@@ -119,42 +118,6 @@ float getpos (float4 *pos, struct Info *info)
 	return depth;
 }
 
-// compute shadow
-float compute_shadow (int x, int y, float4 pos,
-      		      read_only image2d_t shadowmap, struct Info *info)
-{
-	float4 lspos;
-
-	// compute coordinates in light space
-	lspos.x = dot (info->shadowmat[0], pos);
-	lspos.y = dot (info->shadowmat[1], pos);
-	lspos.z = dot (info->shadowmat[2], pos);
-	lspos.w = dot (info->shadowmat[3], pos);
-	lspos.xyz = native_divide (lspos.xyz, lspos.w);
-
-	// something like frustum culling
-	if (lspos.w < 0 || lspos.x < 0 || lspos.y < 0
-	    || lspos.x > 1 || lspos.y > 1)
-	{
-	    return 1.0;
-	}
-
-	// read data from the shadow map
-	float2 moments;
-	moments = read_imagef (shadowmap, samplerB, lspos.xy).xy;
-
-	// depth comparison
-	if (lspos.z <= moments.x)
-	   return 1;
-
-	// smooth shadows using the variance from the shadow map
-	float variance = moments.y - (moments.x * moments.x);
-	variance = max (variance, 0.00001);
-	float d = lspos.z - moments.x;
-	float p = native_divide (variance, variance + d * d);
-	return smoothstep (0.1, 1.0, p);
-}
-
 // computes sky color (TODO)
 float4 compute_sky (float4 p, struct Info *info)
 {
@@ -166,8 +129,8 @@ float4 compute_sky (float4 p, struct Info *info)
 }
 
 // compute the pixel value for some given gbuffer data
-float4 compute_pixel (struct PixelData *data, read_only image2d_t shadowmap,
-      		      float2 p, global struct Light *lights,
+float4 compute_pixel (struct PixelData *data, float2 p,
+       		      global struct Light *lights,
 		      unsigned int num_light_indices,
 		      local ushort *light_indices,
 		      struct Info *info,
@@ -274,16 +237,6 @@ float4 compute_pixel (struct PixelData *data, read_only image2d_t shadowmap,
 		}
 	}
 
-	// fetch the shadow factor
-	float shadow;
-	shadow = compute_shadow (x, y, pos, shadowmap, info);
-	shadow *= info->shadow_alpha;
-	shadow += 1 - info->shadow_alpha;
-
-	// apply shadow to diffuse and specular light
-	diffuse *= shadow;
-	specular *= shadow;
-
 	// add ambient light
 	diffuse += 0.025;
 
@@ -384,7 +337,7 @@ kernel void composition (write_only image2d_t screen,
 			 read_only image2d_t depthbuffer,
 			 read_only image2d_t normalmap,
 			 read_only image2d_t specularmap,
-			 read_only image2d_t shadowmap,
+			 read_only image2d_t shadowmask,
 			 read_only image2d_t fragidx,
 			 global uint *fraglist,
 			 unsigned int num_lights,
@@ -566,9 +519,9 @@ kernel void composition (write_only image2d_t screen,
 	opaquedata.depth = depth;
 
 	// compute the opaque color
-	pixel = compute_pixel (&opaquedata, shadowmap, pos,
-	       		       lights, num_light_indices, light_indices,
-			       &info, num_parameters, parameters);
+	pixel = compute_pixel (&opaquedata, pos, lights, num_light_indices,
+	      		       light_indices, &info, num_parameters,
+			       parameters);
 
 	// iterate over the depth layers
 	for (uchar i = 0; i < num; i++)
@@ -577,14 +530,17 @@ kernel void composition (write_only image2d_t screen,
 
 		// compute the color for a depth layer
 		// (back to front)
-		pixel2 = compute_pixel (&data[num - i - 1],
-		       	 	       	shadowmap, pos, lights,
-					num_light_indices, light_indices,
-					&info, num_parameters,
-					parameters);
+		pixel2 = compute_pixel (&data[num - i - 1], pos, lights,
+		       	 	        num_light_indices, light_indices,
+					&info, num_parameters, parameters);
 		// blend the next layer with the current colot
 		pixel = mix (pixel, pixel2, pixel2.w);
 	}
+
+	float shadow = read_imagef (shadowmask, sampler, (int2) (x, y)).x;
+	shadow *= info.shadow_alpha;
+	shadow += (1 - info.shadow_alpha);
+	pixel *= shadow;
 
 	// compute the luminance of the current pixel
 	float luminance = 0.2126 * pixel.x + 0.7152 * pixel.y

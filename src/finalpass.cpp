@@ -339,14 +339,13 @@ void FinalPass::Render (void)
 		break;
 	case 5:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->shadowmap.shadowmap.Bind (GL_TEXTURE0,
-																				GL_TEXTURE_2D);
-		program = 3;
+		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		program = 4;
 		break;
 	case 6:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		program = 4;
+		renderer->shadowpass.GetShadowMask ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		program = 2;
 		break;
 	default:
 		throw std::runtime_error ("Invalid render mode.");

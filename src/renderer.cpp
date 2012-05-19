@@ -18,7 +18,7 @@
 #include <fstream>
 
 Renderer::Renderer (void)
-	: geometry (this), shadowmap (this),
+	: geometry (this), shadowpass (this),
 		finalpass (this), gbuffer (this), filters (this),
 #ifdef DEBUG
 		memory (0),
@@ -63,8 +63,8 @@ bool Renderer::Init (void)
 	if (!filters.Init ())
 		 return false;
 
-	(*logstream) << "Initialize Shadow Map..." << std::endl;
-	if (!shadowmap.Init ())
+	(*logstream) << "Initialize Shadow Pass..." << std::endl;
+	if (!shadowpass.Init ())
 		 return false;
 
 	float max = -100;
@@ -206,10 +206,7 @@ void Renderer::Frame (void)
 
 	gbuffer.Render (geometry);
 
-	for (GLuint i = 0; i < shadows.size (); i++)
-	{
-		shadowmap.Render (i, geometry, shadows[i]);
-	}
+	shadowpass.Render (0, geometry, shadows[0]);
 
 	composition.Frame (timefactor);
 

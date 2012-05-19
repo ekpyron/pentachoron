@@ -503,8 +503,8 @@ void Interface::PrintRendermode (void)
 		"normal buffer",
 		"specular buffer",
 		"depth buffer",
-		"shadow projection",
-		"glow"
+		"glow",
+		"shadow mask"
 	};
 
 	font.Print (rendermodes[renderer->finalpass.GetRenderMode ()]);
@@ -605,8 +605,8 @@ void Interface::MoveShadowZ (int what)
 void Interface::ToggleSoftShadow (int what)
 {
 	bool value;
-	value = renderer->shadowmap.GetSoftShadows ();
-	renderer->shadowmap.SetSoftShadows (!value);
+	value = renderer->shadowpass.GetSoftShadows ();
+	renderer->shadowpass.SetSoftShadows (!value);
 }
 
 void Interface::MoveLightX (int what)
@@ -957,7 +957,7 @@ void Interface::PrintShadowZ (void)
 
 void Interface::PrintSoftShadow (void)
 {
-	if (renderer->shadowmap.GetSoftShadows ())
+	if (renderer->shadowpass.GetSoftShadows ())
 		 font.Print ("yes");
 	else
 		 font.Print ("no");
