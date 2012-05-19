@@ -322,7 +322,7 @@ void Model::Render (GLuint pass, const gl::Program &program)
 		if (passtype == Geometry::Pass::GBufferTransparency)
 			 gl::Enable (GL_CULL_FACE);
 	}
-	else
+	else if (passtype != Geometry::Pass::GBufferSRAA)
 	{
 		if (passtype != Geometry::Pass::GBufferTransparency)
 		{
