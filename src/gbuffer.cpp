@@ -19,6 +19,9 @@
 
 GBuffer::GBuffer (Renderer *parent)
 	: renderer (parent)
+#ifdef DEBUG
+	  , numsamples (0)
+#endif
 {
 }
 
@@ -64,23 +67,23 @@ bool GBuffer::Init (void)
 		}
 
 		fshader = gl::Shader (GL_FRAGMENT_SHADER);
-		if (!ReadFile (MakePath ("shaders", "gbuffer", "depthonly.txt"), src))
+		if (!ReadFile (MakePath ("shaders", "gbuffer", "sraa.txt"), src))
 			 return false;
 		fshader.Source (src);
 		if (!fshader.Compile ())
 		{
 			(*logstream) << "Cannot compile "
-									 << MakePath ("shaders", "gbuffer", "depthonly.txt")
+									 << MakePath ("shaders", "gbuffer", "sraa.txt")
 									 << ":" << std::endl << fshader.GetInfoLog () << std::endl;
 			return false;
 		}
 
-		depthonlyprog.Attach (vshader);
-		depthonlyprog.Attach (fshader);
-		if (!depthonlyprog.Link ())
+		sraaprog.Attach (vshader);
+		sraaprog.Attach (fshader);
+		if (!sraaprog.Link ())
 		{
-			(*logstream) << "Cannot link the gbuffer depth only shader:"
-									 << std::endl << depthonlyprog.GetInfoLog ()
+			(*logstream) << "Cannot link the gbuffer sraa shader:"
+									 << std::endl << sraaprog.GetInfoLog ()
 									 << std::endl;
 			return false;
 		}
@@ -129,34 +132,25 @@ bool GBuffer::Init (void)
 	specularbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
 													0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	
-	for (auto i = 0; i < 4; i++)
-		 depthtexture[i].Image2D (GL_TEXTURE_2D, 0, GL_R32F, width, height,
-															0, GL_RED, GL_FLOAT, NULL);
+	depthtexture.Image2D (GL_TEXTURE_2D, 0, GL_R32F, width, height,
+												0, GL_RED, GL_FLOAT, NULL);
 
 #ifdef DEBUG
 	renderer->memory += width * height * (4 * 4 + 4 + 4 + 4 + 4);
 #endif
 
-	framebuffer[0].Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 												 colorbuffer, 0);
-	framebuffer[0].Texture2D (GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
 												 normalbuffer, 0);
-	framebuffer[0].Texture2D (GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
 												 specularbuffer, 0);
-	framebuffer[0].Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
-												 depthtexture[0], 0);
-	framebuffer[0].Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
+												 depthtexture, 0);
+	framebuffer.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
 		
-	framebuffer[0].DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
-					 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
-
-	for (auto i = 1; i < 4; i++)
-	{
-		framebuffer[i].Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-															depthtexture[i], 0);
-		framebuffer[i].Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
-		framebuffer[i].DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
-	}
+	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+				 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
 
 	fragidx.Image2D (GL_TEXTURE_2D, 0, GL_R32I, width, height,
 									 0, GL_RED_INTEGER, GL_INT, NULL);
@@ -175,7 +169,7 @@ bool GBuffer::Init (void)
 	transparencyclearfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
 	depthmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, depthtexture[0]);
+		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, depthtexture);
 	colormem = renderer->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, colorbuffer);
 	normalmem = renderer->clctx.CreateFromGLTexture2D
@@ -195,7 +189,42 @@ bool GBuffer::Init (void)
 				 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	counter.Data (sizeof (GLuint) * 64, counters, GL_DYNAMIC_DRAW);
 
+	GL_CHECK_ERROR;
+
 	return true;
+}
+
+void GBuffer::SetAntialiasing (GLuint samples)
+{
+#ifdef DEBUG
+	renderer->memory -= width * height * numsamples * (4 + 4);
+#endif
+	if (samples > 1)
+	{
+		numsamples = samples;
+		msdepthtexture.Image2DMultisample (GL_TEXTURE_2D_MULTISAMPLE,
+																			 numsamples, GL_DEPTH_COMPONENT32,
+																			 width, height, GL_TRUE);
+		msnormalbuffer.Image2DMultisample (GL_TEXTURE_2D_MULTISAMPLE,
+																			 numsamples, GL_RGBA8, width, height,
+																			 GL_TRUE);
+		multisamplefb.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE,
+														 msdepthtexture, 0);
+		multisamplefb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE,
+														 msnormalbuffer, 0);
+		multisamplefb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
+
+#ifdef DEBUG
+		renderer->memory += width * height * numsamples * (4 + 4);
+#endif
+	}
+	else
+	{
+		numsamples = 0;
+		msdepthtexture = gl::Texture ();
+		msnormalbuffer = gl::Texture ();
+		multisamplefb = gl::Framebuffer ();
+	}
 }
 
 GLuint GBuffer::GetWidth (void)
@@ -221,13 +250,18 @@ void GBuffer::Render (Geometry &geometry)
 	transparencyprog["farClipPlane"] = renderer->camera.GetFarClipPlane ();
 	transparencyprog["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
 
+	sraaprog["projmat"] = renderer->camera.GetProjMatrix ();
+	sraaprog["viewport"] = glm::uvec2 (width, height);
+	sraaprog["farClipPlane"] = renderer->camera.GetFarClipPlane ();
+	sraaprog["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+
 	gl::Enable (GL_DEPTH_TEST);
 	gl::DepthMask (GL_TRUE);
 	gl::DepthFunc (GL_LESS);
 
 	program.Use ();
 
-	framebuffer[0].Bind (GL_FRAMEBUFFER);
+	framebuffer.Bind (GL_FRAMEBUFFER);
 	gl::Viewport (0, 0, width, height);
 		
 	gl::ClearBufferfv (GL_COLOR, 0, (float[]) {0.0f, 0.0f, 0.0f, 1.0f} );
@@ -267,20 +301,19 @@ void GBuffer::Render (Geometry &geometry)
 	}
 	counter.Unmap ();
 
-	depthonlyprog.Use ();
+	sraaprog.Use ();
 
 	if (renderer->GetAntialiasing ())
 	{
-		for (auto i = 1; i < 4; i++)
-		{
-			framebuffer[i].Bind (GL_FRAMEBUFFER);
-			gl::Viewport (0, 0, width, height);
-			gl::ClearBufferfv (GL_COLOR, 0, (float[]) {1.0f, 0.0f, 0.0f, 0.0f} );
-			gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
+		gl::DepthMask (GL_TRUE);
+		multisamplefb.Bind (GL_FRAMEBUFFER);
+		gl::Viewport (0, 0, width, height);
+		gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
+		gl::ClearBufferfv (GL_COLOR, 0, (float[]) {0.0f, 0.0f, 0.0f, 0.0f});
 			
-			geometry.Render (Geometry::Pass::GBufferDepthOnly,
-											 program, renderer->camera.GetViewMatrix ());
-		}
+		geometry.Render (Geometry::Pass::GBufferSRAA,
+										 sraaprog, renderer->camera.GetViewMatrix ());
+		gl::DepthMask (GL_FALSE);
 	}
 
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);

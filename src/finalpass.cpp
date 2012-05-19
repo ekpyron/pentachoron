@@ -284,6 +284,8 @@ void FinalPass::Render (void)
 	for (gl::Program &program : fprograms)
 	{
 		program["viewport"] = viewport;
+		program["gbufferdim"] = glm::uvec2 (renderer->gbuffer.GetWidth (),
+																				renderer->gbuffer.GetHeight ());
 		program["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
 		program["farClipPlane"] = renderer->camera.GetFarClipPlane ();
 		program["tonemapping.image_key"] = tonemapping.image_key;
@@ -297,6 +299,7 @@ void FinalPass::Render (void)
 		program["tonemapping.sigma"] = powf (tonemapping.sigma, tonemapping.n);
 		program["tonemapping.n"] = tonemapping.n;
 		program["glow"] = renderer->composition.GetGlowSize () > 0;
+		program["antialiasing"] = renderer->GetAntialiasing ();
 	}
 	gl::Viewport (0, 0, viewport.x, viewport.y);
 
@@ -310,8 +313,15 @@ void FinalPass::Render (void)
 		renderer->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		renderer->windowgrid.sampler.Bind (1);
 		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE1, GL_TEXTURE_2D);
-		renderer->windowgrid.sampler.Bind (2);
-		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE2, GL_TEXTURE_2D);
+		if (renderer->GetAntialiasing ())
+		{
+			renderer->windowgrid.sampler.Bind (2);
+			renderer->gbuffer.msdepthtexture.Bind (GL_TEXTURE2,
+																						 GL_TEXTURE_2D_MULTISAMPLE);
+			renderer->windowgrid.sampler.Bind (3);
+			renderer->gbuffer.msnormalbuffer.Bind (GL_TEXTURE3,
+																						 GL_TEXTURE_2D_MULTISAMPLE);
+		}
 		pipelines[0].Bind ();
 		break;
 	case 1:
@@ -331,7 +341,7 @@ void FinalPass::Render (void)
 		break;
 	case 4:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture[0].Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->gbuffer.depthtexture.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		pipelines[5].Bind ();
 		break;
 	case 5:

@@ -290,16 +290,16 @@ void Interface::EditAntialiasing (int what)
 {
 	if (!what)
 	{
-		renderer->SetAntialiasing (!renderer->GetAntialiasing ());
+		GLuint samples = renderer->GetAntialiasing ();
+		samples += 4;
+		if (samples > 16) samples = 0;
+		renderer->SetAntialiasing (samples);
 	}
 }
 
 void Interface::PrintAntialiasing (void)
 {
-	if (renderer->GetAntialiasing ())
-		 font.Print ("on");
-	else
-		 font.Print ("off");
+	font.Print (renderer->GetAntialiasing ());
 }
 
 void Interface::PrintGlowSize (void)

@@ -36,11 +36,20 @@ public:
 	 cl::Memory normalmem;
 	 gl::Texture specularbuffer;
 	 cl::Memory specularmem;
-	 gl::Texture depthtexture[4];
+	 gl::Texture depthtexture;
 	 gl::Renderbuffer depthbuffer;
 	 cl::Memory depthmem;
+
+	 gl::Texture msdepthtexture;
+	 gl::Texture msnormalbuffer;
+#ifdef DEBUG
+	 GLuint numsamples;
+#endif
+
 	 GLuint GetWidth (void);
 	 GLuint GetHeight (void);
+
+	 void SetAntialiasing (GLuint samples);
 	 gl::Texture fraglisttex;
 	 gl::Buffer fraglist;
 	 cl::Memory fraglistmem;
@@ -50,13 +59,14 @@ public:
 private:
 	 GLuint width, height;
 
-	 gl::Framebuffer framebuffer[4];
+	 gl::Framebuffer framebuffer;
+	 gl::Framebuffer multisamplefb;
 	 gl::Framebuffer transparencyfb;
 	 gl::Framebuffer transparencyclearfb;
 
 	 gl::Program program;
 	 gl::Program transparencyprog;
-	 gl::Program depthonlyprog;
+	 gl::Program sraaprog;
 	 gl::Sampler depthsampler;
 
 	 gl::Buffer counter;

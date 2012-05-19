@@ -2,8 +2,12 @@
 layout(location = 0) out vec4 output;
 layout(binding = 0) uniform sampler2D colorbuffer;
 layout(binding = 1) uniform sampler2D glowbuffer;
-layout(binding = 2) uniform sampler2D depthmap;
+layout(binding = 2) uniform sampler2DMS depthmap;
+layout(binding = 3) uniform sampler2DMS normalmap;
+
 uniform uvec2 viewport;
+uniform uvec2 gbufferdim;
+uniform uint antialiasing;
 uniform bool glow;
 uniform float farClipPlane;
 uniform float nearClipPlane;
@@ -21,12 +25,6 @@ uniform struct
 float luminance (vec3 color)
 {
 	return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
-}
-
-float getdepth (vec2 coord)
-{
-	return 2.0 * nearClipPlane / (farClipPlane + nearClipPlane -
-	       texture (depthmap, coord).r * (farClipPlane - nearClipPlane));
 }
 
 vec4 tonemap (vec4 color)
@@ -84,9 +82,63 @@ vec4 tonemap (vec4 color)
 void main (void)
 {
 	vec4 color;
-	float edge;
 	vec2 coord = gl_FragCoord.xy / viewport;
-	color = texture (colorbuffer, coord);
+
+	if (antialiasing > 0)
+	{
+		ivec2 p = ivec2 (coord * gbufferdim);
+
+		float weights[9] = { 0, 0, 0,
+		      		     0, 0, 0,
+				     0, 0, 0 };
+		for (int s = 0; s < antialiasing; s++)
+		{
+			float d;
+			vec3 N;
+			d = texelFetch (depthmap, p, s).r;
+			N = texelFetch (normalmap, p, s).xyz * 2 - 1;
+			float tmpweights[9] = { 0, 0, 0,
+			      		      	0, 0, 0,
+						0, 0, 0 };
+			float sum = 0.0f;
+			for (int y = 0; y < 3; y++)
+			{
+				for (int x = 0; x < 3; x++)
+				{
+					float d2;
+					vec3 N2;
+					d2 = texelFetch (depthmap,
+					   p + ivec2 (x - 1, y - 1), s).r;
+					N2 = texelFetch (normalmap,
+					   p + ivec2 (x - 1, y - 1), s).xyz * 2 - 1;
+					float w = exp (-500 * max (abs (d - d2),
+					      	       (1 - dot (N, N2))));
+					tmpweights[x + y * 3] = w;
+					sum += w;
+				}
+			}
+			for (int i = 0; i < 9; i++)
+			{
+				weights[i] += tmpweights[i] / sum;
+			}
+		}
+
+		color = vec4 (0, 0, 0, 0);
+		for (int y = 0; y < 3; y++)
+		{
+			for (int x = 0; x < 3; x++)
+			{
+				color += weights[x + y * 3]
+				* texture (colorbuffer, coord
+			  	    + vec2 (x - 1, y - 1) / gbufferdim)
+				/ antialiasing;
+			}
+		}
+	}
+	else
+	{
+		color = texture (colorbuffer, coord);
+	}
 
 	if (glow)
 	{

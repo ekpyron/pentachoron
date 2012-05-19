@@ -49,7 +49,7 @@ private:
 			float radius;
 	 } bsphere;
 
-	 gl::VertexArray vertexarray, shadowpassarray;
+	 gl::VertexArray vertexarray, shadowpassarray, sraaarray;
 	 GLuint trianglecount;
 	 GLuint vertexcount;
 	 std::vector<gl::Buffer> buffers;

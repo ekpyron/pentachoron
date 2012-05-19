@@ -23,7 +23,7 @@ Renderer::Renderer (void)
 #ifdef DEBUG
 		memory (0),
 #endif
-		interface (this), composition (this), antialiasing (false)
+		interface (this), composition (this), antialiasing (0)
 {
 }
 
@@ -172,12 +172,13 @@ void Renderer::OnKeyDown (int key)
 	interface.OnKeyDown (key);
 }
 
-void Renderer::SetAntialiasing (bool value)
+void Renderer::SetAntialiasing (GLuint value)
 {
 	antialiasing = value;
+	gbuffer.SetAntialiasing (value);
 }
 
-bool Renderer::GetAntialiasing (void)
+GLuint Renderer::GetAntialiasing (void)
 {
 	return antialiasing;
 }

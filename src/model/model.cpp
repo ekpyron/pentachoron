@@ -289,7 +289,7 @@ void Model::Render (GLuint pass, const gl::Program &program)
 
 		query->second.Begin (GL_ANY_SAMPLES_PASSED);
 		break;
-	case Geometry::Pass::GBufferDepthOnly:
+	case Geometry::Pass::GBufferSRAA:
 		GLuint p;
 		p = (pass & (~Geometry::Pass::Mask)) | Geometry::Pass::GBuffer;
 		query = queries.find (pass);

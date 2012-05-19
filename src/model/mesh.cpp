@@ -32,6 +32,7 @@ Mesh::Mesh (Model &model) : trianglecount (0), vertexcount (0),
 Mesh::Mesh (Mesh &&mesh)
 	: vertexarray (std::move (mesh.vertexarray)),
 		shadowpassarray (std::move (mesh.shadowpassarray)),
+		sraaarray (std::move (mesh.sraaarray)),
 		trianglecount (mesh.trianglecount),
 		vertexcount (mesh.vertexcount),
 		buffers (std::move (mesh.buffers)),
@@ -56,6 +57,7 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 {
 	vertexarray = std::move (mesh.vertexarray);
 	shadowpassarray = std::move (mesh.shadowpassarray);
+	sraaarray = std::move (mesh.sraaarray);
 	trianglecount = mesh.trianglecount;
 	vertexcount = mesh.vertexcount;
 	buffers = std::move (mesh.buffers);
@@ -167,6 +169,13 @@ bool Mesh::Load (void *m, const Material *mat,
 																		 GL_FALSE, 0, 0);
 	shadowpassarray.EnableVertexAttrib (0);
 
+	for (auto i = 0; i < 2; i++)
+	{
+		sraaarray.VertexAttribOffset (buffers[i], i, 3, GL_FLOAT,
+																		GL_FALSE, 0, 0);
+		sraaarray.EnableVertexAttrib (i);
+	}
+
 	for (auto i = 0; i < 3; i++)
 	{
 		vertexarray.VertexAttribOffset (buffers[i], i, 3, GL_FLOAT,
@@ -226,8 +235,10 @@ void Mesh::Render (const gl::Program &program, GLuint passtype)
 	switch (passtype)
 	{
 	case Geometry::Pass::ShadowMap:
-	case Geometry::Pass::GBufferDepthOnly:
 		shadowpassarray.Bind ();
+		break;
+	case Geometry::Pass::GBufferSRAA:
+		sraaarray.Bind ();
 		break;
 	default:
 		material->Use (program);

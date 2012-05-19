@@ -43,15 +43,15 @@ public:
 	 void Frame (void);
 	 void OnKeyDown (int key);
 	 void OnKeyUp (int key);
-	 bool GetAntialiasing (void);
-	 void SetAntialiasing (bool value);
+	 GLuint GetAntialiasing (void);
+	 void SetAntialiasing (GLuint value);
 #ifdef DEBUG
 	 unsigned long memory;
 #endif
 private:
 	 Camera camera;
 
-	 bool antialiasing;
+	 GLuint antialiasing;
 
 	 Geometry geometry;
 	 GBuffer gbuffer;
