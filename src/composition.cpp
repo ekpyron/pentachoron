@@ -56,7 +56,7 @@ bool Composition::Init (void)
 		 (renderer->gbuffer.GetHeight () >> 1) * 4;
 #endif
 
-	if (!glow.Init (glowmap, 1))
+	if (!glow.Init (screen, glowmap, 1))
 		 return false;
 
 	screenmem = renderer->clctx.CreateFromGLTexture2D

@@ -36,11 +36,13 @@ public:
 	 ~Glow (void);
 	 /** Initialization.
 		* Initializes the glow class.
+		* \param screenmap Screenmap to blend the glow map into.
 		* \param glowmap Glowmap to use.
 		* \param mipmap_level Specifies which mipmap level of the glow map to use.
 		* \returns Whether the initialization was successful.
 		*/
-	 bool Init (gl::Texture &glowmap, GLuint mipmap_level);
+	 bool Init (gl::Texture &screenmap, gl::Texture &glowmap,
+							GLuint mipmap_level);
 	 /** Apply glow effect.
 		* Applies the glow effect.
 		*/
@@ -92,6 +94,14 @@ private:
 		* the glow map.
 		*/
 	 gl::Framebuffer destination;
+	 /** Blend framebuffer.
+		* The framebuffer object for blending the glow map into the screen
+		* texture.
+		*/
+	 gl::Framebuffer framebuffer;
+	 gl::Program fprogram;
+	 gl::ProgramPipeline pipeline;
+	 gl::Sampler sampler;
 
 	 Renderer *renderer;
 };

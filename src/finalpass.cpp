@@ -304,15 +304,13 @@ void FinalPass::Render (void)
 	case 0:
 		renderer->windowgrid.sampler.Bind (0);
 		renderer->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		renderer->windowgrid.sampler.Bind (1);
-		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 		if (renderer->GetAntialiasing ())
 		{
-			renderer->windowgrid.sampler.Bind (2);
-			renderer->gbuffer.msdepthtexture.Bind (GL_TEXTURE2,
+			renderer->windowgrid.sampler.Bind (1);
+			renderer->gbuffer.msdepthtexture.Bind (GL_TEXTURE1,
 																						 GL_TEXTURE_2D_MULTISAMPLE);
-			renderer->windowgrid.sampler.Bind (3);
-			renderer->gbuffer.msnormalbuffer.Bind (GL_TEXTURE3,
+			renderer->windowgrid.sampler.Bind (2);
+			renderer->gbuffer.msnormalbuffer.Bind (GL_TEXTURE2,
 																						 GL_TEXTURE_2D_MULTISAMPLE);
 		}
 		program = 0;

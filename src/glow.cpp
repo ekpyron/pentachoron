@@ -26,12 +26,53 @@ Glow::~Glow (void)
 {
 }
 
-bool Glow::Init (gl::Texture &glowmap, GLuint mipmap_level)
+bool Glow::Init (gl::Texture &screenmap, gl::Texture &glowmap,
+								 GLuint mipmap_level)
 {
+	{
+		gl::Shader obj (GL_FRAGMENT_SHADER);
+		std::string source;
+		if (!ReadFile (MakePath ("shaders", "blendglow.txt"), source))
+			 return false;
+		obj.Source (source);
+		if (!obj.Compile ())
+		{
+			(*logstream) << "Could not compile "
+									 << MakePath ("shaders", "blendglow.txt")
+									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
+			 return false;
+		}
+
+		fprogram.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
+		fprogram.Attach (obj);
+		if (!fprogram.Link ())
+		{
+			(*logstream) << "Could not link the shader program "
+									 << MakePath ("shaders", "blendglow.txt")
+									 << ": " << std::endl << fprogram.GetInfoLog ()
+									 << std::endl;
+			 return false;
+		}
+	}
+	pipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
+														 renderer->windowgrid.vprogram);
+	pipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, fprogram);
+	fprogram["viewport"] = glm::uvec2 (renderer->gbuffer.GetWidth (),
+																		 renderer->gbuffer.GetHeight ());
+
 	width = renderer->gbuffer.GetWidth () >> (mipmap_level + 1);
 	height = renderer->gbuffer.GetHeight () >> (mipmap_level + 1);
 	map.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F, width, height,
 							 0, GL_RGBA, GL_FLOAT, NULL);
+
+	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+												 screenmap, 0);
+	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
 #ifdef DEBUG
 	renderer->memory += width * height * 4 * 2;
@@ -80,6 +121,19 @@ void Glow::Apply (void)
 	
 	gl::Framebuffer::Unbind (GL_DRAW_FRAMEBUFFER);
 	gl::Framebuffer::Unbind (GL_READ_FRAMEBUFFER);
-		
+
 	blur.Apply ();
+
+	framebuffer.Bind (GL_FRAMEBUFFER);
+	pipeline.Bind ();
+	map.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+	sampler.Bind (0);
+	gl::Enable (GL_BLEND);
+	gl::BlendFunc (GL_ONE, GL_ONE);
+	gl::BlendEquation (GL_FUNC_ADD);
+	renderer->windowgrid.Render ();
+	gl::Disable (GL_BLEND);
+
+	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
+	GL_CHECK_ERROR;
 }

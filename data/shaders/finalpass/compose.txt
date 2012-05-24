@@ -1,9 +1,8 @@
 #version 420 core
 layout(location = 0) out vec4 output;
 layout(binding = 0) uniform sampler2D colorbuffer;
-layout(binding = 1) uniform sampler2D glowbuffer;
-layout(binding = 2) uniform sampler2DMS depthmap;
-layout(binding = 3) uniform sampler2DMS normalmap;
+layout(binding = 1) uniform sampler2DMS depthmap;
+layout(binding = 2) uniform sampler2DMS normalmap;
 
 uniform uvec2 viewport;
 uniform uvec2 gbufferdim;
@@ -165,11 +164,6 @@ void main (void)
 	else
 	{
 		color = texture (colorbuffer, coord);
-	}
-
-	if (glow)
-	{
-		color.xyz += texture (glowbuffer, coord).xyz;
 	}
 
 	output = tonemap (color);
