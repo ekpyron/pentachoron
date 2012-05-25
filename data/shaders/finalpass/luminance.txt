@@ -1,0 +1,14 @@
+#version 420 core
+layout(location = 0) out float luminance;
+layout(binding = 0) uniform sampler2D screenmap;
+
+uniform uvec2 gbufferdim;
+uniform float delta;
+
+void main (void)
+{
+	vec2 coord = gl_FragCoord.xy / gbufferdim;
+	vec3 color = texture (screenmap, coord).xyz;
+	luminance = log (0.2126 * color.x + 0.7152 * color.y
+	      	    + 0.0722 * color.z + delta);
+}
