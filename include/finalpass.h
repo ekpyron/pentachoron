@@ -43,9 +43,19 @@ public:
 	 GLuint GetRGBWorkingSpace (void);
 	 void SetTonemappingMode (GLuint mode);
 	 GLuint GetTonemappingMode (void);
+	 void SetAvgLumConst (float mode);
+	 float GetAvgLumConst (void);
+	 void SetAvgLumLinear (float mode);
+	 float GetAvgLumLinear (void);
+	 void SetAvgLumDelta (float delta);
+	 float GetAvgLumDelta (void);
+	 void SetAvgLumLod (float lod);
+	 float GetAvgLumLod (void);
 private:
 	 std::vector<gl::Program> fprograms;
 	 std::vector<gl::ProgramPipeline> pipelines;
+	 gl::Framebuffer framebuffer;
+	 gl::Texture luminance;
 	 gl::Sampler sampler;
 	 GLuint rendermode;
 	 struct
@@ -56,6 +66,13 @@ private:
 			float n;
 			GLuint rgb_working_space;
 			GLuint mode;
+			struct
+			{
+				 float constant;
+				 float linear;
+				 float delta;
+				 float lod;
+			} avgLum;
 	 } tonemapping;
 	 Renderer *renderer;
 };

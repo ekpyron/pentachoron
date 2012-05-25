@@ -20,7 +20,8 @@
 
 FinalPass::FinalPass (Renderer *parent)
 	: renderer (parent), rendermode (0), 
-		tonemapping ({ 0.18f, 1.0f, 1.0f, 1.0f, 0, 0 })
+		tonemapping ({ 0.18f, 1.0f, 1.0f, 1.0f, 0, 0,
+				{ 0.5f, 0.0f, 0.01f, 0.0f } })
 {
 }
 
@@ -32,7 +33,7 @@ bool FinalPass::Init (void)
 {
 	std::vector<const char *> fprogram_sources = {
 		"compose.txt", "normal.txt", "passthrough.txt", "shadowmap.txt",
-		"glow.txt", "depth.txt", "edge.txt"
+		"glow.txt", "depth.txt", "edge.txt", "luminance.txt"
 	};
 	for (const char *&filename : fprogram_sources)
 	{
@@ -61,6 +62,20 @@ bool FinalPass::Init (void)
 			 return false;
 		}
 	}
+
+	luminance.Image2D (GL_TEXTURE_2D, 0, GL_R32F,
+										 renderer->gbuffer.GetWidth (),
+										 renderer->gbuffer.GetHeight (),
+										 0, GL_RED, GL_FLOAT, NULL);
+
+	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+												 luminance, 0);
+	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
 	for (gl::Program &fprogram : fprograms)
 	{
@@ -146,6 +161,46 @@ void FinalPass::SetTonemappingMode (GLuint mode)
 GLuint FinalPass::GetTonemappingMode (void)
 {
 	return tonemapping.mode;
+}
+
+void FinalPass::SetAvgLumConst (float constant)
+{
+	tonemapping.avgLum.constant = constant;
+}
+
+float FinalPass::GetAvgLumConst (void)
+{
+	return tonemapping.avgLum.constant;
+}
+
+void FinalPass::SetAvgLumLinear (float linear)
+{
+	tonemapping.avgLum.linear = linear;
+}
+
+float FinalPass::GetAvgLumLinear (void)
+{
+	return tonemapping.avgLum.linear;
+}
+
+void FinalPass::SetAvgLumDelta (float delta)
+{
+	tonemapping.avgLum.delta = delta;
+}
+
+float FinalPass::GetAvgLumDelta (void)
+{
+	return tonemapping.avgLum.delta;
+}
+
+void FinalPass::SetAvgLumLod (float lod)
+{
+	tonemapping.avgLum.lod = lod;
+}
+
+float FinalPass::GetAvgLumLod (void)
+{
+	return tonemapping.avgLum.lod;
 }
 
 const std::vector<glm::mat3x3> RGB2XYZ = {
@@ -293,6 +348,16 @@ void FinalPass::Render (void)
 		"tonemapURQ",
 		"tonemapExponential"
 	};
+
+	framebuffer.Bind (GL_FRAMEBUFFER);
+	pipelines.back ().Bind ();
+	fprograms.back ()["delta"] = tonemapping.avgLum.delta;
+	renderer->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+	renderer->windowgrid.sampler.Bind (0);
+	renderer->windowgrid.Render ();
+	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
+	luminance.GenerateMipmap (GL_TEXTURE_2D);
+
 	viewport = renderer->camera.GetViewport ();
 	gl::Viewport (0, 0, viewport.x, viewport.y);
 
@@ -313,6 +378,8 @@ void FinalPass::Render (void)
 			renderer->gbuffer.msnormalbuffer.Bind (GL_TEXTURE2,
 																						 GL_TEXTURE_2D_MULTISAMPLE);
 		}
+		sampler.Bind (3);
+		luminance.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
 		program = 0;
 		break;
 	case 1:
@@ -374,6 +441,12 @@ void FinalPass::Render (void)
 	fprograms[program]["tonemapping.sigma"]
 		 = powf (tonemapping.sigma, tonemapping.n);
 	fprograms[program]["tonemapping.n"] = tonemapping.n;
+	fprograms[program]["avgLum.constant"]
+		 = tonemapping.avgLum.constant;
+	fprograms[program]["avgLum.linear"]
+		 = tonemapping.avgLum.linear;
+	fprograms[program]["avgLum.lod"]
+		 = tonemapping.avgLum.lod;
 	fprograms[program]["glow"] = renderer->composition.GetGlowSize () > 0;
 	fprograms[program]["antialiasing"] = renderer->GetAntialiasing ();
 

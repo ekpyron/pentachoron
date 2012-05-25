@@ -544,7 +544,7 @@ kernel void composition (write_only image2d_t screen,
 
 	// compute the luminance of the current pixel
 	float luminance = 0.2126 * pixel.x + 0.7152 * pixel.y
-	      		  + 0.0722 * pixel.w;
+	      		  + 0.0722 * pixel.z;
 
 	// glow effect
 	if (info.glowsize > 0)

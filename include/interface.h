@@ -42,6 +42,7 @@ public:
 	 void ToggleCompositionmode (int what);
 	 void ToggleSoftShadow (int what);
 	 void EditToneMapping (int what);
+	 void EditToneMappingAvgLum (int what);
 	 void EditGlowSize (int what);
 	 void EditAntialiasing (int what);
 	 void Exit (int what);
@@ -88,6 +89,10 @@ public:
 	 void EditToneMappingMode (int what);
 	 void EditToneMappingSigma (int what);
 	 void EditToneMappingN (int what);
+	 void EditToneMappingAvgLumConstant (int what);
+	 void EditToneMappingAvgLumLinear (int what);
+	 void EditToneMappingAvgLumDelta (int what);
+	 void EditToneMappingAvgLumLod (int what);
 	 void EditLuminanceThreshold (int what);
 
 	 void PrintRendermode (void);
@@ -125,6 +130,10 @@ public:
 	 void PrintToneMappingMode (void);
 	 void PrintToneMappingSigma (void);
 	 void PrintToneMappingN (void);
+	 void PrintToneMappingAvgLumConstant (void);
+	 void PrintToneMappingAvgLumLinear (void);
+	 void PrintToneMappingAvgLumDelta (void);
+	 void PrintToneMappingAvgLumLod (void);
 	 void PrintGlowSize (void);
 	 void PrintLuminanceThreshold (void);
 	 void PrintAntialiasing (void);

@@ -1,8 +1,9 @@
 #version 420 core
 layout(location = 0) out vec4 output;
-layout(binding = 0) uniform sampler2D colorbuffer;
+layout(binding = 0) uniform sampler2D screenmap;
 layout(binding = 1) uniform sampler2DMS depthmap;
 layout(binding = 2) uniform sampler2DMS normalmap;
+layout(binding = 3) uniform sampler2D luminancemap;
 
 uniform uvec2 viewport;
 uniform uvec2 gbufferdim;
@@ -19,9 +20,23 @@ uniform struct
 	float sigma;
 	float n;
 } tonemapping;
+uniform struct
+{
+	float constant;
+	float linear;
+	float lod;
+} avgLum;
 
 subroutine vec4 tonemapType (vec4 color);
 subroutine uniform tonemapType tonemap;
+
+float getAvgLuminance (void)
+{
+	vec2 coord = gl_FragCoord.xy / viewport;
+	float luminance;
+	luminance = exp (texture (luminancemap, coord, avgLum.lod).r);
+	return avgLum.constant + avgLum.linear * luminance;
+}
 
 vec3 RGB2Yxy (vec3 color)
 {
@@ -53,8 +68,9 @@ subroutine (tonemapType) vec4 tonemapDefault (vec4 color)
 
 subroutine (tonemapType) vec4 tonemapReinhard (vec4 color)
 {
-	float avgLuminance = 0.5;
+	float avgLuminance = getAvgLuminance ();
 	float exposure = tonemapping.image_key / avgLuminance;
+
 	vec3 Yxy;
 	Yxy = RGB2Yxy (color.xyz);
 	float Lp = Yxy.r * exposure / avgLuminance;
@@ -68,7 +84,7 @@ subroutine (tonemapType) vec4 tonemapReinhard (vec4 color)
 
 subroutine (tonemapType) vec4 tonemapLogarithmic (vec4 color)
 {
-	float avgLuminance = 0.5;
+	float avgLuminance = getAvgLuminance ();
 	float exposure = tonemapping.image_key / avgLuminance;
 	vec3 Yxy;
 	Yxy = RGB2Yxy (color.xyz);
@@ -81,7 +97,7 @@ subroutine (tonemapType) vec4 tonemapLogarithmic (vec4 color)
 
 subroutine (tonemapType) vec4 tonemapURQ (vec4 color)
 {
-	float avgLuminance = 0.5;
+	float avgLuminance = getAvgLuminance ();
 	float exposure = tonemapping.image_key / avgLuminance;
 	vec3 Yxy;
 	Yxy = RGB2Yxy (color.xyz);
@@ -95,7 +111,7 @@ subroutine (tonemapType) vec4 tonemapURQ (vec4 color)
 
 subroutine (tonemapType) vec4 tonemapExponential (vec4 color)
 {
-	float avgLuminance = 0.5;
+	float avgLuminance = getAvgLuminance ();
 	float exposure = tonemapping.image_key / avgLuminance;
 	vec3 Yxy;
 	Yxy = RGB2Yxy (color.xyz);
@@ -155,7 +171,7 @@ void main (void)
 			for (int x = 0; x < 3; x++)
 			{
 				color += weights[x + y * 3]
-				* texture (colorbuffer, coord
+				* texture (screenmap, coord
 			  	    + vec2 (x - 1, y - 1) / gbufferdim)
 				/ antialiasing;
 			}
@@ -163,7 +179,7 @@ void main (void)
 	}
 	else
 	{
-		color = texture (colorbuffer, coord);
+		color = texture (screenmap, coord);
 	}
 
 	output = tonemap (color);

@@ -30,17 +30,18 @@ typedef struct Menu {
 	 std::vector<MenuEntry> entries;
 } Menu;
 
-#define MAIN_MENU                0
-#define EDIT_LIGHTS              1
-#define EDIT_SHADOWS             2
-#define EDIT_LIGHT_POSITION      3
-#define EDIT_LIGHT_DIRECTION     4
-#define EDIT_LIGHT_DIFFUSE       5
-#define EDIT_LIGHT_SPECULAR      6
-#define EDIT_LIGHT_ATTENUATION   7
-#define EDIT_SHADOW_POSITION     8
-#define EDIT_TONE_MAPPING        9
-#define EDIT_GLOW                10
+#define MAIN_MENU                 0
+#define EDIT_LIGHTS               1
+#define EDIT_SHADOWS              2
+#define EDIT_LIGHT_POSITION       3
+#define EDIT_LIGHT_DIRECTION      4
+#define EDIT_LIGHT_DIFFUSE        5
+#define EDIT_LIGHT_SPECULAR       6
+#define EDIT_LIGHT_ATTENUATION    7
+#define EDIT_SHADOW_POSITION      8
+#define EDIT_TONE_MAPPING         9
+#define EDIT_GLOW                 10
+#define EDIT_TONE_MAPPING_AVG_LUM 11
 
 const std::vector<Menu> menus = {
 	{
@@ -160,6 +161,8 @@ const std::vector<Menu> menus = {
 				&Interface::EditToneMappingMode, false },
 			{ "Image Key ", &Interface::PrintImageKey,
 				&Interface::EditImageKey, true },
+			{ "Average Luminance", NULL,
+				&Interface::EditToneMappingAvgLum, false },
 			{ "White Threshold ", &Interface::PrintWhiteThreshold,
 				&Interface::EditWhiteThreshold, true },
 			{ "Sigma: ", &Interface::PrintToneMappingSigma,
@@ -179,6 +182,20 @@ const std::vector<Menu> menus = {
 			{ "Luminance Threshold: ", &Interface::PrintLuminanceThreshold,
 				&Interface::EditLuminanceThreshold, true },
 			{ "Back", NULL, &Interface::MainMenu, false }
+		}
+	},
+	{
+		"Tonemapping Average Luminance", NULL,
+		{
+			{ "Constant: ", &Interface::PrintToneMappingAvgLumConstant,
+				&Interface::EditToneMappingAvgLumConstant, true },
+			{ "Linear: ", &Interface::PrintToneMappingAvgLumLinear,
+				&Interface::EditToneMappingAvgLumLinear, true },
+			{ "Delta: ", &Interface::PrintToneMappingAvgLumDelta,
+				&Interface::EditToneMappingAvgLumDelta, true },
+			{ "Lod: ", &Interface::PrintToneMappingAvgLumLod,
+				&Interface::EditToneMappingAvgLumLod, true },
+			{ "Back", NULL, &Interface::EditToneMapping, false }
 		}
 	}
 };
@@ -408,6 +425,15 @@ void Interface::EditToneMapping (int what)
 	}
 }
 
+void Interface::EditToneMappingAvgLum (int what)
+{
+	if (!what)
+	{
+		menu = EDIT_TONE_MAPPING_AVG_LUM;
+		submenu = 0;
+	}
+}
+
 #define NUM_RGB_WORKING_SPACES 16
 
 void Interface::EditRGBWorkingSpace (int what)
@@ -480,6 +506,66 @@ void Interface::EditToneMappingMode (int what)
 	if (mode >= NUM_TONE_MAPPING_MODES)
 		 mode = 0;
 	renderer->finalpass.SetTonemappingMode (mode);
+}
+
+void Interface::EditToneMappingAvgLumConstant (int what)
+{
+	float c;
+	c = renderer->finalpass.GetAvgLumConst ();
+	c += what * 0.01;
+	renderer->finalpass.SetAvgLumConst (c);
+}
+
+void Interface::PrintToneMappingAvgLumConstant (void)
+{
+	float c;
+	c = renderer->finalpass.GetAvgLumConst ();
+	font.Print (c);
+}
+
+void Interface::EditToneMappingAvgLumLinear (int what)
+{
+	float c;
+	c = renderer->finalpass.GetAvgLumLinear ();
+	c += what * 0.01;
+	renderer->finalpass.SetAvgLumLinear (c);
+}
+
+void Interface::PrintToneMappingAvgLumLinear (void)
+{
+	float c;
+	c = renderer->finalpass.GetAvgLumLinear ();
+	font.Print (c);
+}
+
+void Interface::EditToneMappingAvgLumDelta (int what)
+{
+	float c;
+	c = renderer->finalpass.GetAvgLumDelta ();
+	c += what * 0.01;
+	renderer->finalpass.SetAvgLumDelta (c);
+}
+
+void Interface::PrintToneMappingAvgLumDelta (void)
+{
+	float c;
+	c = renderer->finalpass.GetAvgLumDelta ();
+	font.Print (c);
+}
+
+void Interface::EditToneMappingAvgLumLod (int what)
+{
+	float c;
+	c = renderer->finalpass.GetAvgLumLod ();
+	c += what * 0.1;
+	renderer->finalpass.SetAvgLumLod (c);
+}
+
+void Interface::PrintToneMappingAvgLumLod (void)
+{
+	float c;
+	c = renderer->finalpass.GetAvgLumLod ();
+	font.Print (c);
 }
 
 void Interface::PrintToneMappingN (void)

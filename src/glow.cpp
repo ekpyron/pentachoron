@@ -125,6 +125,8 @@ void Glow::Apply (void)
 	blur.Apply ();
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
+	gl::Viewport (0, 0, renderer->gbuffer.GetWidth (),
+								renderer->gbuffer.GetHeight ());
 	pipeline.Bind ();
 	map.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	sampler.Bind (0);
