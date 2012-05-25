@@ -482,7 +482,7 @@ void Interface::Exit (int what)
 	}
 }
 
-#define NUM_TONE_MAPPING_MODES 5
+#define NUM_TONE_MAPPING_MODES 6
 
 void Interface::PrintToneMappingMode (void)
 {
@@ -491,7 +491,8 @@ void Interface::PrintToneMappingMode (void)
 		"Reinhard",
 		"Logarithmic",
 		"URQ",
-		"Exponential"
+		"Exponential",
+		"Drago"
 	};
 	font.Print (tone_mapping_modes [renderer->finalpass.GetTonemappingMode ()]);
 }

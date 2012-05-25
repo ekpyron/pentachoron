@@ -67,6 +67,10 @@ bool FinalPass::Init (void)
 										 renderer->gbuffer.GetWidth (),
 										 renderer->gbuffer.GetHeight (),
 										 0, GL_RED, GL_FLOAT, NULL);
+#ifdef DEBUG
+	renderer->memory += renderer->gbuffer.GetWidth ()
+		 * renderer->gbuffer.GetHeight () * 4;
+#endif
 
 	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -346,7 +350,8 @@ void FinalPass::Render (void)
 		"tonemapReinhard",
 		"tonemapLogarithmic",
 		"tonemapURQ",
-		"tonemapExponential"
+		"tonemapExponential",
+		"tonemapDrago"
 	};
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
