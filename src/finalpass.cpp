@@ -380,8 +380,7 @@ void FinalPass::Render (void)
 			renderer->gbuffer.msdepthtexture.Bind (GL_TEXTURE1,
 																						 GL_TEXTURE_2D_MULTISAMPLE);
 			renderer->windowgrid.sampler.Bind (2);
-			renderer->gbuffer.msnormalbuffer.Bind (GL_TEXTURE2,
-																						 GL_TEXTURE_2D_MULTISAMPLE);
+			renderer->gbuffer.depthtexture.Bind (GL_TEXTURE2, GL_TEXTURE_2D);
 		}
 		sampler.Bind (3);
 		luminance.Bind (GL_TEXTURE3, GL_TEXTURE_2D);

@@ -207,7 +207,7 @@ bool GBuffer::Init (void)
 void GBuffer::SetAntialiasing (GLuint samples)
 {
 #ifdef DEBUG
-	renderer->memory -= width * height * numsamples * (4 + 4);
+	renderer->memory -= width * height * numsamples * 4;
 #endif
 	if (samples > 1)
 	{
@@ -215,24 +215,18 @@ void GBuffer::SetAntialiasing (GLuint samples)
 		msdepthtexture.Image2DMultisample (GL_TEXTURE_2D_MULTISAMPLE,
 																			 numsamples, GL_DEPTH_COMPONENT32,
 																			 width, height, GL_TRUE);
-		msnormalbuffer.Image2DMultisample (GL_TEXTURE_2D_MULTISAMPLE,
-																			 numsamples, GL_RGBA8, width, height,
-																			 GL_TRUE);
 		multisamplefb.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE,
 														 msdepthtexture, 0);
-		multisamplefb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE,
-														 msnormalbuffer, 0);
-		multisamplefb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
+		multisamplefb.DrawBuffers ({ });
 
 #ifdef DEBUG
-		renderer->memory += width * height * numsamples * (4 + 4);
+		renderer->memory += width * height * numsamples * 4;
 #endif
 	}
 	else
 	{
 		numsamples = 0;
 		msdepthtexture = gl::Texture ();
-		msnormalbuffer = gl::Texture ();
 		multisamplefb = gl::Framebuffer ();
 	}
 }
@@ -312,7 +306,6 @@ void GBuffer::Render (Geometry &geometry)
 		multisamplefb.Bind (GL_FRAMEBUFFER);
 		gl::Viewport (0, 0, width, height);
 		gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
-		gl::ClearBufferfv (GL_COLOR, 0, (float[]) {0.0f, 0.0f, 0.0f, 0.0f});
 			
 		geometry.Render (Geometry::Pass::GBufferSRAA,
 										 sraaprog, renderer->camera.GetViewMatrix ());

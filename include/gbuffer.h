@@ -41,7 +41,6 @@ public:
 	 cl::Memory depthmem;
 
 	 gl::Texture msdepthtexture;
-	 gl::Texture msnormalbuffer;
 #ifdef DEBUG
 	 GLuint numsamples;
 #endif

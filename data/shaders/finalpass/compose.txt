@@ -1,8 +1,8 @@
 #version 420 core
 layout(location = 0) out vec4 output;
 layout(binding = 0) uniform sampler2D screenmap;
-layout(binding = 1) uniform sampler2DMS depthmap;
-layout(binding = 2) uniform sampler2DMS normalmap;
+layout(binding = 1) uniform sampler2DMS msdepthmap;
+layout(binding = 2) uniform sampler2D depthmap;
 layout(binding = 3) uniform sampler2D luminancemap;
 
 uniform uvec2 viewport;
@@ -133,9 +133,7 @@ void main (void)
 		for (int s = 0; s < antialiasing; s++)
 		{
 			float d;
-			vec3 N;
-			d = texelFetch (depthmap, p, s).r;
-			N = texelFetch (normalmap, p, s).xyz * 2 - 1;
+			d = texelFetch (msdepthmap, p, s).r;
 			float tmpweights[9] = { 0, 0, 0,
 			      		      	0, 0, 0,
 						0, 0, 0 };
@@ -145,13 +143,9 @@ void main (void)
 				for (int x = 0; x < 3; x++)
 				{
 					float d2;
-					vec3 N2;
 					d2 = texelFetch (depthmap,
-					   p + ivec2 (x - 1, y - 1), s).r;
-					N2 = texelFetch (normalmap,
-					   p + ivec2 (x - 1, y - 1), s).xyz * 2 - 1;
-					float w = exp (-500 * max (abs (d - d2),
-					      	       (1 - dot (N, N2))));
+					   p + ivec2 (x - 1, y - 1), 0).r;
+					float w = exp (-500 * abs (d - d2));
 					tmpweights[x + y * 3] = w;
 					sum += w;
 				}
