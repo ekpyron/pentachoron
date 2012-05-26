@@ -130,25 +130,28 @@ void main (void)
 		float weights[9] = { 0, 0, 0,
 		      		     0, 0, 0,
 				     0, 0, 0 };
+		float depths[9];
+		for (int y = 0; y < 3; y++)
+		{
+			for (int x = 0; x < 3; x++)
+			{
+				depths[y * 3 + x] = texelFetch (depthmap,
+				   p + ivec2 (x - 1, y - 1), 0).r;
+			}
+		}
 		for (int s = 0; s < antialiasing; s++)
 		{
-			float d;
-			d = texelFetch (msdepthmap, p, s).r;
+			float depth;
+			depth = texelFetch (msdepthmap, p, s).r;
 			float tmpweights[9] = { 0, 0, 0,
 			      		      	0, 0, 0,
 						0, 0, 0 };
 			float sum = 0.0f;
-			for (int y = 0; y < 3; y++)
+			for (int i = 0; i < 9; i++)
 			{
-				for (int x = 0; x < 3; x++)
-				{
-					float d2;
-					d2 = texelFetch (depthmap,
-					   p + ivec2 (x - 1, y - 1), 0).r;
-					float w = exp (-500 * abs (d - d2));
-					tmpweights[x + y * 3] = w;
-					sum += w;
-				}
+				float w = exp (-500 * abs (depth - depths[i]));
+				tmpweights[i] = w;
+				sum += w;
 			}
 			for (int i = 0; i < 9; i++)
 			{
