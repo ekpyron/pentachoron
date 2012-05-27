@@ -11,21 +11,25 @@ uniform uint antialiasing;
 uniform bool glow;
 uniform float farClipPlane;
 uniform float nearClipPlane;
-uniform struct
+layout(row_major) uniform;
+layout(std140, binding=0) uniform Tonemapping
 {
-	float image_key;
-	float white_threshold;
-	mat3x3 RGB2XYZ;
-	mat3x3 XYZ2RGB;
-	float sigma;
-	float n;
-} tonemapping;
-uniform struct
-{
-	float constant;
-	float linear;
-	float lod;
-} avgLum;
+	struct
+	{
+		mat3x3 RGB2XYZ;
+		mat3x3 XYZ2RGB;
+		float image_key;
+		float white_threshold;
+		float sigma;
+		float n;
+	} tonemapping;
+	struct
+	{
+		float constant;
+		float linear;
+		float lod;
+	} avgLum;
+};
 
 subroutine float tonemapType (float Lp);
 subroutine uniform tonemapType tonemapOperator;

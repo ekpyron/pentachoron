@@ -58,20 +58,21 @@ private:
 	 gl::Texture luminance;
 	 gl::Sampler sampler;
 	 GLuint rendermode;
+	 gl::Buffer tonemappingBuffer;
 	 struct
 	 {
-			float image_key;
-			float white_threshold;
-			float sigma;
-			float n;
+			GLfloat image_key;
+			GLfloat white_threshold;
+			GLfloat sigma;
+			GLfloat n;
 			GLuint rgb_working_space;
 			GLuint mode;
 			struct
 			{
-				 float constant;
-				 float linear;
-				 float delta;
-				 float lod;
+				 GLfloat constant;
+				 GLfloat linear;
+				 GLfloat delta;
+				 GLfloat lod;
 			} avgLum;
 	 } tonemapping;
 	 Renderer *renderer;

@@ -487,7 +487,7 @@ void Interface::Exit (int what)
 void Interface::PrintToneMappingMode (void)
 {
 	const char *tone_mapping_modes[NUM_TONE_MAPPING_MODES] = {
-		"Disabled",
+		"Default",
 		"Reinhard",
 		"Logarithmic",
 		"URQ",

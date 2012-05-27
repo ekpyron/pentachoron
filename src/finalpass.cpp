@@ -29,184 +29,6 @@ FinalPass::~FinalPass (void)
 {
 }
 
-bool FinalPass::Init (void)
-{
-	std::vector<const char *> fprogram_sources = {
-		"compose.txt", "normal.txt", "passthrough.txt", "shadowmap.txt",
-		"glow.txt", "depth.txt", "edge.txt", "luminance.txt"
-	};
-	for (const char *&filename : fprogram_sources)
-	{
-		gl::Shader obj (GL_FRAGMENT_SHADER);
-		std::string source;
-		if (!ReadFile (MakePath ("shaders", "finalpass", filename), source))
-			 return false;
-		obj.Source (source);
-		if (!obj.Compile ())
-		{
-			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "finalpass", filename)
-									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
-			 return false;
-		}
-
-		fprograms.emplace_back ();
-		fprograms.back ().Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		fprograms.back ().Attach (obj);
-		if (!fprograms.back ().Link ())
-		{
-			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "finalpass", filename)
-									 << ": " << std::endl << fprograms.back ().GetInfoLog ()
-									 << std::endl;
-			 return false;
-		}
-	}
-
-	luminance.Image2D (GL_TEXTURE_2D, 0, GL_R32F,
-										 renderer->gbuffer.GetWidth (),
-										 renderer->gbuffer.GetHeight (),
-										 0, GL_RED, GL_FLOAT, NULL);
-#ifdef DEBUG
-	renderer->memory += renderer->gbuffer.GetWidth ()
-		 * renderer->gbuffer.GetHeight () * 4;
-#endif
-
-	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-												 luminance, 0);
-	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
-
-	for (gl::Program &fprogram : fprograms)
-	{
-		pipelines.emplace_back ();
-		pipelines.back ().UseProgramStages (GL_VERTEX_SHADER_BIT,
-																				renderer->windowgrid.vprogram);
-		pipelines.back ().UseProgramStages (GL_FRAGMENT_SHADER_BIT, fprogram);
-
-		fprogram["gbufferdim"] = glm::uvec2 (renderer->gbuffer.GetWidth (),
-																				 renderer->gbuffer.GetHeight ());
-		fprogram["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
-		fprogram["farClipPlane"] = renderer->camera.GetFarClipPlane ();
-	}
-
-	return true;
-}
-
-void FinalPass::SetRenderMode (GLuint mode)
-{
-	rendermode = mode;
-}
-
-GLuint FinalPass::GetRenderMode (void)
-{
-	return rendermode;
-}
-
-void FinalPass::SetImageKey (float key)
-{
-	tonemapping.image_key = key;
-}
-
-float FinalPass::GetImageKey (void)
-{
-	return tonemapping.image_key;
-}
-
-void FinalPass::SetWhiteThreshold (float threshold)
-{
-	tonemapping.white_threshold = threshold;
-}
-
-float FinalPass::GetWhiteThreshold (void)
-{
-	return tonemapping.white_threshold;
-}
-
-void FinalPass::SetTonemappingSigma (float sigma)
-{
-	tonemapping.sigma = sigma;
-}
-
-float FinalPass::GetTonemappingSigma (void)
-{
-	return tonemapping.sigma;
-}
-
-void FinalPass::SetTonemappingExponent (float n)
-{
-	tonemapping.n = n;
-}
-
-float FinalPass::GetTonemappingExponent (void)
-{
-	return tonemapping.n;
-}
-
-void FinalPass::SetRGBWorkingSpace (GLuint ws)
-{
-	tonemapping.rgb_working_space = ws;
-}
-
-GLuint FinalPass::GetRGBWorkingSpace (void)
-{
-	return tonemapping.rgb_working_space;
-}
-
-void FinalPass::SetTonemappingMode (GLuint mode)
-{
-	tonemapping.mode = mode;
-}
-
-GLuint FinalPass::GetTonemappingMode (void)
-{
-	return tonemapping.mode;
-}
-
-void FinalPass::SetAvgLumConst (float constant)
-{
-	tonemapping.avgLum.constant = constant;
-}
-
-float FinalPass::GetAvgLumConst (void)
-{
-	return tonemapping.avgLum.constant;
-}
-
-void FinalPass::SetAvgLumLinear (float linear)
-{
-	tonemapping.avgLum.linear = linear;
-}
-
-float FinalPass::GetAvgLumLinear (void)
-{
-	return tonemapping.avgLum.linear;
-}
-
-void FinalPass::SetAvgLumDelta (float delta)
-{
-	tonemapping.avgLum.delta = delta;
-}
-
-float FinalPass::GetAvgLumDelta (void)
-{
-	return tonemapping.avgLum.delta;
-}
-
-void FinalPass::SetAvgLumLod (float lod)
-{
-	tonemapping.avgLum.lod = lod;
-}
-
-float FinalPass::GetAvgLumLod (void)
-{
-	return tonemapping.avgLum.lod;
-}
-
 const std::vector<glm::mat3x3> RGB2XYZ = {
 // Adobe RGB (1998)
 	glm::mat3x3 (0.5767309f, 0.1855540f, 0.1881852f,
@@ -341,6 +163,229 @@ const std::vector<glm::mat3x3> XYZ2RGB = {
 							 0.0349342f, -0.0968930f,  1.2884099f)
 };
 
+bool FinalPass::Init (void)
+{
+	std::vector<const char *> fprogram_sources = {
+		"compose.txt", "normal.txt", "passthrough.txt", "shadowmap.txt",
+		"glow.txt", "depth.txt", "edge.txt", "luminance.txt"
+	};
+	for (const char *&filename : fprogram_sources)
+	{
+		gl::Shader obj (GL_FRAGMENT_SHADER);
+		std::string source;
+		if (!ReadFile (MakePath ("shaders", "finalpass", filename), source))
+			 return false;
+		obj.Source (source);
+		if (!obj.Compile ())
+		{
+			(*logstream) << "Could not compile "
+									 << MakePath ("shaders", "finalpass", filename)
+									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
+			 return false;
+		}
+
+		fprograms.emplace_back ();
+		fprograms.back ().Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
+		fprograms.back ().Attach (obj);
+		if (!fprograms.back ().Link ())
+		{
+			(*logstream) << "Could not link the shader program "
+									 << MakePath ("shaders", "finalpass", filename)
+									 << ": " << std::endl << fprograms.back ().GetInfoLog ()
+									 << std::endl;
+			 return false;
+		}
+	}
+
+	luminance.Image2D (GL_TEXTURE_2D, 0, GL_R32F,
+										 renderer->gbuffer.GetWidth (),
+										 renderer->gbuffer.GetHeight (),
+										 0, GL_RED, GL_FLOAT, NULL);
+#ifdef DEBUG
+	renderer->memory += renderer->gbuffer.GetWidth ()
+		 * renderer->gbuffer.GetHeight () * 4;
+#endif
+
+	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+												 luminance, 0);
+	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
+
+	for (gl::Program &fprogram : fprograms)
+	{
+		pipelines.emplace_back ();
+		pipelines.back ().UseProgramStages (GL_VERTEX_SHADER_BIT,
+																				renderer->windowgrid.vprogram);
+		pipelines.back ().UseProgramStages (GL_FRAGMENT_SHADER_BIT, fprogram);
+
+		fprogram["gbufferdim"] = glm::uvec2 (renderer->gbuffer.GetWidth (),
+																				 renderer->gbuffer.GetHeight ());
+		fprogram["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+		fprogram["farClipPlane"] = renderer->camera.GetFarClipPlane ();
+	}
+
+	{
+		struct {
+			 glm::mat3x4 RGB2XYZ;
+			 glm::mat3x4 XYZ2RGB;
+			 GLfloat image_key;
+			 GLfloat white_threshold;
+			 GLfloat sigma;
+			 GLfloat n;
+
+			 GLfloat constant;
+			 GLfloat linear;
+			 GLfloat lod;
+		} data;
+		data.RGB2XYZ = glm::mat3x4 (RGB2XYZ[tonemapping.rgb_working_space]);
+		data.image_key = tonemapping.image_key;
+
+		data.white_threshold = tonemapping.white_threshold;
+		data.XYZ2RGB = glm::mat3x4 (XYZ2RGB[tonemapping.rgb_working_space]);
+
+		data.sigma = powf (tonemapping.sigma, tonemapping.n);
+		data.n = tonemapping.n;
+		data.constant = tonemapping.avgLum.constant;
+		data.linear = tonemapping.avgLum.linear;
+		data.lod = tonemapping.avgLum.lod;
+		tonemappingBuffer.Data (sizeof (data), &data, GL_STATIC_DRAW);
+	}
+
+	return true;
+}
+
+void FinalPass::SetRenderMode (GLuint mode)
+{
+	rendermode = mode;
+}
+
+GLuint FinalPass::GetRenderMode (void)
+{
+	return rendermode;
+}
+
+void FinalPass::SetImageKey (float key)
+{
+	tonemapping.image_key = key;
+	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2, sizeof (GLfloat), &key);
+}
+
+float FinalPass::GetImageKey (void)
+{
+	return tonemapping.image_key;
+}
+
+void FinalPass::SetWhiteThreshold (float threshold)
+{
+	tonemapping.white_threshold = threshold;
+	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat),
+														 sizeof (GLfloat),
+														 &threshold);
+}
+
+float FinalPass::GetWhiteThreshold (void)
+{
+	return tonemapping.white_threshold;
+}
+
+void FinalPass::SetTonemappingSigma (float sigma)
+{
+	tonemapping.sigma = sigma;
+	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat) * 2,
+														 sizeof (GLfloat),
+														 &sigma);
+}
+
+float FinalPass::GetTonemappingSigma (void)
+{
+	return tonemapping.sigma;
+}
+
+void FinalPass::SetTonemappingExponent (float n)
+{
+	tonemapping.n = n;
+	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat) * 3,
+														 sizeof (GLfloat),
+														 &n);
+}
+
+float FinalPass::GetTonemappingExponent (void)
+{
+	return tonemapping.n;
+}
+
+void FinalPass::SetRGBWorkingSpace (GLuint ws)
+{
+	tonemapping.rgb_working_space = ws;
+	if (tonemapping.rgb_working_space >= RGB2XYZ.size ())
+		 tonemapping.rgb_working_space = 0;
+}
+
+GLuint FinalPass::GetRGBWorkingSpace (void)
+{
+	return tonemapping.rgb_working_space;
+}
+
+void FinalPass::SetTonemappingMode (GLuint mode)
+{
+	tonemapping.mode = mode;
+}
+
+GLuint FinalPass::GetTonemappingMode (void)
+{
+	return tonemapping.mode;
+}
+
+void FinalPass::SetAvgLumConst (float constant)
+{
+	tonemapping.avgLum.constant = constant;
+	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat) * 4,
+														 sizeof (GLfloat), &constant);
+}
+
+float FinalPass::GetAvgLumConst (void)
+{
+	return tonemapping.avgLum.constant;
+}
+
+void FinalPass::SetAvgLumLinear (float linear)
+{
+	tonemapping.avgLum.linear = linear;
+	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat) * 5,
+														 sizeof (GLfloat), &linear);
+}
+
+float FinalPass::GetAvgLumLinear (void)
+{
+	return tonemapping.avgLum.linear;
+}
+
+void FinalPass::SetAvgLumDelta (float delta)
+{
+	tonemapping.avgLum.delta = delta;
+}
+
+float FinalPass::GetAvgLumDelta (void)
+{
+	return tonemapping.avgLum.delta;
+}
+
+void FinalPass::SetAvgLumLod (float lod)
+{
+	tonemapping.avgLum.lod = lod;
+	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat) * 6,
+														 sizeof (GLfloat), &lod);
+}
+
+float FinalPass::GetAvgLumLod (void)
+{
+	return tonemapping.avgLum.lod;
+}
+
 void FinalPass::Render (void)
 {
 	glm::uvec2 viewport;
@@ -432,25 +477,7 @@ void FinalPass::Render (void)
 	}
 
 	fprograms[program]["viewport"] = viewport;
-	fprograms[program]["tonemapping.image_key"] = tonemapping.image_key;
-	fprograms[program]["tonemapping.white_threshold"]
-		 = tonemapping.white_threshold;
-	if (tonemapping.rgb_working_space >= RGB2XYZ.size ())
-		 tonemapping.rgb_working_space = 0;
-	fprograms[program]["tonemapping.RGB2XYZ"]
-		 = RGB2XYZ[tonemapping.rgb_working_space];
-	fprograms[program]["tonemapping.XYZ2RGB"]
-		 = XYZ2RGB[tonemapping.rgb_working_space];
-
-	fprograms[program]["tonemapping.sigma"]
-		 = powf (tonemapping.sigma, tonemapping.n);
-	fprograms[program]["tonemapping.n"] = tonemapping.n;
-	fprograms[program]["avgLum.constant"]
-		 = tonemapping.avgLum.constant;
-	fprograms[program]["avgLum.linear"]
-		 = tonemapping.avgLum.linear;
-	fprograms[program]["avgLum.lod"]
-		 = tonemapping.avgLum.lod;
+	tonemappingBuffer.BindBase (GL_UNIFORM_BUFFER, 0);
 	fprograms[program]["glow"] = renderer->composition.GetGlowSize () > 0;
 	fprograms[program]["antialiasing"] = renderer->GetAntialiasing ();
 
