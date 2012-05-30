@@ -163,17 +163,35 @@ void main (void)
 			}
 		}
 
-		color = vec4 (0, 0, 0, 0);
-		for (int y = 0; y < 3; y++)
+		int i;
+		for (i = 0; i < 9; i++)
 		{
-			for (int x = 0; x < 3; x++)
+			if (abs (weights[0] * 9 / antialiasing - 1) > 0.03)
 			{
-				color += weights[x + y * 3]
-				* texture (screenmap, coord
-			  	    + vec2 (x - 1, y - 1) / gbufferdim)
-				/ antialiasing;
+				break;
 			}
 		}
+
+		if (i < 9)
+		{
+			color = vec4 (0, 0, 0, 0);
+			for (int y = 0; y < 3; y++)
+			{
+				for (int x = 0; x < 3; x++)
+				{
+					color += weights[x + y * 3]
+					* texture (screenmap, coord
+			  		   	   + vec2 (x - 1, y - 1)
+						   / gbufferdim)
+					/ antialiasing;
+				}
+			}
+		}
+		else
+		{
+			color = texture (screenmap, coord);
+		}
+
 	}
 	else
 	{
