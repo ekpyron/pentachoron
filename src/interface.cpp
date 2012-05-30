@@ -181,6 +181,10 @@ const std::vector<Menu> menus = {
 				&Interface::EditGlowSize, false },
 			{ "Luminance Threshold: ", &Interface::PrintLuminanceThreshold,
 				&Interface::EditLuminanceThreshold, true },
+			{ "Limit: ", &Interface::PrintGlowLimit,
+				&Interface::EditGlowLimit, true },
+			{ "Exponent: ", &Interface::PrintGlowExponent,
+				&Interface::EditGlowExponent, true },			
 			{ "Back", NULL, &Interface::MainMenu, false }
 		}
 	},
@@ -201,7 +205,7 @@ const std::vector<Menu> menus = {
 };
 
 Interface::Interface (Renderer *parent)
-	: showInterface (false), menu (MAIN_MENU), submenu (0), renderer (parent),
+	: showInterface (0), menu (MAIN_MENU), submenu (0), renderer (parent),
 		active_light (0), active_shadow (0), timefactor (0)
 {
 }
@@ -294,13 +298,27 @@ void Interface::RemoveLight (int what)
 
 void Interface::EditGlowSize (int what)
 {
-	GLint size = renderer->composition.GetGlowSize ();
+	GLint size = renderer->composition.GetGlow ().GetSize ();
 
 	size += what * 4;
 	if (size >= 0)
 	{
-		renderer->composition.SetGlowSize (size);
+		renderer->composition.GetGlow ().SetSize (size);
 	}
+}
+
+void Interface::EditGlowLimit (int what)
+{
+	GLfloat limit = renderer->composition.GetGlow ().GetLimit ();
+	limit += what * timefactor;
+	renderer->composition.GetGlow ().SetLimit (limit);
+}
+
+void Interface::EditGlowExponent (int what)
+{
+	GLfloat exp = renderer->composition.GetGlow ().GetExponent ();
+	exp += what * timefactor;
+	renderer->composition.GetGlow ().SetExponent (exp);
 }
 
 void Interface::EditAntialiasing (int what)
@@ -321,7 +339,17 @@ void Interface::PrintAntialiasing (void)
 
 void Interface::PrintGlowSize (void)
 {
-	font.Print (renderer->composition.GetGlowSize ());
+	font.Print (renderer->composition.GetGlow ().GetSize ());
+}
+
+void Interface::PrintGlowLimit (void)
+{
+	font.Print (renderer->composition.GetGlow ().GetLimit ());
+}
+
+void Interface::PrintGlowExponent (void)
+{
+	font.Print (renderer->composition.GetGlow ().GetExponent ());
 }
 
 void Interface::RandomizeLights (int what)
@@ -1182,40 +1210,53 @@ void Interface::OnKeyUp (int key)
 {
 	if (key == GLFW_KEY_TAB)
 	{
-		showInterface = !showInterface;
+		if (showInterface == 1)
+			 showInterface = 0;
+		else
+			 showInterface = 1;
 		return;
 	}
-	if (showInterface)
+	if (key == 'I')
 	{
-		switch (key)
+		if (showInterface == 2)
+			 showInterface = 0;
+		else
+			 showInterface = 2;
+	}
+	if (showInterface == 1)
+	{
+		if (showInterface)
 		{
-		case GLFW_KEY_UP:
-			if (!submenu)
-				 submenu = menus[menu].entries.size ();
-			submenu--;
-			break;
-		case GLFW_KEY_DOWN:
-			submenu++;
-			if (submenu >= menus[menu].entries.size ())
-				 submenu = 0;
-			break;
-		case GLFW_KEY_ENTER:
-			(this->*(menus[menu].entries[submenu].handler)) (0);
-			break;
-		case GLFW_KEY_LEFT:
-			if (!menus[menu].entries[submenu].repeating)
-				 (this->*(menus[menu].entries[submenu].handler)) (-1);
-			break;
-		case GLFW_KEY_RIGHT:
-			if (!menus[menu].entries[submenu].repeating)
-				 (this->*(menus[menu].entries[submenu].handler)) (1);
-			break;
-		case GLFW_KEY_ESC:
-			if (menu == MAIN_MENU)
-				 showInterface = false;
-			else
-				 MainMenu (0);
-			break;
+			switch (key)
+			{
+			case GLFW_KEY_UP:
+				if (!submenu)
+					 submenu = menus[menu].entries.size ();
+				submenu--;
+				break;
+			case GLFW_KEY_DOWN:
+				submenu++;
+				if (submenu >= menus[menu].entries.size ())
+					 submenu = 0;
+				break;
+			case GLFW_KEY_ENTER:
+				(this->*(menus[menu].entries[submenu].handler)) (0);
+				break;
+			case GLFW_KEY_LEFT:
+				if (!menus[menu].entries[submenu].repeating)
+					 (this->*(menus[menu].entries[submenu].handler)) (-1);
+				break;
+			case GLFW_KEY_RIGHT:
+				if (!menus[menu].entries[submenu].repeating)
+					 (this->*(menus[menu].entries[submenu].handler)) (1);
+				break;
+			case GLFW_KEY_ESC:
+				if (menu == MAIN_MENU)
+					 showInterface = 0;
+				else
+					 MainMenu (0);
+				break;
+			}
 		}
 	}
 }
@@ -1261,7 +1302,7 @@ void Interface::Frame (float tf)
 	}
 
 	font.Frame ();
-	if (showInterface)
+	if (showInterface == 1)
 	{
 		font.SetColor (glm::vec3 (1, 1, 1));
 		font.Print (menus[menu].title);
@@ -1285,15 +1326,38 @@ void Interface::Frame (float tf)
 			font.Print ('\n');
 		}
 	}
+	else if (showInterface == 2)
+	{
+		font.SetColor (glm::vec3 (1, 1, 1));
+		font.Print ("FPS: ", fps);
+		if (gl::IsExtensionSupported ("GL_NVX_gpu_memory_info"))
+		{
+			GLint mem;
+			GLint usedmem;
+			gl::GetIntegerv (GL_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX, &mem);
+			font.Print ("\nDedicated memory: ", mem >> 10, " MB");
+			gl::GetIntegerv (GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &mem);
+			usedmem = mem;
+			font.Print ("\nTotal available memory: ", mem >> 10, " MB");
+			gl::GetIntegerv (GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &mem);
+			usedmem -= mem;
+			font.Print ("\nCurrently available memory: ", mem >> 10, " MB");
+			font.Print ("\nUsed memory: ", usedmem >> 10, " MB");
+			gl::GetIntegerv (GL_GPU_MEMORY_INFO_EVICTION_COUNT_NVX, &mem);
+			font.Print ("\nEviction count: ", mem);
+			gl::GetIntegerv (GL_GPU_MEMORY_INFO_EVICTED_MEMORY_NVX, &mem);
+			font.Print ("\nEvicted memory: ", mem >> 10, " MB");
+		}
+#ifdef DEBUG
+		font.Print ("\nGBuffer memory: ", renderer->memory >> 20, " MB");
+#endif
+	}
 	else
 	{
 		font.SetColor (glm::vec3 (1, 1, 1));
 		font.Print ("FPS: ", fps);
 		font.Print ("\nOcclusion culled: ", Model::culled);
 		font.Print ("\nFrustum culled: ", renderer->culling.culled);
-#ifdef DEBUG
-		font.Print ("\nMem: ", renderer->memory >> 20, " MB");
-#endif
 	}
 	if (glfwGetKey ('A'))
 	{

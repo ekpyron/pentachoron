@@ -18,7 +18,7 @@
 #include "renderer.h"
 
 Glow::Glow (Renderer *parent)
-	: renderer (parent)
+	: renderer (parent), limit (1.0f), exponent (1.0f)
 {
 }
 
@@ -100,6 +100,26 @@ void Glow::SetSize (GLuint size)
 GLuint Glow::GetSize (void)
 {
 	return blur.GetSize ();
+}
+
+GLfloat Glow::GetExponent (void)
+{
+	return exponent;
+}
+
+void Glow::SetExponent (GLfloat exp)
+{
+	exponent = exp;
+}
+
+GLfloat Glow::GetLimit (void)
+{
+	return limit;
+}
+
+void Glow::SetLimit (GLfloat l)
+{
+	limit = l;
 }
 
 const gl::Texture &Glow::GetMap (void)

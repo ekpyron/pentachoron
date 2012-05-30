@@ -89,6 +89,8 @@ bool ShadowMap::Init (void)
 
 	blur = renderer->filters.CreateBlur (shadowmapmem, width, height, 4);
 
+	projmat = gl::SmartUniform<glm::mat4> (program["projmat"], glm::mat4(1));
+
 	return true;
 }
 
@@ -98,11 +100,11 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	vmat = glm::lookAt (glm::vec3 (shadow.position),
 											glm::vec3 (shadow.position + shadow.direction),
 											glm::vec3 (1, 0, 0));
-	projmat = glm::perspective (2 * shadow.spot.angle * 180.0f / float (DRE_PI),
-															(float) width / (float) height,
-															3.0f, 500.0f);
-	program["projmat"] = projmat;
-	renderer->culling.SetProjMatrix (projmat);
+	projmat.Set (glm::perspective (2 * shadow.spot.angle
+																 * 180.0f / float (DRE_PI),
+																 (float) width / (float) height,
+																 3.0f, 500.0f));
+	renderer->culling.SetProjMatrix (projmat.Get ());
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
 

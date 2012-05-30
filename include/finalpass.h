@@ -59,6 +59,9 @@ private:
 	 gl::Sampler sampler;
 	 GLuint rendermode;
 	 gl::Buffer tonemappingBuffer;
+	 gl::SmartUniform<GLuint> antialiasing;
+	 gl::SmartUniform<GLint> glow;
+	 std::vector<gl::SmartUniform<glm::uvec2>> viewport_uniforms;
 	 struct
 	 {
 			GLfloat image_key;

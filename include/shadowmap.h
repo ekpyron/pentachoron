@@ -82,11 +82,11 @@ public:
 		* of the shadow caster.
 		*/
 	 glm::mat4 vmat;
-	 /** Projection matrix.
+	 /** Projection matrix (smart uniform).
 		* The projection matrix to render the scene from the perspective
-		* of the shadow caster.y
+		* of the shadow caster. Stored in a smart uniform wrapper.
 		*/
-	 glm::mat4 projmat;
+	 gl::SmartUniform<glm::mat4> projmat;
 private:
 	 /** Shadow map width.
 		*/

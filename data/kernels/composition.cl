@@ -71,8 +71,16 @@ struct Info
 	float4 center;
 	float luminance_threshold;
 	float shadow_alpha;
-	unsigned int glowsize;
 	unsigned int mode;
+	unsigned int padding;
+	struct
+	{	
+		unsigned int size;
+		float limit;
+		float exponent;
+		unsigned int padding;
+		
+	} glow;
 };
 
 // material parameter
@@ -263,7 +271,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	}
 
 	// return the pixel
-	return pixel;
+	return clamp (pixel, 0.0, info->glow.limit);
 }
 
 // determine whether a light affects a given bounding sphere
@@ -506,6 +514,7 @@ kernel void composition (write_only image2d_t screen,
 	
 	float f = ((float) num_light_indices) / 255.0f;
 	pixel = f * ((float4) (1, 1, 1, 1));
+	write_imagef (screen, (int2) (x, y), pixel);
 	write_imagef (glowmap, (int2) (x, y), (float4) (0, 0, 0, 0));
 
 	} else { // normal operation
@@ -542,13 +551,17 @@ kernel void composition (write_only image2d_t screen,
 	shadow += (1 - info.shadow_alpha);
 	pixel *= shadow;
 
-	// compute the luminance of the current pixel
-	float luminance = 0.2126 * pixel.x + 0.7152 * pixel.y
-	      		  + 0.0722 * pixel.z;
+	// write the screen value
+	write_imagef (screen, (int2) (x, y), pixel);
 
 	// glow effect
-	if (info.glowsize > 0)
+	if (info.glow.size > 0)
 	{
+		pixel = pow (pixel, info.glow.exponent);
+		// compute the luminance of the current pixel
+		float luminance = 0.2126 * pixel.x + 0.7152 * pixel.y
+	      		  	  + 0.0722 * pixel.z;
+
 		float4 glow = (float4) (0.0, 0.0, 0.0, 0.0);
 
 		// check against the luminance threshold
@@ -563,7 +576,4 @@ kernel void composition (write_only image2d_t screen,
 	}
 
 	} /* info.mode */
-
-	// write the screen value
-	write_imagef (screen, (int2) (x, y), pixel);
 }

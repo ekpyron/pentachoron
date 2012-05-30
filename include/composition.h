@@ -48,15 +48,6 @@ public:
 		* \param timefactor The fraction of seconds since the last frame.
 		*/
 	 void Frame (float timefactor);
-	 /** Get glow size.
-		* Obtains the size of the current glow effect.
-		* \return size of current glow.
-		*/
-	 GLuint GetGlowSize (void);
-	 /** Set glow size.
-		* Sets the size of the current glow effect.
-		*/
-	 void SetGlowSize (GLuint size);
 	 /** Get shadow alpha.
 		* Obtains the transparency factor of the shadows.
 		* \returns shadow transparency factor.
@@ -92,11 +83,11 @@ public:
 		* \returns a referene to the screen texture
 		*/
 	 const gl::Texture &GetScreen (void);
-	 /** Get glow map.
-		* Returns a reference to the (downsampled and blurred) glow map.
-		* \returns a referene to the glow map
+	 /** Get glow.
+		* Returns a reference to the internal glow effect class.
+		* \returns a referene to the Glow class
 		*/
-	 const gl::Texture &GetGlowMap (void);
+	 Glow &GetGlow (void);
 private:
 	 /** Screen texture.
 		* A texture storing the combined, lit pixel value to be

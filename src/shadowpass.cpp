@@ -115,10 +115,10 @@ void ShadowPass::Render (GLuint shadowid, Geometry &geometry,
 	fprogram["projinfo"]
 		 = renderer->camera.GetProjInfo ();
 	fprogram["shadowmat"] = glm::mat4 (glm::vec4 (0.5, 0.0, 0.0, 0.0),
-																		glm::vec4 (0.0, 0.5, 0.0, 0.0),
-																		glm::vec4 (0.0, 0.0, 0.5, 0.0),
-																		glm::vec4 (0.5, 0.5, 0.5, 1.0))
-		 * shadowmap.projmat
+																		 glm::vec4 (0.0, 0.5, 0.0, 0.0),
+																		 glm::vec4 (0.0, 0.0, 0.5, 0.0),
+																		 glm::vec4 (0.5, 0.5, 0.5, 1.0))
+		 * shadowmap.projmat.Get ()
 		 * shadowmap.vmat;
 
 	pipeline.Bind ();

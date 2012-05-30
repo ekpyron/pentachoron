@@ -44,6 +44,8 @@ public:
 	 void EditToneMapping (int what);
 	 void EditToneMappingAvgLum (int what);
 	 void EditGlowSize (int what);
+	 void EditGlowLimit (int what);
+	 void EditGlowExponent (int what);
 	 void EditAntialiasing (int what);
 	 void Exit (int what);
 
@@ -135,13 +137,15 @@ public:
 	 void PrintToneMappingAvgLumDelta (void);
 	 void PrintToneMappingAvgLumLod (void);
 	 void PrintGlowSize (void);
+	 void PrintGlowLimit (void);
+	 void PrintGlowExponent (void);
 	 void PrintLuminanceThreshold (void);
 	 void PrintAntialiasing (void);
 private:
 	 gl::Freetype freetype;
 	 gl::Font font;
 
-	 bool showInterface;
+	 GLuint showInterface;
 	 unsigned int menu, submenu;
 
 	 int active_light, active_shadow;

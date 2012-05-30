@@ -20,7 +20,7 @@
 
 FinalPass::FinalPass (Renderer *parent)
 	: renderer (parent), rendermode (0), 
-		tonemapping ({ 0.18f, 1.0f, 1.0f, 1.0f, 0, 0,
+		tonemapping ({ 0.18f, 0.9f, 1.0f, 1.0f, 0, 0,
 				{ 0.5f, 0.0f, 0.01f, 0.0f } })
 {
 }
@@ -195,6 +195,10 @@ bool FinalPass::Init (void)
 									 << std::endl;
 			 return false;
 		}
+
+		gl::SmartUniform<glm::uvec2> uniform (fprograms.back ()["viewport"],
+																					renderer->camera.GetViewport ());
+		viewport_uniforms.push_back (uniform);
 	}
 
 	luminance.Image2D (GL_TEXTURE_2D, 0, GL_R32F,
@@ -253,7 +257,14 @@ bool FinalPass::Init (void)
 		data.linear = tonemapping.avgLum.linear;
 		data.lod = tonemapping.avgLum.lod;
 		tonemappingBuffer.Data (sizeof (data), &data, GL_STATIC_DRAW);
+		fprograms.back ()["delta"] = tonemapping.avgLum.delta;
 	}
+
+	antialiasing = gl::SmartUniform<GLuint> (fprograms[0]["antialiasing"],
+																					 renderer->GetAntialiasing ());
+	glow = gl::SmartUniform<GLint> (fprograms[0]["glow"],
+																	renderer->composition.
+																	GetGlow ().GetSize () > 0);
 
 	return true;
 }
@@ -367,6 +378,7 @@ float FinalPass::GetAvgLumLinear (void)
 void FinalPass::SetAvgLumDelta (float delta)
 {
 	tonemapping.avgLum.delta = delta;
+	fprograms.back ()["delta"] = tonemapping.avgLum.delta;
 }
 
 float FinalPass::GetAvgLumDelta (void)
@@ -401,7 +413,6 @@ void FinalPass::Render (void)
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
 	pipelines.back ().Bind ();
-	fprograms.back ()["delta"] = tonemapping.avgLum.delta;
 	renderer->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	renderer->windowgrid.sampler.Bind (0);
 	renderer->windowgrid.Render ();
@@ -453,7 +464,8 @@ void FinalPass::Render (void)
 		break;
 	case 5:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->composition.GetGlowMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->composition.GetGlow ().GetMap ().Bind (GL_TEXTURE0,
+																										 GL_TEXTURE_2D);
 		program = 4;
 		break;
 	case 6:
@@ -476,10 +488,10 @@ void FinalPass::Render (void)
 		gl::UniformSubroutinesuiv (GL_FRAGMENT_SHADER, 1, &idx);
 	}
 
-	fprograms[program]["viewport"] = viewport;
+	viewport_uniforms[program].Set (viewport);
 	tonemappingBuffer.BindBase (GL_UNIFORM_BUFFER, 0);
-	fprograms[program]["glow"] = renderer->composition.GetGlowSize () > 0;
-	fprograms[program]["antialiasing"] = renderer->GetAntialiasing ();
+	glow.Set (renderer->composition.GetGlow ().GetSize () > 0);
+	antialiasing.Set (renderer->GetAntialiasing ());
 
 	gl::Disable (GL_DEPTH_TEST);
 

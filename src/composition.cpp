@@ -78,19 +78,14 @@ bool Composition::Init (void)
 	composition.SetArg (12, sizeof (cl_uint), &num_parameters);
 	composition.SetArg (13, renderer->parametermem);
 
-	SetGlowSize (0);
+	glow.SetSize (0);
 
 	return true;
 }
 
-void Composition::SetGlowSize (GLuint size)
+Glow &Composition::GetGlow (void)
 {
-	glow.SetSize (size);
-}
-
-GLuint Composition::GetGlowSize (void)
-{
-	return glow.GetSize ();
+	return glow;
 }
 
 void Composition::SetLuminanceThreshold (float threshold)
@@ -122,11 +117,6 @@ const gl::Texture &Composition::GetScreen (void)
 	return screen;
 }
 
-const gl::Texture &Composition::GetGlowMap (void)
-{
-	return glow.GetMap ();
-}
-
 #define NUM_COMPOSITIONMODES   3
 
 void Composition::SetMode (GLuint m)
@@ -151,8 +141,15 @@ void Composition::Frame (float timefactor)
 		 glm::vec4 center;
 		 GLfloat luminance_threshold;
 		 GLfloat shadow_alpha;
-		 GLuint glowsize;
 		 GLuint mode;
+		 GLuint padding;
+		 struct
+		 {
+				GLuint size;
+				float limit;
+				float exponent;
+				GLuint padding;
+		 } glow;
 	} Info;
 	std::vector<cl::Memory> mem = { screenmem, glowmem,
 																	renderer->gbuffer.colormem,
@@ -173,7 +170,9 @@ void Composition::Frame (float timefactor)
 	info.center = glm::vec4 (renderer->camera.GetCenter (), 0.0);
 	info.luminance_threshold = luminance_threshold;
 	info.shadow_alpha = shadow_alpha;
-	info.glowsize = glow.GetSize ();
+	info.glow.size = glow.GetSize ();
+	info.glow.limit = glow.GetLimit ();
+	info.glow.exponent = glow.GetExponent ();
 	info.mode = mode;
 
 	composition.SetArg (9, sizeof (cl_uint), &num_lights);

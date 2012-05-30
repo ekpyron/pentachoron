@@ -56,6 +56,26 @@ public:
 		* Sets the size of the glow effect.
 		*/
 	 void SetSize (GLuint size);
+	 /** Get glow limit.
+		* Returns the maximum pixel value that's written to the glow map.
+		* \returns the glow limit
+		*/
+	 GLfloat GetLimit (void);
+	 /** Set glow limit.
+		* Sets the maximum pixel value that's written to the glow map.
+		* \param limit the glow limit
+		*/
+	 void SetLimit (GLfloat limit);
+	 /** Get glow exponent.
+		* Returns the glow exponent.
+		* \returns the glow exponent
+		*/
+	 GLfloat GetExponent (void);
+	 /** Set glow exponent.
+		* Sets the glow exponent.
+		* \param exp the glow exponent
+		*/
+	 void SetExponent (GLfloat exp);
 	 /** Get glow map.
 		* Returns a reference to the (downsampled and blurred) glow map.
 		* \returns a referene to the glow map
@@ -94,6 +114,14 @@ private:
 		* the glow map.
 		*/
 	 gl::Framebuffer destination;
+	 /** The glow limit.
+		* The maximum pixel value to be written to the glow map.
+		*/
+	 GLfloat limit;
+	 /** The glow exponent.
+		* The exponent to adjust the pixel value written to the glow map.
+		*/
+	 GLfloat exponent;
 	 /** Blend framebuffer.
 		* The framebuffer object for blending the glow map into the screen
 		* texture.
