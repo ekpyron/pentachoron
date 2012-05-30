@@ -111,8 +111,8 @@ bool Renderer::Init (void)
 			sizeof (Light) * lights.size (),
 			&lights[0], 0, NULL, NULL);
 
-	interface.AddLight (0);
-	interface.AddShadow (0);
+	interface.AddLight ();
+	interface.AddShadow ();
 
 	{
 		YAML::Node parameterlist;
