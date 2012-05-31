@@ -235,7 +235,7 @@ void Mesh::Render (const gl::Program &program, GLuint passtype)
 		break;
 	}
 	indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
-		
+	
 	gl::DrawElements (GL_TRIANGLES, trianglecount * 3,
 										GL_UNSIGNED_INT, NULL);
 

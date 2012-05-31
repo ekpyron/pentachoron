@@ -57,7 +57,6 @@ private:
 
 	 friend class Model;
 	 friend class Mesh;
-	 friend class GBuffer;
 	 Renderer *renderer;
 };
 

@@ -72,7 +72,6 @@ private:
 	 gl::Buffer counter;
 
 	 Renderer *renderer;
-	 friend class Renderer;
 };
 
 
