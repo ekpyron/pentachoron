@@ -262,11 +262,24 @@ bool FinalPass::Init (void)
 
 	antialiasing = gl::SmartUniform<GLuint> (fprograms[0]["antialiasing"],
 																					 renderer->GetAntialiasing ());
+	antialiasing_threshold 
+		 = gl::SmartUniform<GLfloat> (fprograms[0]["antialiasing_threshold"],
+																	0.02f);
 	glow = gl::SmartUniform<GLint> (fprograms[0]["glow"],
 																	renderer->composition.
 																	GetGlow ().GetSize () > 0);
 
 	return true;
+}
+
+void FinalPass::SetAntialiasingThreshold (GLfloat threshold)
+{
+	antialiasing_threshold.Set (threshold);
+}
+
+GLfloat FinalPass::GetAntialiasingThreshold (void)
+{
+	return antialiasing_threshold.Get ();
 }
 
 void FinalPass::SetRenderMode (GLuint mode)

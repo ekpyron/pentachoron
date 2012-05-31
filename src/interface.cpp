@@ -29,6 +29,7 @@
 #define EDIT_TONE_MAPPING         9
 #define EDIT_GLOW                 10
 #define EDIT_TONE_MAPPING_AVG_LUM 11
+#define EDIT_ANTIALIASING         12
 
 extern bool running;
 
@@ -76,15 +77,11 @@ Interface::Interface (Renderer *parent)
 							submenu = 0;
 						}
 					}, false },
-				{ "Antialiasing: ", [&] (void) {
-						font.Print (renderer->GetAntialiasing ());
-					}, [&] (int what) {
+				{ "Antialiasing", NULL, [&] (int what) {
 						if (!what)
 						{
-							GLuint samples = renderer->GetAntialiasing ();
-							samples += 4;
-							if (samples > 16) samples = 0;
-							renderer->SetAntialiasing (samples);
+							menu = EDIT_ANTIALIASING;
+							submenu = 0;
 						}
 					}, false },
 #define NUM_RENDERMODES 7
@@ -914,6 +911,37 @@ Interface::Interface (Renderer *parent)
 						if (!what)
 						{
 							menu = EDIT_TONE_MAPPING;
+							submenu = 0;
+						}
+					}, false }
+			}
+		},
+		{
+			"Antialiasing", NULL,
+			{
+				{ "Samples: ", [&] (void) {
+						font.Print (renderer->GetAntialiasing ());
+					}, [&] (int what) {
+						if (!what)
+						{
+							GLuint samples = renderer->GetAntialiasing ();
+							samples += 4;
+							if (samples > 16) samples = 0;
+							renderer->SetAntialiasing (samples);
+						}
+					}, true },
+				{ "Threshold: ", [&] (void) {
+						font.Print (renderer->finalpass.
+												GetAntialiasingThreshold () * 100.0f, " %");
+					}, [&] (int what) {
+						GLfloat threshold = renderer->finalpass.GetAntialiasingThreshold ();
+						threshold += what * timefactor * 0.01;
+						renderer->finalpass.SetAntialiasingThreshold (threshold);
+					}, true },
+				{ "Back", NULL, [&](int what) {
+						if (!what)
+						{
+							menu = MAIN_MENU;
 							submenu = 0;
 						}
 					}, false }

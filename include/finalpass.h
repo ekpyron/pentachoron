@@ -29,6 +29,9 @@ public:
 	 bool Init (void);
 	 void Render (void);
 
+	 void SetAntialiasingThreshold (GLfloat threshold);
+	 GLfloat GetAntialiasingThreshold (void);
+
 	 void SetRenderMode (GLuint mode);
 	 GLuint GetRenderMode (void);
 	 void SetImageKey (float key);
@@ -60,6 +63,7 @@ private:
 	 GLuint rendermode;
 	 gl::Buffer tonemappingBuffer;
 	 gl::SmartUniform<GLuint> antialiasing;
+	 gl::SmartUniform<GLfloat> antialiasing_threshold;
 	 gl::SmartUniform<GLint> glow;
 	 std::vector<gl::SmartUniform<glm::uvec2>> viewport_uniforms;
 	 struct
