@@ -325,15 +325,12 @@ Interface::Interface (Renderer *parent)
 				{ "Shadow Alpha: ", [&] (void) {
 						font.Print (renderer->composition.GetShadowAlpha ());
 				}, [&] (int what) {
-						if (!what)
-						{
-							if (!renderer->shadows.size ())
-							{
-								AddShadow ();
-							}
-							menu = EDIT_SHADOWS;
-							submenu = 0;
-						}
+						GLfloat alpha;
+						alpha = renderer->composition.GetShadowAlpha ();
+						alpha += timefactor * what;
+						alpha = (alpha>=0?alpha:0);
+						alpha = (alpha<=1?alpha:1);
+						renderer->composition.SetShadowAlpha (alpha);
 					}, true },
 				{ "Soft Shadows: ", [&] (void) {
 						if (renderer->shadowpass.GetSoftShadows ())
