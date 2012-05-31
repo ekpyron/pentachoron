@@ -44,16 +44,25 @@ public:
 	 void Frame (void);
 	 void OnKeyDown (int key);
 	 void OnKeyUp (int key);
+
 	 GLuint GetAntialiasing (void);
 	 void SetAntialiasing (GLuint value);
+
+	 Light &GetLight (GLuint light);
+	 GLuint GetNumLights (void);
+	 void RemoveLight (GLuint light);
+	 void AddLight (const Light &light);
+	 void UpdateLight (GLuint light);
+	 const cl::Memory &GetLightMem (void);
+
+	 GLuint GetNumParameters (void);
+	 const cl::Memory &GetParameterMem (void);
+
 #ifdef DEBUG
 	 unsigned long memory;
 #endif
-private:
-	 Camera camera;
 
-	 GLuint antialiasing;
-
+/* TODO: make as much as possible private */
 	 Geometry geometry;
 	 GBuffer gbuffer;
 	 ShadowPass shadowpass;
@@ -62,35 +71,24 @@ private:
 	 Filters filters;
 	 Composition composition;
 	 Culling culling;
-	 gl::Program opacityprogram;
-	 cl::CommandQueue queue;
+	 Camera camera;
 
 	 std::vector<Shadow> shadows;
+	 cl::CommandQueue queue;
+	 cl::Context clctx;
 
-	 std::vector<Light> lights;
-	 cl::Memory lightmem;
+private:
+	 GLuint antialiasing;
+
+	 gl::Program opacityprogram;
 
 	 std::vector<Parameter> parameters;
 	 cl::Memory parametermem;
 
-	 cl::Context clctx;
+	 std::vector<Light> lights;
+	 cl::Memory lightmem;
 
 	 Interface interface;
-
-	 friend class Geometry;
-	 friend class GBuffer;
-	 friend class ShadowMap;
-	 friend class ShadowPass;
-	 friend class OpacityPass;
-	 friend class FinalPass;
-	 friend class Filters;
-	 friend class Interface;
-	 friend class Composition;
-	 friend class Model;
-	 friend class Mesh;
-	 friend class Glow;
-	 friend class Culling;
-	 friend class Camera;
 };
 
 #endif /* !defined RENDERER_H */

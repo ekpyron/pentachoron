@@ -74,9 +74,9 @@ bool Composition::Init (void)
 	composition.SetArg (7, renderer->gbuffer.fragidxmem);
 	composition.SetArg (8, renderer->gbuffer.fraglistmem);
 
-	cl_uint num_parameters = renderer->parameters.size ();
+	cl_uint num_parameters = renderer->GetNumParameters ();
 	composition.SetArg (12, sizeof (cl_uint), &num_parameters);
-	composition.SetArg (13, renderer->parametermem);
+	composition.SetArg (13, renderer->GetParameterMem ());
 
 	glow.SetSize (0);
 
@@ -161,7 +161,7 @@ void Composition::Frame (float timefactor)
 																	renderer->shadowpass.GetShadowMaskMem () };
 	Info info;
 
-	cl_uint num_lights = renderer->lights.size ();
+	cl_uint num_lights = renderer->GetNumLights ();
 
 	info.projinfo = renderer->camera.GetProjInfo ();
 	info.vmatinv = glm::transpose
@@ -176,7 +176,7 @@ void Composition::Frame (float timefactor)
 	info.mode = mode;
 
 	composition.SetArg (9, sizeof (cl_uint), &num_lights);
-	composition.SetArg (10, renderer->lightmem);
+	composition.SetArg (10, renderer->GetLightMem ());
 	composition.SetArg (11, sizeof (Info), &info);
 
 	const size_t work_dim[] = { renderer->gbuffer.GetWidth (),

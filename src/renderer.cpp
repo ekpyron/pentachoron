@@ -184,6 +184,77 @@ GLuint Renderer::GetAntialiasing (void)
 	return antialiasing;
 }
 
+Light &Renderer::GetLight (GLuint light)
+{
+	return lights[light];
+}
+
+GLuint Renderer::GetNumLights (void)
+{
+	return lights.size ();
+}
+
+void Renderer::RemoveLight (GLuint light)
+{
+	if (lights.size () < 2)
+		 return;
+	lights.erase (lights.begin () + light);
+	queue.EnqueueWriteBuffer (lightmem, CL_TRUE, 0,
+														sizeof (Light) * lights.size (),
+														&lights[0], 0, NULL, NULL);
+}
+
+void Renderer::AddLight (const Light &light)
+{
+	lights.push_back (light);
+	lights.back ().CalculateFrustum ();
+	lightmem = clctx.CreateBuffer (CL_MEM_READ_ONLY,
+																 sizeof (Light) * lights.size (),
+																 NULL);
+	queue.EnqueueWriteBuffer (lightmem, CL_TRUE, 0,
+														sizeof (Light) * lights.size (),
+														&lights[0], 0, NULL, NULL);
+}
+
+void Renderer::UpdateLight (GLuint light)
+{
+	lights[light].spot.cosine = cosf (lights[light].spot.angle);
+	lights[light].spot.tangent = tanf (lights[light].spot.angle);
+	lights[light].spot.penumbra_cosine = cosf (lights[light].spot.penumbra_angle);
+	lights[light].direction = glm::normalize (lights[light].direction);
+	lights[light].color = glm::clamp (lights[light].color, 0.0f, 1.0f);
+	lights[light].specular.color = glm::clamp (lights[light].specular.color,
+																						 0.0f, 1.0f);
+	if (lights[light].attenuation.x < 0)
+		 lights[light].attenuation.x = 0;
+	if (lights[light].attenuation.y < 0)
+		 lights[light].attenuation.y = 0;
+	if (lights[light].attenuation.z < 0)
+		 lights[light].attenuation.z = 0;
+	if (lights[light].attenuation.w < 0)
+		 lights[light].attenuation.w = 0;
+	lights[light].CalculateFrustum ();
+	queue.EnqueueWriteBuffer (lightmem, CL_TRUE,
+														intptr_t (&lights[light]) - intptr_t (&lights[0]),
+														sizeof (lights[light]), &lights[light],
+														0, NULL, NULL);
+}
+
+const cl::Memory &Renderer::GetLightMem (void)
+{
+	return lightmem;
+}
+
+GLuint Renderer::GetNumParameters (void)
+{
+	return parameters.size ();
+}
+
+const cl::Memory &Renderer::GetParameterMem (void)
+{
+	return parametermem;
+}
+
 extern bool running;
 
 void Renderer::Frame (void)

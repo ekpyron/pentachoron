@@ -44,10 +44,6 @@ Interface::Interface (Renderer *parent)
 				{ "Lights", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (!renderer->lights.size ())
-							{
-								AddLight ();
-							}
 							menu = EDIT_LIGHTS;
 							submenu = 0;
 						}
@@ -124,7 +120,7 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Edit Lights ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->lights.size ());
+				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
 			},
 			{
 				{ "Add Light", NULL, [&] (int what) {
@@ -136,8 +132,8 @@ Interface::Interface (Renderer *parent)
 				{ "Select Light ", NULL , [&] (int what) {
 						active_light += what;
 						if (active_light < 0)
-							 active_light += renderer->lights.size ();
-						if (active_light >= renderer->lights.size ())
+							 active_light += renderer->GetNumLights ();
+						if (active_light >= renderer->GetNumLights ())
 							 active_light = 0;
 					}, false },
 				{ "Edit Position", NULL, [&] (int what) {
@@ -176,72 +172,40 @@ Interface::Interface (Renderer *parent)
 						}
 					}, false },
 				{ "Spot Angle ", [&] (void) {
-						font.Print (renderer->lights[active_light].spot.angle
+						font.Print (renderer->GetLight (active_light).spot.angle
 												* 180.0f / DRE_PI);
 					}, [&] (int what) {
-						renderer->lights[active_light].spot.angle += what * timefactor;
-						renderer->lights[active_light].spot.cosine
-						= cosf (renderer->lights[active_light].spot.angle);
-						renderer->lights[active_light].spot.tangent
-						= tanf (renderer->lights[active_light].spot.angle);
-						renderer->lights[active_light].CalculateFrustum ();
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light])
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light]),
-						 &renderer->lights[active_light], 0, NULL, NULL);
+						renderer->GetLight (active_light).spot.angle += what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Spot Penumbra Angle ", [&] (void) {
-						font.Print (renderer->lights[active_light].spot.penumbra_angle
+						font.Print (renderer->GetLight (active_light).spot.penumbra_angle
 												* 180.0f / DRE_PI);
 					}, [&] (int what) {
-						renderer->lights[active_light].spot.penumbra_angle
+						renderer->GetLight (active_light).spot.penumbra_angle
 						+= what * timefactor;
-						renderer->lights[active_light].spot.penumbra_cosine
-						= cosf (renderer->lights[active_light].spot.penumbra_angle);
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light].spot)
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light].spot),
-						 &renderer->lights[active_light].spot,
-						 0, NULL, NULL);
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Spot Exponent ", [&] (void) {
-						font.Print (renderer->lights[active_light].spot.exponent);
+						font.Print (renderer->GetLight (active_light).spot.exponent);
 					}, [&] (int what) {
-						renderer->lights[active_light].spot.exponent += what * timefactor;
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light].spot.exponent)
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light].spot.exponent),
-						 &renderer->lights[active_light].spot.exponent,
-						 0, NULL, NULL);
+						renderer->GetLight (active_light).spot.exponent
+						+= what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Remove", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (renderer->lights.size () < 2)
-								 return;
-						
-							renderer->lights.erase (renderer->lights.begin ()
-																			+ active_light);
-							if (active_light >= renderer->lights.size ())
-								 active_light = 0;
-							renderer->queue.EnqueueWriteBuffer
-							(renderer->lightmem, CL_TRUE, 0,
-							 sizeof (Light) * renderer->lights.size (),
-							 &renderer->lights[0], 0, NULL, NULL);
+							renderer->RemoveLight (active_light);
 						}
 					}, false },
 				{ "Randomize lights", NULL, [&] (int what) {
 						if (!what)
 						{
 							srand (time (NULL));
-							for (Light &light : renderer->lights)
+							for (auto i = 0; i < renderer->GetNumLights (); i++)
 							{
+								Light &light = renderer->GetLight (i);
 								if (light.color == glm::vec4 (1, 1, 1, 1))
 									 continue;
 								light.position.x += ((float (rand ())
@@ -263,12 +227,8 @@ Interface::Interface (Renderer *parent)
 								};			
 								light.color = colors[rand () % 6];
 								light.specular.color = glm::vec3 (light.color);
-								light.CalculateFrustum ();
+								renderer->UpdateLight (i);
 							}
-							renderer->queue.EnqueueWriteBuffer
-							(renderer->lightmem, CL_TRUE, 0,
-							 sizeof (Light) * renderer->lights.size (),
-							 &renderer->lights[0], 0, NULL, NULL);
 						}
 					}, false },
 				{ "Back", NULL, [&] (int what) {
@@ -353,52 +313,30 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Light Position ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->lights.size ());
+				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
 			},
 			{
 				{ "X ", [&] (void) {
-						font.Print (renderer->lights[active_light].position.x);
+						font.Print (renderer->GetLight (active_light).position.x);
 					}, [&] (int what) {
-						renderer->lights[active_light].position.x += what * timefactor;
-						renderer->lights[active_light].CalculateFrustum ();
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light])
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light]),
-						 &renderer->lights[active_light], 0, NULL, NULL);
+						renderer->GetLight (active_light).position.x += what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Y ", [&] (void) {
-						font.Print (renderer->lights[active_light].position.y);
+						font.Print (renderer->GetLight (active_light).position.y);
 					}, [&] (int what) {
-						renderer->lights[active_light].position.y += what * timefactor;
-						renderer->lights[active_light].CalculateFrustum ();
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light])
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light]),
-						 &renderer->lights[active_light], 0, NULL, NULL);
+						renderer->GetLight (active_light).position.y += what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Z ", [&] (void) {
-						font.Print (renderer->lights[active_light].position.z);
+						font.Print (renderer->GetLight (active_light).position.z);
 					}, [&] (int what) {
-						renderer->lights[active_light].position.z += what * timefactor;
-						renderer->lights[active_light].CalculateFrustum ();
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light])
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light]),
-						 &renderer->lights[active_light], 0, NULL, NULL);
+						renderer->GetLight (active_light).position.z += what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (!renderer->lights.size ())
-							{
-								AddLight ();
-							}
 							menu = EDIT_LIGHTS;
 							submenu = 0;
 						}
@@ -407,58 +345,30 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Light Direction ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->lights.size ());
+				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
 			},
 			{
 				{ "X ", [&] (void) {
-						font.Print (renderer->lights[active_light].direction.x);
+						font.Print (renderer->GetLight (active_light).direction.x);
 					}, [&] (int what) {
-						renderer->lights[active_light].direction.x += what * timefactor;
-						renderer->lights[active_light].direction
-						= glm::normalize (renderer->lights[active_light].direction);
-						renderer->lights[active_light].CalculateFrustum ();
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light])
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light]),
-						 &renderer->lights[active_light], 0, NULL, NULL);
+						renderer->GetLight (active_light).direction.x += what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Y ", [&] (void) {
-						font.Print (renderer->lights[active_light].direction.y);
+						font.Print (renderer->GetLight (active_light).direction.y);
 					}, [&] (int what) {
-						renderer->lights[active_light].direction.y += what * timefactor;
-						renderer->lights[active_light].direction
-						= glm::normalize (renderer->lights[active_light].direction);
-						renderer->lights[active_light].CalculateFrustum ();
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light])
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light]),
-						 &renderer->lights[active_light], 0, NULL, NULL);
+						renderer->GetLight (active_light).direction.y += what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Z ", [&] (void) {
-						font.Print (renderer->lights[active_light].direction.z);
+						font.Print (renderer->GetLight (active_light).direction.z);
 					}, [&] (int what) {
-						renderer->lights[active_light].direction.z += what * timefactor;
-						renderer->lights[active_light].direction
-						= glm::normalize (renderer->lights[active_light].direction);
-						renderer->lights[active_light].CalculateFrustum ();
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light])
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light]),
-					 &renderer->lights[active_light], 0, NULL, NULL);
+						renderer->GetLight (active_light).direction.z += what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (!renderer->lights.size ())
-							{
-								AddLight ();
-							}
 							menu = EDIT_LIGHTS;
 							submenu = 0;
 						}
@@ -467,64 +377,30 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Light Diffuse Color ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->lights.size ());
+				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
 			},
 			{
 				{ "R ", [&] (void) {
-						font.Print (renderer->lights[active_light].color.r);
+						font.Print (renderer->GetLight (active_light).color.r);
 					}, [&] (int what) {
-						renderer->lights[active_light].color.r += what * timefactor;
-						if (renderer->lights[active_light].color.r < 0)
-							 renderer->lights[active_light].color.r = 0;
-						else if (renderer->lights[active_light].color.r > 1)
-							 renderer->lights[active_light].color.r = 1;
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light].color.r)
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light].color.r),
-						 &renderer->lights[active_light].color.r,
-						 0, NULL, NULL);
+						renderer->GetLight (active_light).color.r += what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "G ", [&] (void) {
-						font.Print (renderer->lights[active_light].color.g);
+						font.Print (renderer->GetLight (active_light).color.g);
 					}, [&] (int what) {
-						renderer->lights[active_light].color.g += what * timefactor;
-						if (renderer->lights[active_light].color.g < 0)
-							 renderer->lights[active_light].color.g = 0;
-						else if (renderer->lights[active_light].color.g > 1)
-							 renderer->lights[active_light].color.g = 1;
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light].color.g)
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light].color.g),
-						 &renderer->lights[active_light].color.g,
-						 0, NULL, NULL);
+						renderer->GetLight (active_light).color.g += what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "B ", [&] (void) {
-						font.Print (renderer->lights[active_light].color.b);
+						font.Print (renderer->GetLight (active_light).color.b);
 					}, [&] (int what) {
-						renderer->lights[active_light].color.b += what * timefactor;
-						if (renderer->lights[active_light].color.b < 0)
-							 renderer->lights[active_light].color.b = 0;
-						else if (renderer->lights[active_light].color.b > 1)
-							 renderer->lights[active_light].color.b = 1;
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light].color.b)
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light].color.b),
-						 &renderer->lights[active_light].color.b,
-						 0, NULL, NULL);
+						renderer->GetLight (active_light).color.b += what * timefactor;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (!renderer->lights.size ())
-							{
-								AddLight ();
-							}
 							menu = EDIT_LIGHTS;
 							submenu = 0;
 						}
@@ -533,67 +409,33 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Light Specular Color ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->lights.size ());
+				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
 			},
 			{
 				{ "R ", [&] (void) {
-						font.Print (renderer->lights[active_light].specular.color.r);
+						font.Print (renderer->GetLight (active_light).specular.color.r);
 					}, [&] (int what) {
-						renderer->lights[active_light].specular.color.r
+						renderer->GetLight (active_light).specular.color.r
 						+= what * timefactor;
-						if (renderer->lights[active_light].specular.color.r < 0)
-							 renderer->lights[active_light].specular.color.r = 0;
-						else if (renderer->lights[active_light].specular.color.r > 1)
-							 renderer->lights[active_light].specular.color.r = 1;
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light].specular.color.r)
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light].specular.color.r),
-						 &renderer->lights[active_light].specular.color.r,
-						 0, NULL, NULL);
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "G ", [&] (void) {
-						font.Print (renderer->lights[active_light].specular.color.g);
+						font.Print (renderer->GetLight (active_light).specular.color.g);
 					}, [&] (int what) {
-						renderer->lights[active_light].specular.color.g
+						renderer->GetLight (active_light).specular.color.g
 						+= what * timefactor;
-						if (renderer->lights[active_light].specular.color.g < 0)
-							 renderer->lights[active_light].specular.color.g = 0;
-						else if (renderer->lights[active_light].specular.color.g > 1)
-							 renderer->lights[active_light].specular.color.g = 1;
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light].specular.color.g)
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light].specular.color.g),
-						 &renderer->lights[active_light].specular.color.g,
-						 0, NULL, NULL);
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "B ", [&] (void) {
-						font.Print (renderer->lights[active_light].specular.color.b);
+						font.Print (renderer->GetLight (active_light).specular.color.b);
 					}, [&] (int what) {
-						renderer->lights[active_light].specular.color.b
+						renderer->GetLight (active_light).specular.color.b
 						+= what * timefactor;
-						if (renderer->lights[active_light].specular.color.b < 0)
-							 renderer->lights[active_light].specular.color.b = 0;
-						else if (renderer->lights[active_light].specular.color.b > 1)
-							 renderer->lights[active_light].specular.color.b = 1;
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light].specular.color.b)
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light].specular.color.b),
-						 &renderer->lights[active_light].specular.color.b,
-						 0, NULL, NULL);
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (!renderer->lights.size ())
-							{
-								AddLight ();
-							}
 							menu = EDIT_LIGHTS;
 							submenu = 0;
 						}
@@ -602,76 +444,40 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Light Attenuation ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->lights.size ());
+				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
 			},
 			{
 				{ "Constant ", [&] (void) {
-						font.Print (renderer->lights[active_light].attenuation.x);
+						font.Print (renderer->GetLight (active_light).attenuation.x);
 					}, [&] (int what) {
-						renderer->lights[active_light].attenuation.x
+						renderer->GetLight (active_light).attenuation.x
 						+= what * timefactor * 0.1;
-						if (renderer->lights[active_light].attenuation.x < 0)
-							 renderer->lights[active_light].attenuation.x = 0;
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light].attenuation.x)
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light].attenuation.x),
-						 &renderer->lights[active_light].attenuation.x,
-						 0, NULL, NULL);
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Linear ", [&] (void) {
-						font.Print (renderer->lights[active_light].attenuation.y);
+						font.Print (renderer->GetLight (active_light).attenuation.y);
 					}, [&] (int what) {
-						renderer->lights[active_light].attenuation.y
+						renderer->GetLight (active_light).attenuation.y
 						+= what * timefactor * 0.1;
-						if (renderer->lights[active_light].attenuation.y < 0)
-							 renderer->lights[active_light].attenuation.y = 0;
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light].attenuation.y)
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light].attenuation.y),
-						 &renderer->lights[active_light].attenuation.y,
-						 0, NULL, NULL);
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Quadratic ", [&] (void) {
-						font.Print (renderer->lights[active_light].attenuation.z * 100);
+						font.Print (renderer->GetLight (active_light).attenuation.z * 100);
 					}, [&] (int what) {
-					renderer->lights[active_light].attenuation.z
-					+= what * timefactor * 0.001;
-					if (renderer->lights[active_light].attenuation.z < 0)
-						 renderer->lights[active_light].attenuation.z = 0;
-					renderer->queue.EnqueueWriteBuffer
-					(renderer->lightmem, CL_TRUE,
-					 intptr_t (&renderer->lights[active_light].attenuation.z)
-					 - intptr_t (&renderer->lights[0]),
-					 sizeof (renderer->lights[active_light].attenuation.z),
-					 &renderer->lights[active_light].attenuation.z,
-					 0, NULL, NULL);
+						renderer->GetLight (active_light).attenuation.z
+						+= what * timefactor * 0.001;
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Max Distance ", [&] (void) {
-						font.Print (renderer->lights[active_light].attenuation.w);
+						font.Print (renderer->GetLight (active_light).attenuation.w);
 					}, [&] (int what) {
-						renderer->lights[active_light].attenuation.w
+						renderer->GetLight (active_light).attenuation.w
 						+= what * timefactor * 0.1;
-						if (renderer->lights[active_light].attenuation.w < 0)
-							 renderer->lights[active_light].attenuation.w = 0;
-						renderer->lights[active_light].CalculateFrustum ();
-						renderer->queue.EnqueueWriteBuffer
-						(renderer->lightmem, CL_TRUE,
-						 intptr_t (&renderer->lights[active_light])
-						 - intptr_t (&renderer->lights[0]),
-						 sizeof (renderer->lights[active_light]),
-						 &renderer->lights[active_light], 0, NULL, NULL);
+						renderer->UpdateLight (active_light);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (!renderer->lights.size ())
-							{
-								AddLight ();
-							}
 							menu = EDIT_LIGHTS;
 							submenu = 0;
 						}
@@ -966,14 +772,7 @@ void Interface::AddLight (void)
 	light.specular.color = glm::vec3 (1, 1, 1);
 	light.attenuation = glm::vec4 (0.0f, 0.0f, 0.007f, 50.0f);
 	light.CalculateFrustum ();
-	renderer->lights.push_back (light);
-	
-	renderer->lightmem = renderer->clctx.CreateBuffer
-		 (CL_MEM_READ_ONLY,	sizeof (Light) * renderer->lights.size (), NULL);
-	renderer->queue.EnqueueWriteBuffer
-		 (renderer->lightmem, CL_TRUE, 0,
-			sizeof (Light) * renderer->lights.size (),
-			&renderer->lights[0], 0, NULL, NULL);
+	renderer->AddLight (light);
 }
 
 void Interface::AddShadow (void)

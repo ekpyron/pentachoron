@@ -373,22 +373,13 @@ kernel void composition (write_only image2d_t screen,
 	uchar num;
 
 	// precompute some values needed later
-	switch (offset)
-	{
-	   case 0:
-	   	gxf = native_divide ((float)gx, 
-	       	       		     (float)get_image_width (depthbuffer));
-	   break;
-	   case 1:
-	   	gyf = native_divide ((float)gy, 
-	       	 	             (float)get_image_width (depthbuffer));
-	   break;
-	   case 2:
-		num_light_indices = 0;
-		boxmin_int = 4294967295;
-		boxmax_int = 0;
-	   break;
-	}
+   	gxf = native_divide ((float)gx, 
+      	       		     (float)get_image_width (depthbuffer));
+   	gyf = native_divide ((float)gy, 
+      	 	             (float)get_image_width (depthbuffer));
+	num_light_indices = 0;
+	boxmin_int = 4294967295;
+	boxmax_int = 0;
 
 	local ushort light_indices[256];
 	uint indices[DEPTHLAYERS];
@@ -483,22 +474,17 @@ kernel void composition (write_only image2d_t screen,
 	barrier (CLK_LOCAL_MEM_FENCE);
 
 	// compute bounding box
-	// TODO: is there a way to avoid all, but one threads
-	//       to wait in this moment?
-	if (offset == 0)
-	{
-		float4 boxmin, boxmax;
-		boxmin.x = gxf;
-		boxmin.y = gyf;
-		boxmin.z = native_divide ((float)boxmin_int, 4294967295.0);
-		getpos (&boxmin, &info);
-		boxmax.x = gxf;
-		boxmax.y = gyf;
-		boxmax.z = native_divide ((float)boxmax_int, 4294967295.0);
-		getpos (&boxmax, &info);
-		radius = 0.5 * fast_distance (boxmin, boxmax);
-		sphere = 0.5 * (boxmin + boxmax);
-	}
+	float4 boxmin, boxmax;
+	boxmin.x = gxf;
+	boxmin.y = gyf;
+	boxmin.z = native_divide ((float)boxmin_int, 4294967295.0);
+	getpos (&boxmin, &info);
+	boxmax.x = gxf;
+	boxmax.y = gyf;
+	boxmax.z = native_divide ((float)boxmax_int, 4294967295.0);
+	getpos (&boxmax, &info);
+	radius = 0.5 * fast_distance (boxmin, boxmax);
+	sphere = 0.5 * (boxmin + boxmax);
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
