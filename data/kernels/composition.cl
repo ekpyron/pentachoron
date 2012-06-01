@@ -547,7 +547,7 @@ kernel void composition (write_only image2d_t screen,
 	// glow effect
 	if (info.glow.size > 0)
 	{
-		pixel = pow (pixel, info.glow.exponent);
+		pixel = native_powr (pixel, info.glow.exponent);
 		// compute the luminance of the current pixel
 		float luminance = dot ((float3) (0.2126, 0.7152, 0.0722),
 		      		       pixel.xyz);
