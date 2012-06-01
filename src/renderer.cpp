@@ -38,6 +38,17 @@ bool Renderer::Init (void)
 	gl::CullFace (GL_BACK);
 	gl::Enable (GL_CULL_FACE);
 
+#ifdef DEBUG
+	{
+		size_t len;
+		clctx.GetDeviceInfo (CL_DEVICE_EXTENSIONS, 0, NULL, &len);
+		std::vector<char> ext;
+		ext.resize (len);
+		clctx.GetDeviceInfo (CL_DEVICE_EXTENSIONS, len, &ext[0], NULL);
+		std::cout << "OpenCL Extensions: " << &ext[0] << std::endl;
+	}
+#endif
+
 	(*logstream) << "Initialize Interface..." << std::endl;
 
 	gl::Hint (GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);

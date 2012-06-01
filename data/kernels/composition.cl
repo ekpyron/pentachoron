@@ -1,3 +1,7 @@
+#ifdef __CUDACC__
+#pragma OPENCL EXTENSION cl_nv_pragma_unroll : enable
+#endif
+
 const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE|CLK_FILTER_NEAREST
 			  |CLK_ADDRESS_CLAMP_TO_EDGE;
 const sampler_t samplerB = CLK_NORMALIZED_COORDS_TRUE|CLK_FILTER_LINEAR
@@ -280,6 +284,7 @@ bool culllight (global struct Light *light, float3 sphere, float radius)
 	float dist;
 
 	// frustum culling for each plane
+	#pragma unroll
 	for (uchar i = 0; i < 6; i++)
 	{
 		dist = dot (light->frustum.planes[i].xyz, sphere)

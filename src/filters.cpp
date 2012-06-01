@@ -32,7 +32,16 @@ bool Filters::Init (void)
 	if (!ReadFile (MakePath ("kernels", "filters.cl"), src))
 		 return false;
 	filters = renderer->clctx.CreateProgramWithSource (src);
-	filters.Build ("-cl-fast-relaxed-math -cl-mad-enable -cl-no-signed-zeros");
+	{
+		std::string options ("-cl-fast-relaxed-math -cl-mad-enable "
+												 "-cl-no-signed-zeros");
+		if (renderer->clctx.IsExtensionSupported ("cl_nv_compiler_options"))
+		{
+			/* TODO: determine the best value here */
+			options.append (" -cl-nv-maxrregcount=128");
+		}
+		filters.Build (options);
+	}
 	hblur = filters.CreateKernel ("hblur");
 	vblur = filters.CreateKernel ("vblur");
 	freichen = filters.CreateKernel ("freichen");

@@ -34,7 +34,15 @@ bool Composition::Init (void)
 		 return false;
 
 	program = renderer->clctx.CreateProgramWithSource (src);
-	program.Build ("-cl-fast-relaxed-math -cl-mad-enable -cl-no-signed-zeros");
+	{
+		std::string options ("-cl-fast-relaxed-math -cl-mad-enable "
+												 "-cl-no-signed-zeros");
+		if (renderer->clctx.IsExtensionSupported ("cl_nv_compiler_options"))
+		{
+			options.append (" -cl-nv-maxrregcount=32");
+		}
+		program.Build (options);
+	}
 	composition = program.CreateKernel ("composition");
 
 	screen.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
