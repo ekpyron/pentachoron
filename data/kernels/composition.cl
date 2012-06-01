@@ -2,6 +2,7 @@
 #pragma OPENCL EXTENSION cl_nv_pragma_unroll : enable
 #endif
 
+
 const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE|CLK_FILTER_NEAREST
 			  |CLK_ADDRESS_CLAMP_TO_EDGE;
 const sampler_t samplerB = CLK_NORMALIZED_COORDS_TRUE|CLK_FILTER_LINEAR
@@ -210,9 +211,9 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		// apply penumbra
 		if (angle < light->spot.penumbra.cosine)
 		{
-		   spotEffect = (angle - light->spot.cosine)
-		   		/ (light->spot.penumbra.cosine
-				   - light->spot.cosine);
+		   spotEffect = native_divide (angle - light->spot.cosine,
+		   			       light->spot.penumbra.cosine
+				   	       - light->spot.cosine);
 		}
 
 		// apply specular exponent
@@ -503,7 +504,7 @@ kernel void composition (write_only image2d_t screen,
 
 	if (info.mode == 1) { // output number of lighs per tile
 	
-	float f = ((float) num_light_indices) / 255.0f;
+	float f = native_divide ((float) num_light_indices, 255.0f);
 	pixel = f * ((float4) (1, 1, 1, 1));
 	write_imagef (screen, (int2) (x, y), pixel);
 	write_imagef (glowmap, (int2) (x, y), (float4) (0, 0, 0, 0));
@@ -538,9 +539,7 @@ kernel void composition (write_only image2d_t screen,
 	}
 
 	float shadow = read_imagef (shadowmask, sampler, (int2) (x, y)).x;
-	shadow *= info.shadow_alpha;
-	shadow += (1 - info.shadow_alpha);
-	pixel *= shadow;
+	pixel *= mad (shadow, info.shadow_alpha, 1 - info.shadow_alpha);
 
 	// write the screen value
 	write_imagef (screen, (int2) (x, y), pixel);
@@ -550,8 +549,8 @@ kernel void composition (write_only image2d_t screen,
 	{
 		pixel = pow (pixel, info.glow.exponent);
 		// compute the luminance of the current pixel
-		float luminance = 0.2126 * pixel.x + 0.7152 * pixel.y
-	      		  	  + 0.0722 * pixel.z;
+		float luminance = dot ((float3) (0.2126, 0.7152, 0.0722),
+		      		       pixel.xyz);
 
 		float4 glow = (float4) (0.0, 0.0, 0.0, 0.0);
 
