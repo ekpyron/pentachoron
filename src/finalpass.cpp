@@ -347,6 +347,12 @@ void FinalPass::SetRGBWorkingSpace (GLuint ws)
 	tonemapping.rgb_working_space = ws;
 	if (tonemapping.rgb_working_space >= RGB2XYZ.size ())
 		 tonemapping.rgb_working_space = 0;
+
+	glm::mat3x4 mat (RGB2XYZ[tonemapping.rgb_working_space]);
+	tonemappingBuffer.SubData (0, sizeof (glm::mat3x4), &mat[0][0]);
+	mat = glm::mat3x4 (XYZ2RGB[tonemapping.rgb_working_space]);
+	tonemappingBuffer.SubData (sizeof (glm::mat3x4), sizeof (glm::mat3x4),
+														 &mat[0][0]);
 }
 
 GLuint FinalPass::GetRGBWorkingSpace (void)
