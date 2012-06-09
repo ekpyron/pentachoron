@@ -41,12 +41,12 @@ typedef struct _Light
 	 } specular;
 	 struct
 	 {
-			glm::vec4 left;
-			glm::vec4 right;
-			glm::vec4 bottom;
-			glm::vec4 top;
-			glm::vec4 near;
-			glm::vec4 far;
+			glm::vec4 l;
+			glm::vec4 r;
+			glm::vec4 b;
+			glm::vec4 t;
+			glm::vec4 n;
+			glm::vec4 f;
 	 } frustum;
 	 /*
 		* attenuation.x: constant attenuation

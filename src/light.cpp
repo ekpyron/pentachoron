@@ -27,40 +27,40 @@ void Light::CalculateFrustum (void)
 												 + glm::vec3 (direction),
 												 glm::vec3 (1, 0, 0));
 
-	frustum.left.x = mvpmat[0].w + mvpmat[0].x;
-	frustum.left.y = mvpmat[1].w + mvpmat[1].x;
-	frustum.left.z = mvpmat[2].w + mvpmat[2].x;
-	frustum.left.w = mvpmat[3].w + mvpmat[3].x;
-	frustum.left /= glm::length (glm::vec3 (frustum.left));
+	frustum.l.x = mvpmat[0].w + mvpmat[0].x;
+	frustum.l.y = mvpmat[1].w + mvpmat[1].x;
+	frustum.l.z = mvpmat[2].w + mvpmat[2].x;
+	frustum.l.w = mvpmat[3].w + mvpmat[3].x;
+	frustum.l /= glm::length (glm::vec3 (frustum.l));
 
-	frustum.right.x = mvpmat[0].w - mvpmat[0].x;
-	frustum.right.y = mvpmat[1].w - mvpmat[1].x;
-	frustum.right.z = mvpmat[2].w - mvpmat[2].x;
-	frustum.right.w = mvpmat[3].w - mvpmat[3].x;
-	frustum.right /= glm::length (glm::vec3 (frustum.right));
+	frustum.r.x = mvpmat[0].w - mvpmat[0].x;
+	frustum.r.y = mvpmat[1].w - mvpmat[1].x;
+	frustum.r.z = mvpmat[2].w - mvpmat[2].x;
+	frustum.r.w = mvpmat[3].w - mvpmat[3].x;
+	frustum.r /= glm::length (glm::vec3 (frustum.r));
 
-	frustum.bottom.x = mvpmat[0].w + mvpmat[0].y;
-	frustum.bottom.y = mvpmat[1].w + mvpmat[1].y;
-	frustum.bottom.z = mvpmat[2].w + mvpmat[2].y;
-	frustum.bottom.w = mvpmat[3].w + mvpmat[3].y;
-	frustum.bottom /= glm::length (glm::vec3 (frustum.bottom));
+	frustum.b.x = mvpmat[0].w + mvpmat[0].y;
+	frustum.b.y = mvpmat[1].w + mvpmat[1].y;
+	frustum.b.z = mvpmat[2].w + mvpmat[2].y;
+	frustum.b.w = mvpmat[3].w + mvpmat[3].y;
+	frustum.b /= glm::length (glm::vec3 (frustum.b));
 
-	frustum.top.x = mvpmat[0].w - mvpmat[0].y;
-	frustum.top.y = mvpmat[1].w - mvpmat[1].y;
-	frustum.top.z = mvpmat[2].w - mvpmat[2].y;
-	frustum.top.w = mvpmat[3].w - mvpmat[3].y;
-	frustum.top /= glm::length (glm::vec3 (frustum.top));
+	frustum.t.x = mvpmat[0].w - mvpmat[0].y;
+	frustum.t.y = mvpmat[1].w - mvpmat[1].y;
+	frustum.t.z = mvpmat[2].w - mvpmat[2].y;
+	frustum.t.w = mvpmat[3].w - mvpmat[3].y;
+	frustum.t /= glm::length (glm::vec3 (frustum.t));
 
-	frustum.near.x = mvpmat[0].w + mvpmat[0].z;
-	frustum.near.y = mvpmat[1].w + mvpmat[1].z;
-	frustum.near.z = mvpmat[2].w + mvpmat[2].z;
-	frustum.near.w = mvpmat[3].w + mvpmat[3].z;
-	frustum.near /= glm::length (glm::vec3 (frustum.near));
+	frustum.n.x = mvpmat[0].w + mvpmat[0].z;
+	frustum.n.y = mvpmat[1].w + mvpmat[1].z;
+	frustum.n.z = mvpmat[2].w + mvpmat[2].z;
+	frustum.n.w = mvpmat[3].w + mvpmat[3].z;
+	frustum.n /= glm::length (glm::vec3 (frustum.n));
 
-	frustum.far.x = mvpmat[0].w - mvpmat[0].z;
-	frustum.far.y = mvpmat[1].w - mvpmat[1].z;
-	frustum.far.z = mvpmat[2].w - mvpmat[2].z;
-	frustum.far.w = mvpmat[3].w - mvpmat[3].z;
-	frustum.far /= glm::length (glm::vec3 (frustum.far));
+	frustum.f.x = mvpmat[0].w - mvpmat[0].z;
+	frustum.f.y = mvpmat[1].w - mvpmat[1].z;
+	frustum.f.z = mvpmat[2].w - mvpmat[2].z;
+	frustum.f.w = mvpmat[3].w - mvpmat[3].z;
+	frustum.f /= glm::length (glm::vec3 (frustum.f));
 
 }
