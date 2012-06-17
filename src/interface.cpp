@@ -631,10 +631,7 @@ Interface::Interface (Renderer *parent)
 					}, [&] (int what) {
 						GLint size = renderer->composition.GetGlow ().GetSize ();
 						size += what * 4;
-						if (size >= 0)
-						{
-							renderer->composition.GetGlow ().SetSize (size);
-						}
+						renderer->composition.GetGlow ().SetSize ((size>=0)?size:0);
 					}, false },
 				{ "Luminance Threshold: ", [&] (void) {
 						font.Print (renderer->composition.GetLuminanceThreshold ());

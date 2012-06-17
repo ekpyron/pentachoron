@@ -3,25 +3,25 @@
 layout (binding = 0) uniform sampler2D image;
 uniform vec2 invviewport;
 
-layout (location = 0) out vec4 color;
+layout (location = 0) out vec2 color;
 
 uniform float offset[3] = float[]( 0.0, 1.3846153846, 3.2307692308);
 uniform float weight[3] = float[]( 0.2270270270, 0.3162162162, 0.0702702703);
 
 void main(void)
 {
-	vec4 c;
-	c = texture2D (image, gl_FragCoord.xy * invviewport) * weight[0];
+	vec2 c;
+	c = texture2D (image, gl_FragCoord.xy * invviewport).xy * weight[0];
 
 	for (int i = 1; i < 3; i++)
 	{
 		vec2 coord;
 		coord = gl_FragCoord.xy + vec2 (0, offset[i]);
-		c += texture (image, coord * invviewport)
+		c += texture (image, coord * invviewport).xy
 		     * weight[i];
 
 		coord = gl_FragCoord.xy - vec2 (0, offset[i]);
-		c += texture (image, coord * invviewport)
+		c += texture (image, coord * invviewport).xy
 		     * weight[i];
 	}
 	color = c;

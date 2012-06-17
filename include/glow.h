@@ -90,30 +90,18 @@ private:
 		* Height of the glow map.
 		*/
 	 GLuint height;
-	 /** Glow map (downsampled).
-		* A texture storing the parts of the screen that is supposed to glow
-		* downsampled to a lower resolution.
-		*/
-	 gl::Texture map;
-	 /** Glow map (OpenCL memory object).
-		* OpenCL memory object referring to the downsampled glow
-		* map.
-		*/
-	 cl::Memory mem;
-	 /** Glow blur.
-		* A Blur object for blurring the downsampled glow map.
-		*/
-	 Blur blur;
-	 /** Source framebuffer.
-		* The source framebuffer object for copying and downsampling
-		* the glow map.
-		*/
-	 gl::Framebuffer source;
-	 /** Destination framebuffer.
-		* The destination framebuffer object for copying and downsampling
-		* the glow map.
-		*/
-	 gl::Framebuffer destination;
+	 struct
+	 {
+			gl::Framebuffer fb;
+			gl::Program prog;
+			gl::ProgramPipeline pipeline;
+	 } vblur;
+	 struct
+	 {
+			gl::Framebuffer fb;
+			gl::Program prog;
+			gl::ProgramPipeline pipeline;
+	 } hblur;
 	 /** The glow limit.
 		* The maximum pixel value to be written to the glow map.
 		*/
@@ -126,10 +114,16 @@ private:
 		* The framebuffer object for blending the glow map into the screen
 		* texture.
 		*/
-	 gl::Framebuffer framebuffer;
-	 gl::Program fprogram;
-	 gl::ProgramPipeline pipeline;
 	 gl::Sampler sampler;
+
+	 gl::Buffer buffer;
+	 gl::Texture buffertex;
+
+	 gl::Texture map;
+
+	 GLuint size;
+
+	 gl::Texture *glowmap;
 
 	 Renderer *renderer;
 };
