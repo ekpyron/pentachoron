@@ -62,19 +62,87 @@ bool ShadowMap::Init (void)
 			(*logstream) << "Cannot link the shadow map shader program:" << std::endl
 									 << vshader.GetInfoLog () << std::endl;
 			return false;
-		}		
+		}
 	}
+	{
+		gl::Shader obj (GL_FRAGMENT_SHADER);
+		std::string source;
+		if (!ReadFile (MakePath ("shaders", "shadowmap", "hblur.txt"), source))
+			 return false;
+		obj.Source (source);
+		if (!obj.Compile ())
+		{
+			(*logstream) << "Could not compile "
+									 << MakePath ("shaders", "shadowmap", "hblur.txt")
+									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
+			return false;
+		}
+
+		hblurprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
+		hblurprog.Attach (obj);
+		if (!hblurprog.Link ())
+		{
+			(*logstream) << "Could not link the shader program "
+									 << MakePath ("shaders", "shadowmap", "hblur.txt")
+									 << ": " << std::endl << hblurprog.GetInfoLog ()
+									 << std::endl;
+			 return false;
+		}
+	}
+	{
+		gl::Shader obj (GL_FRAGMENT_SHADER);
+		std::string source;
+		if (!ReadFile (MakePath ("shaders", "shadowmap", "vblur.txt"), source))
+			 return false;
+		obj.Source (source);
+		if (!obj.Compile ())
+		{
+			(*logstream) << "Could not compile "
+									 << MakePath ("shaders", "shadowmap", "vblur.txt")
+									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
+			return false;
+		}
+
+		vblurprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
+		vblurprog.Attach (obj);
+		if (!vblurprog.Link ())
+		{
+			(*logstream) << "Could not link the shader program "
+									 << MakePath ("shaders", "shadowmap", "vblur.txt")
+									 << ": " << std::endl << vblurprog.GetInfoLog ()
+									 << std::endl;
+			 return false;
+		}
+	}
+
+	hblurpipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
+																	renderer->windowgrid.vprogram);
+	hblurpipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, hblurprog);
+	vblurpipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
+																	renderer->windowgrid.vprogram);
+	vblurpipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, vblurprog);
 
 	width = config["shadowmap"]["width"].as<GLuint> ();
 	height = config["shadowmap"]["height"].as<GLuint> ();
+
+	hblurprog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
+	vblurprog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
+
+	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	shadowmap.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
+										 0, GL_RG, GL_FLOAT, NULL);
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
 	shadowmap.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
 										 0, GL_RG, GL_FLOAT, NULL);
 
-	shadowmapmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_WRITE, GL_TEXTURE_RECTANGLE, 0, shadowmap);
+	tmpstore.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
+										0, GL_RG, GL_FLOAT, NULL);
 
 	depthbuffer.Storage (GL_DEPTH_COMPONENT32, width, height);
 
@@ -87,7 +155,12 @@ bool ShadowMap::Init (void)
 	framebuffer.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
 	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
-	blur = renderer->filters.CreateBlur (shadowmapmem, width, height, 4);
+	hblurfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+										 tmpstore, 0);
+	hblurfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
+	vblurfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+										 shadowmap, 0);
+	vblurfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
 	projmat = gl::SmartUniform<glm::mat4> (program["projmat"], glm::mat4(1));
 
@@ -126,11 +199,26 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	gl::DepthMask (GL_FALSE);
 
 	gl::Program::UseNone ();
-	
-	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
-
 	if (soft_shadows)
-		 blur.Apply ();
+	{
+		hblurfb.Bind (GL_FRAMEBUFFER);
+		hblurpipeline.Bind ();
+
+		shadowmap.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		sampler.Bind (0);
+		renderer->windowgrid.Render ();
+	
+		gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
+
+		vblurfb.Bind (GL_FRAMEBUFFER);
+		vblurpipeline.Bind ();
+		
+		tmpstore.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		sampler.Bind (0);
+		renderer->windowgrid.Render ();
+	
+		gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
+	}
 
 	GL_CHECK_ERROR;
 }

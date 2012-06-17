@@ -73,10 +73,10 @@ public:
 		* A texture containing the actual shadow map.
 		*/
 	 gl::Texture shadowmap;
-	 /** Shadow map (OpenCL memory object).
-		* OpenCL memory object referring to the shadow map texture
+	 /** Temporary storage.
+		* A texture used as temporary storage for blurring the shadow map.
 		*/
-	 cl::Memory shadowmapmem;
+	 gl::Texture tmpstore;
 	 /** View matrix.
 		* The view matrix to render the scene from the perspective
 		* of the shadow caster.
@@ -98,6 +98,11 @@ private:
 		* OpenGL shader program used to fill the shadow map.
 		*/
 	 gl::Program program;
+	 gl::Program vblurprog;
+	 gl::Program hblurprog;
+	 gl::Sampler sampler;
+	 gl::ProgramPipeline vblurpipeline;
+	 gl::ProgramPipeline hblurpipeline;
 	 /** Depthbuffer.
 		* Renderbuffer used to store the depth buffer while
 		* rendering the geometry.
@@ -109,15 +114,12 @@ private:
 		*/
 	 gl::Framebuffer framebuffer;
 
+	 gl::Framebuffer vblurfb;
+	 gl::Framebuffer hblurfb;
 	 /** Soft shadows.
 		* If true, the shadow map is blurred, if false, it is not.
 		*/
 	 bool soft_shadows;
-
-	 /** Blur filter.
-		* Blur filter used to blur the shadow map.
-		*/
-	 Blur blur;
 	 /** Parent renderer.
 		* The Renderer this class belongs to.
 		*/
