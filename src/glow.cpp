@@ -180,14 +180,14 @@ void Glow::SetSize (GLuint s)
 	data.push_back (weights_data[0]);
 	data.push_back (offsets_data[0]);
 
-	for (int i = 1; i <= weights_data.size() >> 1; i++)
+	for (int i = 0; i < weights_data.size() >> 1; i++)
 	{
 		float weight;
-		weight = weights_data[i * 2 - 1] +
+		weight = weights_data[i * 2 + 1] +
 			 weights_data[i * 2];
 		data.push_back (weight);
-		data.push_back ((offsets_data[i * 2 - 1]
-										 * weights_data[i * 2 - 1]
+		data.push_back ((offsets_data[i * 2 + 1]
+										 * weights_data[i * 2 + 1]
 										 + offsets_data[i * 2]
 										 * weights_data[i * 2])
 										/ weight);
