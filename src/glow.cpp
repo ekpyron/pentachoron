@@ -80,54 +80,80 @@ bool Glow::Init (gl::Texture &screenmap, gl::Texture &gm,
 			 return false;
 		}
 	}
+	{
+		gl::Shader obj (GL_FRAGMENT_SHADER);
+		std::string source;
+		if (!ReadFile (MakePath ("shaders", "glow", "blend.txt"), source))
+			 return false;
+		obj.Source (source);
+		if (!obj.Compile ())
+		{
+			(*logstream) << "Could not compile "
+									 << MakePath ("shaders", "glow", "blend.txt")
+									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
+			 return false;
+		}
+
+		blendprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
+		blendprog.Attach (obj);
+		if (!blendprog.Link ())
+		{
+			(*logstream) << "Could not link the shader program "
+									 << MakePath ("shaders", "glow", "blend.txt")
+									 << ": " << std::endl << blendprog.GetInfoLog ()
+									 << std::endl;
+			 return false;
+		}
+	}
+	width = renderer->gbuffer.GetWidth () >> mipmap_level;
+	height = renderer->gbuffer.GetHeight () >> mipmap_level;
 	hblur.pipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
 																	 renderer->windowgrid.vprogram);
 	hblur.pipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, hblur.prog);
 	vblur.pipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
 																	 renderer->windowgrid.vprogram);
 	vblur.pipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, vblur.prog);
+	blendpipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
+																	renderer->windowgrid.vprogram);
+	blendpipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, blendprog);
 
-	hblur.prog["invviewport"] = glm::vec2 (1.0f / renderer->gbuffer.GetWidth (),
-																				 1.0f / renderer->gbuffer.GetHeight ());
-	vblur.prog["invviewport"] = glm::vec2 (1.0f / renderer->gbuffer.GetWidth (),
-																				 1.0f / renderer->gbuffer.GetHeight ());
+	blendprog["invviewport"] = glm::vec2 (1.0f / renderer->gbuffer.GetWidth (),
+																				1.0f / renderer->gbuffer.GetHeight ());
 
-	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	hblur.prog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
+	vblur.prog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
+
+	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	map.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
-							 renderer->gbuffer.GetWidth (),
-							 renderer->gbuffer.GetHeight (),
+	sampler2.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	sampler2.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	sampler2.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	sampler2.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	map.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F, width, height,
 							 0, GL_RGBA, GL_FLOAT, NULL);
+	map2.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F, width, height,
+								0, GL_RGBA, GL_FLOAT, NULL);
 #ifdef DEBUG
-	renderer->memory += renderer->gbuffer.GetWidth ()
-		 * renderer->gbuffer.GetHeight () * 4 * 4;
+	renderer->memory += width * height * 4 * 4 * 2;
 #endif
 
 	hblur.fb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 											map, 0);
 	hblur.fb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 	vblur.fb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-											screenmap, 0);
+											map2, 0);
 	vblur.fb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
+	blendfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+										 screenmap, 0);
+	blendfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
 	SetSize (4);
 
 	return true;
-}
-
-long double Coef (unsigned long n, unsigned long k)
-{
-	long double ret;
-	ret = 1.0 / powl (2.0, n);
-	for (unsigned long i = 0; i < k; i++)
-	{
-		ret *= (long double) (n - i);
-		ret /= (long double) (i+1);
-	}
-	return ret;
 }
 
 void nextrow (std::vector<unsigned long> &row)
@@ -155,6 +181,8 @@ void Glow::SetSize (GLuint s)
 		return;
 	}
 	size = (s&~3) + 1;
+	if (size > 61)
+		 size = 61;
 
 	if (!size)
 		 return;
@@ -197,9 +225,6 @@ void Glow::SetSize (GLuint s)
 								&data[0], GL_STATIC_DRAW);
 
 	buffertex.Buffer (GL_RG32F, buffer);
-
-	hblur.prog["size"] = (GLuint)(data.size () >> 1);
-	vblur.prog["size"] = (GLuint)(data.size () >> 1);
 }
 
 GLuint Glow::GetSize (void)
@@ -229,7 +254,7 @@ void Glow::SetLimit (GLfloat l)
 
 const gl::Texture &Glow::GetMap (void)
 {
-	return map;
+	return map2;
 }
 
 void Glow::Apply (void)
@@ -241,8 +266,7 @@ void Glow::Apply (void)
 
 	hblur.fb.Bind (GL_FRAMEBUFFER);
 	hblur.pipeline.Bind ();
-	gl::Viewport (0, 0, renderer->gbuffer.GetWidth (),
-								renderer->gbuffer.GetHeight ());
+	gl::Viewport (0, 0, width, height);
 
 	glowmap->Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	sampler.Bind (0);
@@ -252,11 +276,20 @@ void Glow::Apply (void)
 	vblur.pipeline.Bind ();
 
 	map.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-	sampler.Bind (0);
+	sampler2.Bind (0);
+
+	renderer->windowgrid.Render ();
+
+	blendfb.Bind (GL_FRAMEBUFFER);
+	blendpipeline.Bind ();
+	gl::Viewport (0, 0, renderer->gbuffer.GetWidth (),
+								renderer->gbuffer.GetHeight ());
 
 	gl::Enable (GL_BLEND);
 	gl::BlendFunc (GL_ONE, GL_ONE);
 	gl::BlendEquation (GL_FUNC_ADD);
+	map2.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+	sampler2.Bind (0);
 	renderer->windowgrid.Render ();
 	gl::Disable (GL_BLEND);
 

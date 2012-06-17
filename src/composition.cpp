@@ -54,7 +54,6 @@ bool Composition::Init (void)
 								renderer->gbuffer.GetHeight (),
 								0, GL_RGBA, GL_FLOAT, NULL);
 
-	glowmap.Parameter (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
 	glowmap.GenerateMipmap (GL_TEXTURE_2D);
 
 #ifdef DEBUG
@@ -62,9 +61,12 @@ bool Composition::Init (void)
 		 * renderer->gbuffer.GetHeight () * (4 * 2 + 4 * 2 + 4);
 	renderer->memory += (renderer->gbuffer.GetWidth () >> 1) *
 		 (renderer->gbuffer.GetHeight () >> 1) * 4;
+	renderer->memory += (renderer->gbuffer.GetWidth () >> 1) *
+		 (renderer->gbuffer.GetHeight () >> 2) * 4;
+  /* ignore smaller mipmap levels... */
 #endif
 
-	if (!glow.Init (screen, glowmap, 1))
+	if (!glow.Init (screen, glowmap, 2))
 		 return false;
 
 	screenmem = renderer->clctx.CreateFromGLTexture2D

@@ -3,10 +3,10 @@
 layout (location = 0) out vec4 output;
 layout (binding = 0) uniform sampler2D glowmap;
 
-uniform uvec2 viewport;
+uniform vec2 invviewport;
 
 void main (void)
 {
-	vec2 coord = gl_FragCoord.xy / viewport;
+	vec2 coord = gl_FragCoord.xy * invviewport;
 	output = texture (glowmap, coord);
 }

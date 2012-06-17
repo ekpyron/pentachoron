@@ -115,11 +115,16 @@ private:
 		* texture.
 		*/
 	 gl::Sampler sampler;
+	 gl::Sampler sampler2;
 
 	 gl::Buffer buffer;
 	 gl::Texture buffertex;
 
-	 gl::Texture map;
+	 gl::Texture map, map2;
+
+	 gl::Framebuffer blendfb;
+	 gl::Program blendprog;
+	 gl::ProgramPipeline blendpipeline;
 
 	 GLuint size;
 
