@@ -94,16 +94,6 @@ bool ShadowPass::Init (void)
 	return true;
 }
 
-void ShadowPass::SetSoftShadows (bool softshadows)
-{
-	shadowmap.SetSoftShadows (softshadows);
-}
-
-bool ShadowPass::GetSoftShadows (void)
-{
-	return shadowmap.GetSoftShadows ();
-}
-
 void ShadowPass::Render (GLuint shadowid, Geometry &geometry,
 												 const Shadow &shadow)
 {

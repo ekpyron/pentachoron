@@ -1,14 +1,7 @@
 #version 420 core
 
-layout(location = 0) out vec2 moments;
-
 layout (early_fragment_tests) in;
 
 void main (void)
 {
-	float dx, dy;
-	moments.x = gl_FragCoord.z;
-	dx = dFdx (gl_FragCoord.z);
-	dy = dFdy (gl_FragCoord.z);
-	moments.y = moments.x * moments.x + 0.25 * (dx * dx + dy * dy);
 }

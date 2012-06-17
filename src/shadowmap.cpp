@@ -18,7 +18,7 @@
 #include "renderer.h"
 
 ShadowMap::ShadowMap (Renderer *parent)
-	: renderer (parent), soft_shadows (true)
+	: renderer (parent)
 {
 }
 
@@ -144,16 +144,17 @@ bool ShadowMap::Init (void)
 	tmpstore.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
 										0, GL_RG, GL_FLOAT, NULL);
 
-	depthbuffer.Storage (GL_DEPTH_COMPONENT32, width, height);
+	depthbuffer.Image2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
+											 width, height, 0, GL_DEPTH_COMPONENT,
+											 GL_FLOAT, NULL);
 
 #ifdef DEBUG
-	renderer->memory += width * height * (2 * 4 + 4);
+	renderer->memory += width * height * (2 * 4 + 2 * 4 + 4);
 #endif
 
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-												 shadowmap, 0);
-	framebuffer.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
-	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
+	framebuffer.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+												 depthbuffer, 0);
+	framebuffer.DrawBuffers ({ });
 
 	hblurfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 										 tmpstore, 0);
@@ -185,7 +186,6 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 
 	gl::DepthMask (GL_TRUE);
 
-	gl::ClearBufferfv (GL_COLOR, 0, (float[]) {1.0f, 1.0f, 1.0f, 1.0f});
 	gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
 	gl::Viewport (0, 0, width, height);
 
@@ -199,26 +199,24 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	gl::DepthMask (GL_FALSE);
 
 	gl::Program::UseNone ();
-	if (soft_shadows)
-	{
-		hblurfb.Bind (GL_FRAMEBUFFER);
-		hblurpipeline.Bind ();
 
-		shadowmap.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		sampler.Bind (0);
-		renderer->windowgrid.Render ();
+	hblurfb.Bind (GL_FRAMEBUFFER);
+	hblurpipeline.Bind ();
+
+	depthbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+	sampler.Bind (0);
+	renderer->windowgrid.Render ();
 	
-		gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
+	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 
-		vblurfb.Bind (GL_FRAMEBUFFER);
-		vblurpipeline.Bind ();
+	vblurfb.Bind (GL_FRAMEBUFFER);
+	vblurpipeline.Bind ();
 		
-		tmpstore.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		sampler.Bind (0);
-		renderer->windowgrid.Render ();
-	
-		gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
-	}
+	tmpstore.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+	sampler.Bind (0);
+	renderer->windowgrid.Render ();
+		
+	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 
 	GL_CHECK_ERROR;
 }
@@ -231,14 +229,4 @@ GLuint ShadowMap::GetWidth (void) const
 GLuint ShadowMap::GetHeight (void) const
 {
 	return height;
-}
-
-bool ShadowMap::GetSoftShadows (void) const
-{
-	return soft_shadows;
-}
-
-void ShadowMap::SetSoftShadows (bool s)
-{
-	soft_shadows = s;
 }

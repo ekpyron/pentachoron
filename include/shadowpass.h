@@ -35,8 +35,6 @@ public:
 
 	 const gl::Texture &GetShadowMask (void);
 	 const cl::Memory &GetShadowMaskMem (void);
-	 void SetSoftShadows (bool softshadow);
-	 bool GetSoftShadows (void);
 private:
 	 gl::Sampler sampler;
 	 gl::Texture shadowmask;

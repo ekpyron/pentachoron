@@ -292,16 +292,6 @@ Interface::Interface (Renderer *parent)
 						alpha = (alpha<=1?alpha:1);
 						renderer->composition.SetShadowAlpha (alpha);
 					}, true },
-				{ "Soft Shadows: ", [&] (void) {
-						if (renderer->shadowpass.GetSoftShadows ())
-							 font.Print ("yes");
-						else
-							 font.Print ("no");
-					}, [&] (int what) {
-						bool value;
-						value = renderer->shadowpass.GetSoftShadows ();
-						renderer->shadowpass.SetSoftShadows (!value);
-				}, false },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{

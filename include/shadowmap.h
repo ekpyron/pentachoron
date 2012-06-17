@@ -57,17 +57,6 @@ public:
 		* Obtains the width of the contained shadow map.
 		*/
 	 GLuint GetHeight (void) const;
-	 /** Query soft shadows.
-		* Queries whether the shadow map should be blurred to create
-		* soft shadows.
-		* \return Whether soft shadows are active.
-		*/
-	 bool GetSoftShadows (void) const;
-	 /** Set soft shadows.
-		* Determines whether to blur the shadow map to create soft shadows.
-		* \param s Whether to activate soft shadows.
-		*/
-	 void SetSoftShadows (bool s);
 	 /** Shadow map.
 		* A texture containing the actual shadow map.
 		*/
@@ -103,10 +92,10 @@ private:
 	 gl::ProgramPipeline vblurpipeline;
 	 gl::ProgramPipeline hblurpipeline;
 	 /** Depthbuffer.
-		* Renderbuffer used to store the depth buffer while
+		* Texture used to store the depth buffer while
 		* rendering the geometry.
 		*/
-	 gl::Renderbuffer depthbuffer;
+	 gl::Texture depthbuffer;
 	 /** Framebuffer.
 		* Framebuffer object used for rendering to the shadow
 		* map texture.
@@ -115,10 +104,6 @@ private:
 
 	 gl::Framebuffer vblurfb;
 	 gl::Framebuffer hblurfb;
-	 /** Soft shadows.
-		* If true, the shadow map is blurred, if false, it is not.
-		*/
-	 bool soft_shadows;
 	 /** Parent renderer.
 		* The Renderer this class belongs to.
 		*/
