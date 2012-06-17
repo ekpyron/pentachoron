@@ -19,7 +19,6 @@
 
 #include <common.h>
 #include <gbuffer.h>
-#include <filters.h>
 #include <glow.h>
 
 class Renderer;

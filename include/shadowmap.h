@@ -21,7 +21,6 @@
 #include "model/model.h"
 #include "geometry.h"
 #include "shadow.h"
-#include "filters.h"
 
 class Renderer;
 

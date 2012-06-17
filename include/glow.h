@@ -19,7 +19,6 @@
 
 #include <common.h>
 #include <gbuffer.h>
-#include <filters.h>
 
 /** Glow class.
  * This class handles the glow effect.

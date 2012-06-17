@@ -19,7 +19,7 @@
 
 Renderer::Renderer (void)
 	: geometry (this), shadowpass (this),
-		finalpass (this), gbuffer (this), filters (this),
+		finalpass (this), gbuffer (this),
 #ifdef DEBUG
 		memory (0),
 #endif
@@ -68,10 +68,6 @@ bool Renderer::Init (void)
 
 	(*logstream) << "Initialize GBuffer..." << std::endl;
 	if (!gbuffer.Init ())
-		 return false;
-
-	(*logstream) << "Initialize Filters..." << std::endl;
-	if (!filters.Init ())
 		 return false;
 
 	(*logstream) << "Initialize Shadow Pass..." << std::endl;

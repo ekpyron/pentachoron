@@ -25,7 +25,6 @@
 #include "camera.h"
 #include "shadowmap.h"
 #include "shadowpass.h"
-#include "filters.h"
 #include "interface.h"
 #include "composition.h"
 #include "light.h"
@@ -68,7 +67,6 @@ public:
 	 ShadowPass shadowpass;
 	 FinalPass finalpass;
 	 WindowGrid windowgrid;
-	 Filters filters;
 	 Composition composition;
 	 Culling culling;
 	 Camera camera;
