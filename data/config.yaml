@@ -5,3 +5,4 @@ font:          { fshader: font.fs, vshader: font.vs, font: liberation.ttf }
 model:	       kitty.yaml
 gbuffer:       { width: 1024, height: 768 }
 shadowmap:     { width: 1024, height: 1024 }
+glow:          { mipmaplevel: 2 }

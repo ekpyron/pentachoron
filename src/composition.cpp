@@ -66,7 +66,8 @@ bool Composition::Init (void)
   /* ignore smaller mipmap levels... */
 #endif
 
-	if (!glow.Init (screen, glowmap, 2))
+	if (!glow.Init (screen, glowmap,
+									config["glow"]["mipmaplevel"].as<unsigned int> (2)))
 		 return false;
 
 	screenmem = renderer->clctx.CreateFromGLTexture2D
