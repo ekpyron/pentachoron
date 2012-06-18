@@ -1,1 +1,5 @@
 * Have a look at freeimage (freeimage.sourceforge.net).
+
+* Think about removing the initial glow map produced by the composition
+  kernel and use the screen map instead.
+  

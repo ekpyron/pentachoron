@@ -139,7 +139,7 @@ bool Glow::Init (gl::Texture &screenmap, gl::Texture &gm,
 	map2.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F, width, height,
 								0, GL_RGBA, GL_FLOAT, NULL);
 #ifdef DEBUG
-	renderer->memory += width * height * 4 * 4 * 2;
+	renderer->memory += width * height * 4 * 2 * 2;
 #endif
 
 	hblur.fb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
