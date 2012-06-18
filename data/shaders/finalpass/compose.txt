@@ -165,7 +165,7 @@ void main (void)
 		int i;
 		for (i = 0; i < 9; i++)
 		{
-			if (abs (weights[0] * 9 / antialiasing - 1)
+			if (abs (weights[i] * 9 / antialiasing - 1)
 			    > antialiasing_threshold)
 			{
 				break;
