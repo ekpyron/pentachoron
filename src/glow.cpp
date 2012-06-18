@@ -16,6 +16,7 @@
  */
 #include "glow.h"
 #include "renderer.h"
+#include <vector>
 
 Glow::Glow (Renderer *parent)
 	: renderer (parent), limit (1.0f), exponent (1.0f), size (0)
@@ -156,7 +157,7 @@ bool Glow::Init (gl::Texture &screenmap, gl::Texture &gm,
 	return true;
 }
 
-void nextrow (std::vector<unsigned long> &row)
+void pascal_next (std::vector<unsigned long> &row)
 {
 	std::vector<unsigned long> nextrow;
 	nextrow.push_back (1);
@@ -187,16 +188,17 @@ void Glow::SetSize (GLuint s)
 	if (!size)
 		 return;
 
-	std::vector<unsigned long> pascal;
+	std::vector<unsigned long> binomial;
 
 	for (int i = 0; i < size + 3; i++)
-		 nextrow (pascal);
+		 pascal_next (binomial);
 
-	unsigned long sum = (8UL<<size) - 2 * (pascal[0] + pascal[1]);
+	unsigned long sum = (8UL<<size)
+		 - 2 * (binomial[0] + binomial[1]);
 
 	for (int i = 0; i < (size+1)/2; i++)
 	{
-		weights_data.push_back ((long double)(pascal[((size - 1) / 2) - i+2])
+		weights_data.push_back ((long double)(binomial[((size - 1) / 2) - i+2])
 														/ (long double)(sum));
 	}
 
