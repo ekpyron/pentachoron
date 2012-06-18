@@ -157,17 +157,17 @@ bool Glow::Init (gl::Texture &screenmap, gl::Texture &gm,
 	return true;
 }
 
-void pascal_next (std::vector<unsigned long> &row)
+float compute_weight (unsigned long n, unsigned long k)
 {
-	std::vector<unsigned long> nextrow;
-	nextrow.push_back (1);
-	for (int i = 1; i < row.size (); i++)
+	long double tmp;
+	tmp = 1.0 / (powl (2, n) - 2 * (1 + n));
+	for (int i = 1; i <= k; i++)
 	{
-		nextrow.push_back (row[i-1] + row[i]);
+		tmp *= (n - k + i);
+		tmp /= i;
 	}
-	nextrow.push_back (1);
-
-	row = std::move (nextrow);
+	return tmp;
+	
 }
 
 void Glow::SetSize (GLuint s)
@@ -182,24 +182,14 @@ void Glow::SetSize (GLuint s)
 		return;
 	}
 	size = (s&~3) + 1;
-	if (size > 61)
-		 size = 61;
 
 	if (!size)
 		 return;
 
-	std::vector<unsigned long> binomial;
-
-	for (int i = 0; i < size + 3; i++)
-		 pascal_next (binomial);
-
-	unsigned long sum = (8UL<<size)
-		 - 2 * (binomial[0] + binomial[1]);
-
 	for (int i = 0; i < (size+1)/2; i++)
 	{
-		weights_data.push_back ((long double)(binomial[((size - 1) / 2) - i+2])
-														/ (long double)(sum));
+		weights_data.push_back
+			 (compute_weight (size + 3, ((size - 1) / 2) - i + 2));
 	}
 
 	for (int i = 0; i < weights_data.size (); i++)
