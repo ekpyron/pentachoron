@@ -26,10 +26,11 @@
 #define EDIT_LIGHT_SPECULAR       6
 #define EDIT_LIGHT_ATTENUATION    7
 #define EDIT_SHADOW_POSITION      8
-#define EDIT_TONE_MAPPING         9
-#define EDIT_GLOW                 10
-#define EDIT_TONE_MAPPING_AVG_LUM 11
-#define EDIT_ANTIALIASING         12
+#define EDIT_SHADOW_DIRECTION     9
+#define EDIT_TONE_MAPPING         10
+#define EDIT_GLOW                 11
+#define EDIT_TONE_MAPPING_AVG_LUM 12
+#define EDIT_ANTIALIASING         13
 
 extern bool running;
 
@@ -265,6 +266,13 @@ Interface::Interface (Renderer *parent)
 							submenu = 0;
 						}
 					}, false },
+				{ "Edit Direction", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_SHADOW_DIRECTION;
+							submenu = 0;
+						}
+					}, false },
 				{ "Remove", NULL, [&] (int what) {
 						if (!what)
 						{
@@ -493,6 +501,45 @@ Interface::Interface (Renderer *parent)
 						font.Print (renderer->shadows[active_shadow].position.z);
 					}, [&] (int what) {
 						renderer->shadows[active_shadow].position.z += what * timefactor;
+					}, true },
+				{ "Back", NULL, [&] (int what) {
+						if (!what)
+						{
+							if (!renderer->shadows.size ())
+							{
+								AddShadow ();
+							}
+							menu = EDIT_SHADOWS;
+							submenu = 0;
+						}
+					}, false }
+			}
+		},
+		{
+			"Shadow Direction ", [&] (void) {
+				font.Print (active_shadow + 1, " / ", renderer->shadows.size ());
+			},
+			{
+				{ "X ", [&] (void) {
+						font.Print (renderer->shadows[active_shadow].direction.x);
+					}, [&] (int what) {
+						renderer->shadows[active_shadow].direction.x += what * timefactor;
+						renderer->shadows[active_shadow].direction =
+						glm::normalize (renderer->shadows[active_shadow].direction);
+					}, true },
+				{ "Y ", [&] (void) {
+						font.Print (renderer->shadows[active_shadow].direction.y);
+					}, [&] (int what) {
+						renderer->shadows[active_shadow].direction.y += what * timefactor;
+						renderer->shadows[active_shadow].direction =
+						glm::normalize (renderer->shadows[active_shadow].direction);
+					}, true },
+				{ "Z ", [&] (void) {
+						font.Print (renderer->shadows[active_shadow].direction.z);
+					}, [&] (int what) {
+						renderer->shadows[active_shadow].direction.z += what * timefactor;
+						renderer->shadows[active_shadow].direction =
+						glm::normalize (renderer->shadows[active_shadow].direction);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
