@@ -192,11 +192,11 @@ float specular_cooktorrance (float3 viewDir, float3 lightDir,
 	NdotL = dot (normal, lightDir);
 
 	float f;
-	f = fresnel + pow (1 - NdotV, 5) * (1 - fresnel);
+	f = fresnel + pown (1 - NdotV, 5) * (1 - fresnel);
 	float g, g1, g2;
 	g1 = native_divide (2 * NdotH * NdotV, VdotH);
 	g2 = native_divide (2 * NdotH * NdotL, VdotH);
-	g = min (1.0, max (0.0, min (g1, g2)));
+	g = min (1.0, min (g1, g2));
 	return native_divide (k * f * g, NdotV);
 }
 
@@ -297,7 +297,8 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		if (param.specular.model != 0)
 		{
 			// normal
-			float3 viewDir = fast_normalize (info->eye.xyz - pos.xyz);
+			float3 viewDir = fast_normalize
+			       	       	 (info->eye.xyz - pos.xyz);
 			lightDir = fast_normalize (lightDir);
 			float3 halfVec = fast_normalize (viewDir + lightDir);
 
@@ -331,9 +332,6 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 
 		}
 	}
-
-	// add ambient light
-	diffuse += 0.025;
 
 	float4 pixel;
 	if (info->mode == 2) // no color; only lighting
