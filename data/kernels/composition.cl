@@ -77,7 +77,7 @@ struct Info
 	float luminance_threshold;
 	float shadow_alpha;
 	unsigned int mode;
-	unsigned int padding;
+	unsigned int num_lights;
 	struct
 	{	
 		unsigned int size;
@@ -354,7 +354,6 @@ kernel void composition (write_only image2d_t screen,
 			 read_only image2d_t shadowmask,
 			 read_only image2d_t fragidx,
 			 global uint *fraglist,
-			 unsigned int num_lights,
 			 global struct Light *lights,
 			 struct Info info,
 			 unsigned int num_parameters,
@@ -496,7 +495,8 @@ kernel void composition (write_only image2d_t screen,
 
 	// obtain the light indices affecting the current tile
 	getlightindices (light_indices, &num_light_indices, boxmin_int,
-			 boxmax_int, lights, num_lights, sphere, radius);
+			 boxmax_int, lights, info.num_lights,
+			 sphere, radius);
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
