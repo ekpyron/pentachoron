@@ -273,6 +273,14 @@ Interface::Interface (Renderer *parent)
 							submenu = 0;
 						}
 					}, false },
+				{ "Angle ", [&] (void) {
+						font.Print (renderer->shadows[active_shadow].spot.angle
+												* 180.0f / DRE_PI);
+					}, [&] (int what) {
+						renderer->shadows[active_shadow].spot.angle += what * timefactor;
+						renderer->shadows[active_shadow].spot.cosine =
+						cosf (renderer->shadows[active_shadow].spot.angle);
+					}, true	},
 				{ "Remove", NULL, [&] (int what) {
 						if (!what)
 						{
