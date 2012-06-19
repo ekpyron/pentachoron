@@ -148,8 +148,8 @@ float specular_gaussian (float3 normal, float3 halfVec,
 {
 	float e;
 	e = acos (dot (normal, halfVec));
-	e = clamp (e, 0.0, 1.0);
-	e = e / param->specular.smoothness;
+	e = native_divide (clamp (e, 0.0, 1.0),
+	    		   param->specular.smoothness);
 	return native_exp (-e * e);
 }
 
@@ -172,7 +172,8 @@ float specular_beckmann (float3 normal, float3 halfVec,
 	e = e * e;
 	m = param->specular.smoothness;
 	m = m * m;
-	return native_exp (-(1 - e) / (e * m)) / (M_PI * m * e * e);
+	return native_divide (native_exp (-native_divide (1 - e, e * m)),
+	       		      (M_PI * m * e * e));
 }
 
 float specular_cooktorrance (float3 viewDir, float3 lightDir,
@@ -193,10 +194,10 @@ float specular_cooktorrance (float3 viewDir, float3 lightDir,
 	float f;
 	f = fresnel + pow (1 - NdotV, 5) * (1 - fresnel);
 	float g, g1, g2;
-	g1 = 2 * NdotH * NdotV / VdotH;
-	g2 = 2 * NdotH * NdotL / VdotH;
+	g1 = native_divide (2 * NdotH * NdotV, VdotH);
+	g2 = native_divide (2 * NdotH * NdotL, VdotH);
 	g = min (1.0, max (0.0, min (g1, g2)));
-	return k * f * g / (NdotL * NdotV);
+	return native_divide (k * f * g, NdotV);
 }
 
 // compute the pixel value for some given gbuffer data
