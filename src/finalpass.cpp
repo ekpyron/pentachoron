@@ -441,9 +441,6 @@ void FinalPass::Render (void)
 	viewport = renderer->camera.GetViewport ();
 	gl::Viewport (0, 0, viewport.x, viewport.y);
 
-	gl::ClearColor (0, 0, 0, 0);
-	gl::Clear (GL_COLOR_BUFFER_BIT);
-
 	switch (rendermode)
 	{
 	case 0:

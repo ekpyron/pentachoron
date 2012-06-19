@@ -186,7 +186,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 
 	gl::DepthMask (GL_TRUE);
 
-	gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
+	gl::ClearBufferfv (GL_DEPTH, 0, (const float[]) {1.0f});
 	gl::Viewport (0, 0, width, height);
 
 	gl::Enable (GL_DEPTH_TEST);

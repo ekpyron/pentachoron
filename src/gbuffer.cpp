@@ -261,11 +261,11 @@ void GBuffer::Render (Geometry &geometry)
 	framebuffer.Bind (GL_FRAMEBUFFER);
 	gl::Viewport (0, 0, width, height);
 		
-	gl::ClearBufferfv (GL_COLOR, 0, (float[]) {0.0f, 0.0f, 0.0f, 1.0f} );
-	gl::ClearBufferfv (GL_COLOR, 1, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
-	gl::ClearBufferfv (GL_COLOR, 2, (float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
-	gl::ClearBufferfv (GL_COLOR, 3, (float[]) {1.0f, 0.0f, 0.0f, 0.0f} );
-	gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
+	gl::ClearBufferfv (GL_COLOR, 0, (const float[]) {0.0f, 0.0f, 0.0f, 1.0f} );
+	gl::ClearBufferfv (GL_COLOR, 1, (const float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
+	gl::ClearBufferfv (GL_COLOR, 2, (const float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
+	gl::ClearBufferfv (GL_COLOR, 3, (const float[]) {1.0f, 0.0f, 0.0f, 0.0f} );
+	gl::ClearBufferfv (GL_DEPTH, 0, (const float[]) {1.0f});
 
 	geometry.Render (Geometry::Pass::GBuffer,
 									 program, renderer->camera.GetViewMatrix ());
@@ -276,7 +276,7 @@ void GBuffer::Render (Geometry &geometry)
 
 	transparencyclearfb.Bind (GL_FRAMEBUFFER);
 
-	gl::ClearBufferuiv (GL_COLOR, 0, (GLuint[]) { (GLuint) -1, (GLuint) -1,
+	gl::ClearBufferuiv (GL_COLOR, 0, (const GLuint[]) { (GLuint) -1, (GLuint) -1,
 				 (GLuint) -1, (GLuint) -1 });
 	
 	transparencyfb.Bind (GL_FRAMEBUFFER);
@@ -305,7 +305,7 @@ void GBuffer::Render (Geometry &geometry)
 		gl::DepthMask (GL_TRUE);
 		multisamplefb.Bind (GL_FRAMEBUFFER);
 		gl::Viewport (0, 0, width, height);
-		gl::ClearBufferfv (GL_DEPTH, 0, (float[]) {1.0f});
+		gl::ClearBufferfv (GL_DEPTH, 0, (const float[]) {1.0f});
 			
 		geometry.Render (Geometry::Pass::GBufferSRAA,
 										 sraaprog, renderer->camera.GetViewMatrix ());
