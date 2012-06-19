@@ -141,7 +141,41 @@ bool Renderer::Init (void)
 		for (const YAML::Node &node : parameterlist)
 		{
 			Parameter parameter;
-			parameter.specular.exponent = node["specular_exponent"].as<float> (2.0f);
+			{
+				YAML::Node specular = node["specular"];
+				float default_smoothness;
+				std::string model = specular["model"].as<std::string> ("none");
+				if (!model.compare ("gaussian"))
+				{
+					parameter.specular.model = 1;
+					default_smoothness = 0.25;
+				}
+				else if (!model.compare ("phong"))
+				{
+					parameter.specular.model = 2;
+					default_smoothness = 2.0;
+				}
+				else if (!model.compare ("beckmann"))
+				{
+					parameter.specular.model = 3;
+					default_smoothness = 0.25;
+				}
+				else if (!model.compare ("cooktorrance"))
+				{
+					parameter.specular.model = 4;
+					default_smoothness = 0.25;
+					parameter.specular.fresnel = specular["fresnel"].as<float> (1.0);
+				}
+				else
+				{
+					(*logstream) << "The parameter file " << filename
+											 << " contains an unknown specular model:"
+											 << model << std::endl;
+					parameter.specular.model = 0;
+				}
+				parameter.specular.smoothness = specular["smoothness"].as<float>
+					 (default_smoothness);
+			}
 			parameters.push_back (parameter);
 		}
 		parametermem = clctx.CreateBuffer

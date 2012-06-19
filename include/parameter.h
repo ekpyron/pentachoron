@@ -23,8 +23,10 @@ typedef struct _Parameter
 {
 	 struct
 	 {
-			float exponent;
-			float padding[3];
+			unsigned int model;
+			float smoothness;
+			float fresnel;
+			float padding;
 	 } specular;
 } Parameter;
 

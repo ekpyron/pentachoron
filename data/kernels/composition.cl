@@ -93,8 +93,10 @@ struct Parameter
 {
 	struct
 	{
-		float exponent;
-		float padding[3];
+		unsigned int model;
+		float smoothness;
+		float fresnel;
+		float padding;
 	} specular;
 };
 
@@ -139,6 +141,62 @@ float4 compute_sky (float4 p, struct Info *info)
 	color.w = 1.0;
 
 	return color;
+}
+
+float specular_gaussian (float3 normal, float3 halfVec,
+      			 struct Parameter *param)
+{
+	float e;
+	e = acos (dot (normal, halfVec));
+	e = clamp (e, 0.0, 1.0);
+	e = e / param->specular.smoothness;
+	return native_exp (-e * e);
+}
+
+float specular_phong (float3 viewDir, float3 lightDir, float3 normal,
+      		      struct Parameter *param)
+{
+	float k;
+	k = dot (viewDir, reflect (-lightDir, normal));
+	k = native_powr (k, param->specular.smoothness);
+	return k;
+}
+
+float specular_beckmann (float3 normal, float3 halfVec,
+      			 struct Parameter *param)
+{
+	float e, m;
+	e = acos (dot (normal, halfVec));
+	e = clamp (e, 0.0, 1.0);
+	e = native_cos (e);
+	e = e * e;
+	m = param->specular.smoothness;
+	m = m * m;
+	return native_exp (-(1 - e) / (e * m)) / (M_PI * m * e * e);
+}
+
+float specular_cooktorrance (float3 viewDir, float3 lightDir,
+      			     float3 normal, float3 halfVec,
+      			     struct Parameter *param)
+{
+	float fresnel = param->specular.fresnel;
+	float k;
+
+	k = specular_beckmann (normal, halfVec, param);
+
+	float NdotH, VdotH, NdotV, NdotL;
+	NdotH = dot (halfVec, normal);
+	VdotH = dot (viewDir, halfVec);
+	NdotV = dot (normal, viewDir);
+	NdotL = dot (normal, lightDir);
+
+	float f;
+	f = fresnel + pow (1 + NdotV, 5) * (1 - fresnel);
+	float g, g1, g2;
+	g1 = 2 * NdotH * NdotV / VdotH;
+	g2 = 2 * NdotH * NdotL / VdotH;
+	g = min (1.0, max (0.0, min (g1, g2)));
+	return k * f * g / (NdotL * NdotV);
 }
 
 // compute the pixel value for some given gbuffer data
@@ -235,18 +293,41 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		diffuse += attenuation * NdotL * light->color.xyz;
 
 		// calculate specular component
-		if (param.specular.exponent != 0.0)
+		if (param.specular.model != 0)
 		{
-			float r;
-			// calculate reflection
-			r = dot (fast_normalize (info->eye.xyz - pos.xyz),
-		    	    	 reflect (fast_normalize
-				 	  (pos.xyz - light->position.xyz),
-			 	  	  normal));
+			// normal
+			float3 viewDir = fast_normalize (info->eye.xyz - pos.xyz);
+			lightDir = fast_normalize (lightDir);
+			float3 halfVec = fast_normalize (viewDir + lightDir);
 
-			// add this light to overall specular light color
-		    	specular += attenuation * light->specular.xyz
-				* native_powr (r, param.specular.exponent);
+			float k;
+
+			switch (param.specular.model)
+			{
+				case 1:
+				     k = specular_gaussian (normal, halfVec,
+				       	 		    &param);
+				break;
+				case 2:
+				     k = specular_phong (viewDir, lightDir,
+				       	 		 normal, &param);
+				break;
+				case 3:
+				     k = specular_beckmann (normal, halfVec,
+				       	 		    &param);
+				break;
+				case 4:
+				     k = specular_cooktorrance
+				       (viewDir, lightDir, normal,
+				        halfVec, &param);
+				break;	
+				default:
+				     k = 0;
+				break;
+			}
+			
+			specular += attenuation * light->specular.xyz * k;
+
 		}
 	}
 
