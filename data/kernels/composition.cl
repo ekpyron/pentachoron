@@ -191,7 +191,7 @@ float specular_cooktorrance (float3 viewDir, float3 lightDir,
 	NdotL = dot (normal, lightDir);
 
 	float f;
-	f = fresnel + pow (1 + NdotV, 5) * (1 - fresnel);
+	f = fresnel + pow (1 - NdotV, 5) * (1 - fresnel);
 	float g, g1, g2;
 	g1 = 2 * NdotH * NdotV / VdotH;
 	g2 = 2 * NdotH * NdotL / VdotH;
