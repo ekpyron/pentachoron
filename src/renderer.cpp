@@ -143,38 +143,46 @@ bool Renderer::Init (void)
 			Parameter parameter;
 			{
 				YAML::Node specular = node["specular"];
-				float default_smoothness;
 				std::string model = specular["model"].as<std::string> ("none");
 				if (!model.compare ("gaussian"))
 				{
 					parameter.specular.model = 1;
-					default_smoothness = 0.25;
+					parameter.specular.smoothness = specular["smoothness"].as<float>
+						 (0.25f);
+					parameter.specular.gaussfactor = specular["gaussfactor"].as<float>
+						 (1.0f);
 				}
 				else if (!model.compare ("phong"))
 				{
 					parameter.specular.model = 2;
-					default_smoothness = 2.0;
+					parameter.specular.shininess = specular["shininess"].as<float>
+						 (2.0f);
+					parameter.specular.param2 = 1.0f;
 				}
 				else if (!model.compare ("beckmann"))
 				{
 					parameter.specular.model = 3;
-					default_smoothness = 0.25;
+					parameter.specular.smoothness = specular["smoothness"].as<float>
+						 (0.25);
+					parameter.specular.param2 = 1.0f;
 				}
 				else if (!model.compare ("cooktorrance"))
 				{
 					parameter.specular.model = 4;
-					default_smoothness = 0.25;
-					parameter.specular.fresnel = specular["fresnel"].as<float> (1.0);
+					parameter.specular.smoothness = specular["smoothness"].as<float>
+						 (0.25f);
+					parameter.specular.fresnel = specular["fresnel"].as<float> (1.0f);
 				}
 				else
 				{
-					(*logstream) << "The parameter file " << filename
-											 << " contains an unknown specular model:"
-											 << model << std::endl;
+					if (model.compare ("none"))
+						 (*logstream) << "The parameter file " << filename
+													<< " contains an unknown specular model:"
+													<< model << std::endl;
 					parameter.specular.model = 0;
+					parameter.specular.param1 = 0.25f;
+					parameter.specular.param2 = 1.0f;
 				}
-				parameter.specular.smoothness = specular["smoothness"].as<float>
-					 (default_smoothness);
 			}
 			parameters.push_back (parameter);
 		}
@@ -225,8 +233,37 @@ GLuint Renderer::GetAntialiasing (void)
 	return antialiasing;
 }
 
+Parameter &Renderer::GetParameters (GLuint param)
+{
+	if (param >= parameters.size ())
+		 throw std::runtime_error ("Parameter index out of bounds.");
+	return parameters[param];
+}
+
+void Renderer::UpdateParameters (GLuint param)
+{
+	queue.EnqueueWriteBuffer (parametermem, CL_TRUE,
+														intptr_t (&parameters[param])
+														- intptr_t (&parameters[0]),
+														sizeof (parameters[param]),
+														&parameters[param],
+														0, NULL, NULL);
+}
+
+GLuint Renderer::GetNumParameters (void)
+{
+	return parameters.size ();
+}
+
+const cl::Memory &Renderer::GetParameterMem (void)
+{
+	return parametermem;
+}
+
 Light &Renderer::GetLight (GLuint light)
 {
+	if (light >= lights.size ())
+		 throw std::runtime_error ("Light index out of bounds.");
 	return lights[light];
 }
 
@@ -284,16 +321,6 @@ void Renderer::UpdateLight (GLuint light)
 const cl::Memory &Renderer::GetLightMem (void)
 {
 	return lightmem;
-}
-
-GLuint Renderer::GetNumParameters (void)
-{
-	return parameters.size ();
-}
-
-const cl::Memory &Renderer::GetParameterMem (void)
-{
-	return parametermem;
 }
 
 extern bool running;

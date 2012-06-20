@@ -56,7 +56,9 @@ private:
 
 	 std::vector<Menu> menus;
 
-	 int active_light, active_shadow;
+	 int active_light;
+	 int active_shadow;
+	 int active_parameter;
 
 	 float timefactor;
 

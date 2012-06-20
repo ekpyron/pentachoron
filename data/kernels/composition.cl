@@ -75,18 +75,18 @@ struct Info
 	float4 shadowmat[4];
 	float4 eye;
 	float4 center;
-	float luminance_threshold;
-	float shadow_alpha;
-	unsigned int mode;
-	unsigned int num_lights;
 	struct
 	{	
 		unsigned int size;
-		float limit;
 		float exponent;
-		unsigned int padding;
+		float threshold;
+		float limit;
 		
 	} glow;
+	float shadow_alpha;
+	unsigned int mode;
+	unsigned int num_lights;
+	float screenlimit;
 };
 
 // material parameter
@@ -95,8 +95,16 @@ struct Parameter
 	struct
 	{
 		unsigned int model;
-		float smoothness;
-		float fresnel;
+		union {
+		      float smoothness;
+		      float shininess;
+		      float param1;
+		};
+		union {
+		      float fresnel;
+		      float gaussfactor;
+		      float param2;
+		};
 		float padding;
 	} specular;
 };
@@ -151,7 +159,7 @@ float specular_gaussian (float3 normal, float3 halfVec,
 	e = acos (dot (normal, halfVec));
 	e = native_divide (clamp (e, 0.0, 1.0),
 	    		   param->specular.smoothness);
-	return native_exp (-e * e);
+	return param->specular.gaussfactor * native_exp (-e * e);
 }
 
 float specular_phong (float3 viewDir, float3 lightDir, float3 normal,
@@ -159,7 +167,7 @@ float specular_phong (float3 viewDir, float3 lightDir, float3 normal,
 {
 	float k;
 	k = dot (viewDir, reflect (-lightDir, normal));
-	k = native_powr (k, param->specular.smoothness);
+	k = native_powr (k, param->specular.shininess);
 	return k;
 }
 
@@ -388,7 +396,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	}
 
 	// clamp the pixel
-	pixel = clamp (pixel, 0.0, info->glow.limit);
+	pixel = clamp (pixel, 0.0, info->screenlimit);
 
 	float shadow = compute_shadow (shadowmap, pos, info);
 	pixel *= mad (shadow, info->shadow_alpha, 1 - info->shadow_alpha);
@@ -670,11 +678,13 @@ kernel void composition (write_only image2d_t screen,
 		float4 glow = (float4) (0.0, 0.0, 0.0, 0.0);
 
 		// check against the luminance threshold
-		if (luminance > info.luminance_threshold)
+		if (luminance > info.glow.threshold)
 		{
 			glow.xyz = pixel.xyz;
 			glow.w = luminance;
 		}
+
+		glow = clamp (glow, 0.0, info.glow.limit);
 
 		// write to glow map
 		write_imagef (glowmap, (int2) (x, y), glow);

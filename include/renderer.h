@@ -54,6 +54,8 @@ public:
 	 const cl::Memory &GetLightMem (void);
 
 	 GLuint GetNumParameters (void);
+	 Parameter &GetParameters (GLuint params);
+	 void UpdateParameters (GLuint params);
 	 const cl::Memory &GetParameterMem (void);
 
 #ifdef DEBUG

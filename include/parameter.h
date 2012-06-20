@@ -24,8 +24,18 @@ typedef struct _Parameter
 	 struct
 	 {
 			unsigned int model;
-			float smoothness;
-			float fresnel;
+			union
+			{
+				 float smoothness;
+				 float shininess;
+				 float param1;
+			};
+			union
+			{
+				 float gaussfactor;
+				 float fresnel;
+				 float param2;
+			};
 			float padding;
 	 } specular;
 } Parameter;

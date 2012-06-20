@@ -18,25 +18,29 @@
 #include "renderer.h"
 
 #define MAIN_MENU                 0
-#define EDIT_LIGHTS               1
-#define EDIT_SHADOWS              2
-#define EDIT_LIGHT_POSITION       3
-#define EDIT_LIGHT_DIRECTION      4
-#define EDIT_LIGHT_DIFFUSE        5
-#define EDIT_LIGHT_SPECULAR       6
-#define EDIT_LIGHT_ATTENUATION    7
-#define EDIT_SHADOW_POSITION      8
-#define EDIT_SHADOW_DIRECTION     9
-#define EDIT_TONE_MAPPING         10
-#define EDIT_GLOW                 11
-#define EDIT_TONE_MAPPING_AVG_LUM 12
-#define EDIT_ANTIALIASING         13
+#define EDIT_COMPOSITION          1
+#define EDIT_LIGHTS               2
+#define EDIT_SHADOWS              3
+#define EDIT_LIGHT_POSITION       4
+#define EDIT_LIGHT_DIRECTION      5
+#define EDIT_LIGHT_DIFFUSE        6
+#define EDIT_LIGHT_SPECULAR       7
+#define EDIT_LIGHT_ATTENUATION    8
+#define EDIT_SHADOW_POSITION      9
+#define EDIT_SHADOW_DIRECTION     10
+#define EDIT_TONE_MAPPING         11
+#define EDIT_GLOW                 12
+#define EDIT_TONE_MAPPING_AVG_LUM 13
+#define EDIT_ANTIALIASING         14
+#define EDIT_PARAMS               15
+#define EDIT_PARAMS_SPECULAR      16
 
 extern bool running;
 
 Interface::Interface (Renderer *parent)
 	: showInterface (0), menu (MAIN_MENU), submenu (0), renderer (parent),
-		active_light (0), active_shadow (0), timefactor (0)
+		active_light (0), active_shadow (0), timefactor (0),
+		active_parameter (0)
 {
 	menus = {
 		{
@@ -102,6 +106,40 @@ Interface::Interface (Renderer *parent)
 							 rendermode = 0;
 						renderer->finalpass.SetRenderMode (rendermode);
 					}, false },
+				{ "Material Parameters", NULL,
+					[&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_PARAMS;
+							submenu = 0;
+						}
+					}, false },
+				{ "Composition", NULL,
+					[&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_COMPOSITION;
+							submenu = 0;
+						}
+					}, false },
+				{ "Exit", NULL, [&] (int what) {
+						if (!what)
+						{
+							running = false;
+						}
+					}, false }
+			}
+		},
+		{
+			"Edit Composition", NULL,
+			{
+				{ "Screen limit: ", [&] (void) {
+						font.Print (renderer->composition.GetScreenLimit ());
+					}, [&] (int what) {
+						float limit = renderer->composition.GetScreenLimit ();
+						limit += what * timefactor;
+						renderer->composition.SetScreenLimit (limit);
+					}, true	},
 				{ "Compositionmode: ", [&] (void) {
 						font.Print (renderer->composition.GetMode ());
 					}, [&] (int what) {
@@ -111,10 +149,11 @@ Interface::Interface (Renderer *parent)
 							 mode = 0;
 						renderer->composition.SetMode (mode);
 					}, false },
-				{ "Exit", NULL, [&] (int what) {
+				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{
-							running = false;
+							menu = MAIN_MENU;
+							submenu = 0;
 						}
 					}, false }
 			}
@@ -787,6 +826,122 @@ Interface::Interface (Renderer *parent)
 						if (!what)
 						{
 							menu = MAIN_MENU;
+							submenu = 0;
+						}
+					}, false }
+			}
+		},
+		{
+			"Edit Material Parameters ", [&] (void) {
+				font.Print (active_parameter + 1, " / ",
+										renderer->GetNumParameters ());
+			},
+			{
+				{ "Select Material", NULL , [&] (int what) {
+						active_parameter += what;
+						if (active_parameter < 0)
+							 active_parameter += renderer->GetNumParameters ();
+						if (active_parameter >= renderer->GetNumParameters ())
+							 active_parameter = 0;
+					}, false },
+				{
+					"Edit Specular ", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_PARAMS_SPECULAR;
+							submenu = 0;
+						}
+					}, false },
+				{ "Back", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = MAIN_MENU;
+							submenu = 0;
+						}
+					}, false }
+			}
+		},
+		{
+			"Edit Specular of Material ", [&] (void) {
+				font.Print (active_parameter + 1);
+			},
+			{
+				{ "Model ", [&] (void) {
+#define NUM_SPECULAR_MODELS 5
+						const char *models[NUM_SPECULAR_MODELS] = {
+							"None", "Gaussian", "Phong", "Beckmann", "Cook-Torrance"
+						};
+						font.Print (models[renderer->GetParameters (active_parameter)
+															 .specular.model]);
+					}, [&] (int what) {
+						int model;
+						model = renderer->GetParameters (active_parameter).specular.model;
+						model += what;
+						if (model >= NUM_SPECULAR_MODELS)
+							 model = 0;
+						if (model < 0)
+							 model = NUM_SPECULAR_MODELS - 1;
+						renderer->GetParameters (active_parameter).specular.model = model;
+						renderer->UpdateParameters (active_parameter);
+					}, false },
+				{ "", [&] (void) {
+						float val;
+						val = renderer->GetParameters (active_parameter)
+						.specular.param1;
+						switch (renderer->GetParameters (active_parameter).specular.model)
+						{
+						case 0:
+							font.Print ("Ignored ", val);
+							break;
+						case 1:
+						case 3:
+						case 4:
+							font.Print ("Smoothness ", val);
+							break;
+						case 2:
+							font.Print ("Shininess ", val);
+							break;
+						}
+					}, [&] (int what) {
+						float val;
+						val = renderer->GetParameters (active_parameter)
+						.specular.param1;
+						val += what * timefactor;
+						renderer->GetParameters (active_parameter).specular.param1
+						= val;
+						renderer->UpdateParameters (active_parameter);
+					}, true },
+				{ "", [&] (void) {
+						float val;
+						val = renderer->GetParameters (active_parameter)
+						.specular.param2;
+						switch (renderer->GetParameters (active_parameter).specular.model)
+						{
+						case 0:
+						case 2:
+						case 3:
+							font.Print ("Ignored ", val);
+							break;
+						case 1:
+							font.Print ("Gauss factor ", val);
+							break;
+						case 4:
+							font.Print ("Fresnel factor ", val);
+							break;
+						}
+					}, [&] (int what) {
+						float val;
+						val = renderer->GetParameters (active_parameter)
+						.specular.param2;
+						val += what * timefactor;
+						renderer->GetParameters (active_parameter).specular.param2
+						= val;
+						renderer->UpdateParameters (active_parameter);
+					}, true },
+				{ "Back", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_PARAMS;
 							submenu = 0;
 						}
 					}, false }

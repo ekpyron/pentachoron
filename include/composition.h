@@ -67,6 +67,8 @@ public:
 		* \param threshold the luminance threshold
 		*/
 	 void SetLuminanceThreshold (float threshold);
+	 float GetScreenLimit (void);
+	 void SetScreenLimit (float limit);
 	 /** Set mode.
 		* Sets the composition mode.
 		* \param mode Composition mode to use.
@@ -93,6 +95,7 @@ private:
 		* displayed on screen.
 		*/
 	 gl::Texture screen;
+	 GLfloat screenlimit;
 	 /** Glow effect.
 		* This class handles the glow effect.
 		*/

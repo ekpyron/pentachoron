@@ -19,7 +19,7 @@
 
 Composition::Composition (Renderer *parent)
 	: renderer (parent), glow (parent), shadow_alpha (0.7),
-		luminance_threshold (0.75)
+		luminance_threshold (0.75), screenlimit (64.0)
 {
 }
 
@@ -109,6 +109,16 @@ float Composition::GetLuminanceThreshold (void)
 	return luminance_threshold;
 }
 
+void Composition::SetScreenLimit (float limit)
+{
+	screenlimit = limit;
+}
+
+GLfloat Composition::GetScreenLimit (void)
+{
+	return screenlimit;
+}
+
 void Composition::SetShadowAlpha (float alpha)
 {
 	if (alpha < 0)
@@ -151,17 +161,17 @@ void Composition::Frame (float timefactor)
 		 glm::mat4 shadowmat;
 		 glm::vec4 eye;
 		 glm::vec4 center;
-		 GLfloat luminance_threshold;
-		 GLfloat shadow_alpha;
-		 GLuint mode;
-		 cl_uint num_lights;
 		 struct
 		 {
 				GLuint size;
-				float limit;
-				float exponent;
-				GLuint padding;
+				GLfloat exponent;
+				GLfloat threshold;
+				GLfloat glowlimit;
 		 } glow;
+		 GLfloat shadow_alpha;
+		 GLuint mode;
+		 cl_uint num_lights;
+		 GLfloat screenlimit;
 	} Info;
 	std::vector<cl::Memory> mem = { screenmem, glowmem,
 																	renderer->gbuffer.colormem,
@@ -182,12 +192,13 @@ void Composition::Frame (float timefactor)
 		 (renderer->shadowmap.GetMat ());
 	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
 	info.center = glm::vec4 (renderer->camera.GetCenter (), 0.0);
-	info.luminance_threshold = luminance_threshold;
 	info.shadow_alpha = shadow_alpha;
+	info.glow.threshold = luminance_threshold;
 	info.glow.size = glow.GetSize ();
-	info.glow.limit = glow.GetLimit ();
+	info.glow.glowlimit = glow.GetLimit ();
 	info.glow.exponent = glow.GetExponent ();
 	info.mode = mode;
+	info.screenlimit = GetScreenLimit ();
 
 	composition.SetArg (9, renderer->GetLightMem ());
 	composition.SetArg (10, sizeof (Info), &info);
