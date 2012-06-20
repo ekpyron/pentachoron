@@ -57,10 +57,18 @@ public:
 		* Obtains the width of the contained shadow map.
 		*/
 	 GLuint GetHeight (void) const;
+	 cl::Memory &GetMem (void);
+	 gl::Texture &GetMap (void);
+	 glm::mat4 GetMat (void);
+private:
 	 /** Shadow map.
 		* A texture containing the actual shadow map.
 		*/
 	 gl::Texture shadowmap;
+	 /** Shadow map mem.
+		* OpenCL memory object used to access the shadow map.
+		*/
+	 cl::Memory shadowmem;
 	 /** Temporary storage.
 		* A texture used as temporary storage for blurring the shadow map.
 		*/
@@ -75,7 +83,6 @@ public:
 		* of the shadow caster. Stored in a smart uniform wrapper.
 		*/
 	 gl::SmartUniform<glm::mat4> projmat;
-private:
 	 /** Shadow map width.
 		*/
 	 GLuint width;

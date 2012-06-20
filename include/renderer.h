@@ -24,7 +24,6 @@
 #include "windowgrid.h"
 #include "camera.h"
 #include "shadowmap.h"
-#include "shadowpass.h"
 #include "interface.h"
 #include "composition.h"
 #include "light.h"
@@ -64,7 +63,7 @@ public:
 /* TODO: make as much as possible private */
 	 Geometry geometry;
 	 GBuffer gbuffer;
-	 ShadowPass shadowpass;
+	 ShadowMap shadowmap;
 	 FinalPass finalpass;
 	 WindowGrid windowgrid;
 	 Composition composition;

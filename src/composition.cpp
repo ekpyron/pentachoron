@@ -81,7 +81,7 @@ bool Composition::Init (void)
 	composition.SetArg (3, renderer->gbuffer.depthmem);
 	composition.SetArg (4, renderer->gbuffer.normalmem);
 	composition.SetArg (5, renderer->gbuffer.specularmem);
-	composition.SetArg (6, renderer->shadowpass.GetShadowMaskMem ());
+	composition.SetArg (6, renderer->shadowmap.GetMem ());
 	composition.SetArg (7, renderer->gbuffer.fragidxmem);
 	composition.SetArg (8, renderer->gbuffer.fraglistmem);
 
@@ -148,6 +148,7 @@ void Composition::Frame (float timefactor)
 	{
 		 glm::vec4 projinfo;
 		 glm::mat4 vmatinv;
+		 glm::mat4 shadowmat;
 		 glm::vec4 eye;
 		 glm::vec4 center;
 		 GLfloat luminance_threshold;
@@ -169,7 +170,7 @@ void Composition::Frame (float timefactor)
 																	renderer->gbuffer.depthmem,
 																	renderer->gbuffer.fraglistmem,
 																	renderer->gbuffer.fragidxmem,
-																	renderer->shadowpass.GetShadowMaskMem () };
+																	renderer->shadowmap.GetMem () };
 	Info info;
 
 	info.num_lights = renderer->GetNumLights ();
@@ -177,6 +178,8 @@ void Composition::Frame (float timefactor)
 	info.projinfo = renderer->camera.GetProjInfo ();
 	info.vmatinv = glm::transpose
 		 (glm::inverse (renderer->camera.GetViewMatrix ()));
+	info.shadowmat = glm::transpose
+		 (renderer->shadowmap.GetMat ());
 	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
 	info.center = glm::vec4 (renderer->camera.GetCenter (), 0.0);
 	info.luminance_threshold = luminance_threshold;

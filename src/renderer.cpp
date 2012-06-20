@@ -18,7 +18,7 @@
 #include <fstream>
 
 Renderer::Renderer (void)
-	: geometry (this), shadowpass (this),
+	: geometry (this), shadowmap (this),
 		finalpass (this), gbuffer (this),
 #ifdef DEBUG
 		memory (0),
@@ -71,7 +71,7 @@ bool Renderer::Init (void)
 		 return false;
 
 	(*logstream) << "Initialize Shadow Pass..." << std::endl;
-	if (!shadowpass.Init ())
+	if (!shadowmap.Init ())
 		 return false;
 
 	float max = -100;
@@ -318,7 +318,7 @@ void Renderer::Frame (void)
 
 	gbuffer.Render (geometry);
 
-	shadowpass.Render (0, geometry, shadows[0]);
+	shadowmap.Render (0, geometry, shadows[0]);
 
 	composition.Frame (timefactor);
 

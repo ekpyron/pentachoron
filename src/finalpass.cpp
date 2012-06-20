@@ -486,7 +486,7 @@ void FinalPass::Render (void)
 		break;
 	case 6:
 		renderer->windowgrid.sampler.Bind (0);
-		renderer->shadowpass.GetShadowMask ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer->shadowmap.GetMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 2;
 		break;
 	default:
