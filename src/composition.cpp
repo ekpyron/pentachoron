@@ -19,7 +19,7 @@
 
 Composition::Composition (Renderer *parent)
 	: renderer (parent), glow (parent), shadow_alpha (0.7),
-		luminance_threshold (0.75), screenlimit (64.0)
+		luminance_threshold (0.75), screenlimit (64.0), mode (0)
 {
 }
 
