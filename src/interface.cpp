@@ -903,13 +903,23 @@ Interface::Interface (Renderer *parent)
 							break;
 						}
 					}, [&] (int what) {
-						float val;
-						val = renderer->GetParameters (active_parameter)
-						.specular.param1;
-						val += what * timefactor;
-						renderer->GetParameters (active_parameter).specular.param1
-						= val;
-						renderer->UpdateParameters (active_parameter);
+						if (!what) {
+							float defaults[NUM_SPECULAR_MODELS] = {
+								0.25, 0.25, 2.0, 0.25, 0.25
+							};
+							renderer->GetParameters (active_parameter).specular.param1
+							= defaults [renderer->GetParameters (active_parameter)
+													.specular.model];
+							renderer->UpdateParameters (active_parameter);
+						} else {
+							float val;
+							val = renderer->GetParameters (active_parameter)
+							.specular.param1;
+							val += what * timefactor;
+							renderer->GetParameters (active_parameter).specular.param1
+							= val;
+							renderer->UpdateParameters (active_parameter);
+						}
 					}, true },
 				{ "", [&] (void) {
 						float val;
@@ -930,13 +940,23 @@ Interface::Interface (Renderer *parent)
 							break;
 						}
 					}, [&] (int what) {
-						float val;
-						val = renderer->GetParameters (active_parameter)
-						.specular.param2;
-						val += what * timefactor;
-						renderer->GetParameters (active_parameter).specular.param2
-						= val;
-						renderer->UpdateParameters (active_parameter);
+						if (!what) {
+							float defaults[NUM_SPECULAR_MODELS] = {
+								1.0, 1.0, 1.0, 1.0, 1.0
+							};
+							renderer->GetParameters (active_parameter).specular.param2
+							= defaults [renderer->GetParameters (active_parameter)
+													.specular.model];
+							renderer->UpdateParameters (active_parameter);
+						} else {
+							float val;
+							val = renderer->GetParameters (active_parameter)
+							.specular.param2;
+							val += what * timefactor;
+							renderer->GetParameters (active_parameter).specular.param2
+							= val;
+							renderer->UpdateParameters (active_parameter);
+						}
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
