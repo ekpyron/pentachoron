@@ -12,6 +12,8 @@ constant float4 small4 = (float4) (0.001, 0.001, 0.001, 0.001);
 
 // maximum depth layers
 #define DEPTHLAYERS 8
+// maximum number of lights per tile
+#define MAX_LIGHTS_PER_TILE 4096
 
 // the gbuffer data of one fragment.
 struct PixelData
@@ -274,7 +276,8 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	param = parameters[material];
 
 	// iterate over lights
-	for (int i = 0; i < num_light_indices; i++)
+	for (int i = 0; i < min ((uint)MAX_LIGHTS_PER_TILE,
+	    	     	    	 num_light_indices); i++)
 	{
 		global struct Light *light;
 
@@ -393,10 +396,27 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 }
 
 // determine whether a light affects a given bounding box
-// TODO: maybe this can be simplified further
+// TODO: fix the box culling (commented out below;
+//   	 it produces artifacts for specific angles)
 bool culllight (global struct Light *light, float3 boxmin, float3 boxmax)
 {
+	float3 sphere;
+	float radius;
+	radius = 0.5 * fast_distance (boxmin, boxmax);
+	sphere = 0.5 * (boxmin + boxmax);
+
+	float dist;
 	#pragma unroll
+	for (uchar i = 0; i < 6; i++)
+	{
+		dist = dot (light->frustum.planes[i].xyz, sphere)
+		       + light->frustum.planes[i].w;
+		if (dist <= -radius)
+		   return false;
+	}
+	return true;
+	
+/*	#pragma unroll
 	for (uchar i = 0; i < 6; i++)
 	{
 		float4 plane = light->frustum.planes[i];
@@ -425,7 +445,7 @@ bool culllight (global struct Light *light, float3 boxmin, float3 boxmax)
 		return false;
 	}
 
-	return true;
+	return true;*/
 }
 
 // determine which lights affect the current tile
@@ -445,7 +465,7 @@ void getlightindices (local ushort *light_indices,
 	// TODO: this still assumes hard-coded 256 threads
 	for (int pass = 0; pass < ((num_lights+255)>>8); pass++)
 	{
-		if (offset < num_lights)
+		if (offset + (pass<<8) < num_lights)
 		{
 			// perform the light culling
 			if (culllight (&lights[(pass<<8) + offset],
@@ -454,13 +474,10 @@ void getlightindices (local ushort *light_indices,
 				// add the light to the per work-group
 				// (i.e. per tile) list of lights
 				uint index = atom_inc (num_light_indices);
-				if (index < 256)
+				if (index < MAX_LIGHTS_PER_TILE)
 			   	   light_indices[index] = (pass<<8) + offset;
 				else
-				{
-				   *num_light_indices = 255;
 				   return;
-				}
 			}
 		}
 	}
@@ -518,7 +535,7 @@ kernel void composition (write_only image2d_t screen,
 	boxmin_int = 4294967295;
 	boxmax_int = 0;
 
-	local ushort light_indices[256];
+	local ushort light_indices[MAX_LIGHTS_PER_TILE];
 	uint indices[DEPTHLAYERS];
 	float depth;
 	float2 pos;
@@ -621,8 +638,6 @@ kernel void composition (write_only image2d_t screen,
 	boxmax.z = native_divide ((float)boxmax_int, 4294967295.0);
 	getpos (&boxmax, &info);
 
-	barrier (CLK_LOCAL_MEM_FENCE);
-
 	// obtain the light indices affecting the current tile
 	getlightindices (light_indices, &num_light_indices, boxmin_int,
 			 boxmax_int, lights, info.num_lights,
@@ -634,7 +649,8 @@ kernel void composition (write_only image2d_t screen,
 
 	if (info.mode == 1) { // output number of lighs per tile
 	
-	float f = native_divide ((float) num_light_indices, 255.0f);
+	float f = native_divide ((float) num_light_indices,
+	      	  		 MAX_LIGHTS_PER_TILE - 1);
 
 	if (f < 0.25)
 	   pixel = 2 * f * ((float4) (0, 0, 1, 1));
