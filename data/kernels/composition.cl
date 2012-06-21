@@ -13,7 +13,7 @@ constant float4 small4 = (float4) (0.001, 0.001, 0.001, 0.001);
 // maximum depth layers
 #define DEPTHLAYERS 8
 // maximum number of lights per tile
-#define MAX_LIGHTS_PER_TILE 4096
+#define MAX_LIGHTS_PER_TILE 256
 
 // the gbuffer data of one fragment.
 struct PixelData
