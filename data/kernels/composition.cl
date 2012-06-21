@@ -92,21 +92,18 @@ struct Info
 // material parameter
 struct Parameter
 {
-	struct
-	{
-		unsigned int model;
-		union {
-		      float smoothness;
-		      float shininess;
-		      float param1;
-		};
-		union {
-		      float fresnel;
-		      float gaussfactor;
-		      float param2;
-		};
-		float padding;
-	} specular;
+	unsigned int model;
+	union {
+	      float smoothness;
+	      float shininess;
+	      float param1;
+	};
+	union {
+	      float fresnel;
+	      float gaussfactor;
+	      float param2;
+	};
+	float padding;
 };
 
 // compute reflection vector
@@ -157,9 +154,8 @@ float specular_gaussian (float3 normal, float3 halfVec,
 {
 	float e;
 	e = acos (dot (normal, halfVec));
-	e = native_divide (clamp (e, 0.0, 1.0),
-	    		   param->specular.smoothness);
-	return param->specular.gaussfactor * native_exp (-e * e);
+	e = native_divide (clamp (e, 0.0, 1.0), param->smoothness);
+	return param->gaussfactor * native_exp (-e * e);
 }
 
 float specular_phong (float3 viewDir, float3 lightDir, float3 normal,
@@ -167,7 +163,7 @@ float specular_phong (float3 viewDir, float3 lightDir, float3 normal,
 {
 	float k;
 	k = dot (viewDir, reflect (-lightDir, normal));
-	k = native_powr (k, param->specular.shininess);
+	k = native_powr (k, param->shininess);
 	return k;
 }
 
@@ -179,7 +175,7 @@ float specular_beckmann (float3 normal, float3 halfVec,
 	e = clamp (e, 0.0, 1.0);
 	e = native_cos (e);
 	e = e * e;
-	m = param->specular.smoothness;
+	m = param->smoothness;
 	m = m * m;
 	return native_divide (native_exp (-native_divide (1 - e, e * m)),
 	       		      (M_PI * m * e * e));
@@ -189,7 +185,7 @@ float specular_cooktorrance (float3 viewDir, float3 lightDir,
       			     float3 normal, float3 halfVec,
       			     struct Parameter *param)
 {
-	float fresnel = param->specular.fresnel;
+	float fresnel = param->fresnel;
 	float k;
 
 	k = specular_beckmann (normal, halfVec, param);
@@ -266,6 +262,9 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	if (getpos (&pos, info) == 1.0)
 	   return compute_sky (pos, info);
 
+	float3 viewDir = fast_normalize
+	       	       	 (info->eye.xyz - pos.xyz);
+
 	// get material information
 	material = data->specular.w * 255.0;
 	if (material >= num_parameters)
@@ -296,7 +295,6 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		if (attenuation < 0.001)
 		   continue;
 
-		float spotEffect = 1.0;
 		float angle;
 		
 		// compute the (cosine of the) angle to spot light direction
@@ -310,16 +308,14 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		// apply penumbra
 		if (angle < light->spot.penumbra.cosine)
 		{
-		   spotEffect = native_divide (angle - light->spot.cosine,
-		   			       light->spot.penumbra.cosine
-				   	       - light->spot.cosine);
+		   attenuation *= native_divide (angle - light->spot.cosine,
+		   			         light->spot.penumbra.cosine
+				   	         - light->spot.cosine);
 		}
 
-		// apply specular exponent
-		spotEffect *= native_powr (angle, light->spot.exponent);
+		// apply spot exponent
+		attenuation *= native_powr (angle, light->spot.exponent);
 
-		// add spot effect to the attenuation
-		attenuation *= spotEffect;
 		if (attenuation < 0.001)
 		   continue;
 		
@@ -329,48 +325,40 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		// compute normal dot light direction
 		float NdotL;
 		NdotL = max (dot (normal, lightDir), 0.0f);
-		
-		// add this light to overall diffuse light color
-		diffuse += attenuation * NdotL * light->color.xyz;
+		float3 halfVec = fast_normalize (viewDir + lightDir);
+		float d = 0.0, s = 0.0;
 
-		// calculate specular component
-		if (param.specular.model != 0)
+		switch (param.model)
 		{
-			// normal
-			float3 viewDir = fast_normalize
-			       	       	 (info->eye.xyz - pos.xyz);
-			lightDir = fast_normalize (lightDir);
-			float3 halfVec = fast_normalize (viewDir + lightDir);
-
-			float k;
-
-			switch (param.specular.model)
-			{
-				case 1:
-				     k = specular_gaussian (normal, halfVec,
-				       	 		    &param);
-				break;
-				case 2:
-				     k = specular_phong (viewDir, lightDir,
-				       	 		 normal, &param);
-				break;
-				case 3:
-				     k = specular_beckmann (normal, halfVec,
-				       	 		    &param);
-				break;
-				case 4:
-				     k = specular_cooktorrance
-				       (viewDir, lightDir, normal,
-				        halfVec, &param);
-				break;	
-				default:
-				     k = 0;
-				break;
-			}
-			
-			specular += attenuation * light->specular.xyz * k;
-
+			case 0:
+			     d = NdotL;
+			     break;
+			case 1:
+			     d = NdotL;
+			     s = specular_gaussian (normal, halfVec, &param);
+			     break;
+			case 2:
+			     d = NdotL;
+			     s = specular_phong (viewDir, lightDir,
+			       	 		 normal, &param);
+			     break;
+			case 3:
+			     d = NdotL;
+			     s = specular_beckmann (normal, halfVec,
+				       	 	    &param);
+			     break;
+			case 4:
+			     d = NdotL;
+			     s = specular_cooktorrance (viewDir, lightDir,
+			       	 		        normal, halfVec,
+							&param);
+			     break;
+			default:
+			     break;
 		}
+		// add this light to overall diffuse light color
+		diffuse += attenuation * light->color.xyz * d;
+		specular += attenuation * light->specular.xyz * s;
 	}
 
 	float4 pixel;

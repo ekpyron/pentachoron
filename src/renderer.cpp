@@ -146,32 +146,32 @@ bool Renderer::Init (void)
 				std::string model = specular["model"].as<std::string> ("none");
 				if (!model.compare ("gaussian"))
 				{
-					parameter.specular.model = 1;
-					parameter.specular.smoothness = specular["smoothness"].as<float>
+					parameter.model = 1;
+					parameter.smoothness = specular["smoothness"].as<float>
 						 (0.25f);
-					parameter.specular.gaussfactor = specular["gaussfactor"].as<float>
+					parameter.gaussfactor = specular["gaussfactor"].as<float>
 						 (1.0f);
 				}
 				else if (!model.compare ("phong"))
 				{
-					parameter.specular.model = 2;
-					parameter.specular.shininess = specular["shininess"].as<float>
+					parameter.model = 2;
+					parameter.shininess = specular["shininess"].as<float>
 						 (2.0f);
-					parameter.specular.param2 = 1.0f;
+					parameter.param2 = 1.0f;
 				}
 				else if (!model.compare ("beckmann"))
 				{
-					parameter.specular.model = 3;
-					parameter.specular.smoothness = specular["smoothness"].as<float>
+					parameter.model = 3;
+					parameter.smoothness = specular["smoothness"].as<float>
 						 (0.25);
-					parameter.specular.param2 = 1.0f;
+					parameter.param2 = 1.0f;
 				}
 				else if (!model.compare ("cooktorrance"))
 				{
-					parameter.specular.model = 4;
-					parameter.specular.smoothness = specular["smoothness"].as<float>
+					parameter.model = 4;
+					parameter.smoothness = specular["smoothness"].as<float>
 						 (0.25f);
-					parameter.specular.fresnel = specular["fresnel"].as<float> (1.0f);
+					parameter.fresnel = specular["fresnel"].as<float> (1.0f);
 				}
 				else
 				{
@@ -179,9 +179,9 @@ bool Renderer::Init (void)
 						 (*logstream) << "The parameter file " << filename
 													<< " contains an unknown specular model:"
 													<< model << std::endl;
-					parameter.specular.model = 0;
-					parameter.specular.param1 = 0.25f;
-					parameter.specular.param2 = 1.0f;
+					parameter.model = 0;
+					parameter.param1 = 0.25f;
+					parameter.param2 = 1.0f;
 				}
 			}
 			parameters.push_back (parameter);

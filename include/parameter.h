@@ -21,23 +21,20 @@
 
 typedef struct _Parameter
 {
-	 struct
+	 unsigned int model;
+	 union
 	 {
-			unsigned int model;
-			union
-			{
-				 float smoothness;
-				 float shininess;
-				 float param1;
-			};
-			union
-			{
-				 float gaussfactor;
-				 float fresnel;
-				 float param2;
-			};
-			float padding;
-	 } specular;
+			float smoothness;
+			float shininess;
+			float param1;
+	 };
+	 union
+	 {
+			float gaussfactor;
+			float fresnel;
+			float param2;
+	 };
+	 float padding;
 } Parameter;
 
 

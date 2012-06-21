@@ -33,7 +33,6 @@
 #define EDIT_TONE_MAPPING_AVG_LUM 13
 #define EDIT_ANTIALIASING         14
 #define EDIT_PARAMS               15
-#define EDIT_PARAMS_SPECULAR      16
 
 extern bool running;
 
@@ -844,62 +843,39 @@ Interface::Interface (Renderer *parent)
 						if (active_parameter >= renderer->GetNumParameters ())
 							 active_parameter = 0;
 					}, false },
-				{
-					"Edit Specular ", NULL, [&] (int what) {
-						if (!what)
-						{
-							menu = EDIT_PARAMS_SPECULAR;
-							submenu = 0;
-						}
-					}, false },
-				{ "Back", NULL, [&] (int what) {
-						if (!what)
-						{
-							menu = MAIN_MENU;
-							submenu = 0;
-						}
-					}, false }
-			}
-		},
-		{
-			"Edit Specular of Material ", [&] (void) {
-				font.Print (active_parameter + 1);
-			},
-			{
-				{ "Model ", [&] (void) {
+				{ "Model: ", [&] (void) {
 #define NUM_SPECULAR_MODELS 5
 						const char *models[NUM_SPECULAR_MODELS] = {
 							"None", "Gaussian", "Phong", "Beckmann", "Cook-Torrance"
 						};
-						font.Print (models[renderer->GetParameters (active_parameter)
-															 .specular.model]);
+						font.Print (models[renderer->GetParameters
+															 (active_parameter).model]);
 					}, [&] (int what) {
 						int model;
-						model = renderer->GetParameters (active_parameter).specular.model;
+						model = renderer->GetParameters (active_parameter).model;
 						model += what;
 						if (model >= NUM_SPECULAR_MODELS)
 							 model = 0;
 						if (model < 0)
 							 model = NUM_SPECULAR_MODELS - 1;
-						renderer->GetParameters (active_parameter).specular.model = model;
+						renderer->GetParameters (active_parameter).model = model;
 						renderer->UpdateParameters (active_parameter);
 					}, false },
 				{ "", [&] (void) {
 						float val;
-						val = renderer->GetParameters (active_parameter)
-						.specular.param1;
-						switch (renderer->GetParameters (active_parameter).specular.model)
+						val = renderer->GetParameters (active_parameter).param1;
+						switch (renderer->GetParameters (active_parameter).model)
 						{
 						case 0:
-							font.Print ("Ignored ", val);
+							font.Print ("Ignored: ", val);
 							break;
 						case 1:
 						case 3:
 						case 4:
-							font.Print ("Smoothness ", val);
+							font.Print ("Smoothness: ", val);
 							break;
 						case 2:
-							font.Print ("Shininess ", val);
+							font.Print ("Shininess: ", val);
 							break;
 						}
 					}, [&] (int what) {
@@ -907,36 +883,32 @@ Interface::Interface (Renderer *parent)
 							float defaults[NUM_SPECULAR_MODELS] = {
 								0.25, 0.25, 2.0, 0.25, 0.25
 							};
-							renderer->GetParameters (active_parameter).specular.param1
-							= defaults [renderer->GetParameters (active_parameter)
-													.specular.model];
+							renderer->GetParameters (active_parameter).param1
+							= defaults [renderer->GetParameters (active_parameter).model];
 							renderer->UpdateParameters (active_parameter);
 						} else {
 							float val;
-							val = renderer->GetParameters (active_parameter)
-							.specular.param1;
+							val = renderer->GetParameters (active_parameter).param1;
 							val += what * timefactor;
-							renderer->GetParameters (active_parameter).specular.param1
-							= val;
+							renderer->GetParameters (active_parameter).param1 = val;
 							renderer->UpdateParameters (active_parameter);
 						}
 					}, true },
 				{ "", [&] (void) {
 						float val;
-						val = renderer->GetParameters (active_parameter)
-						.specular.param2;
-						switch (renderer->GetParameters (active_parameter).specular.model)
+						val = renderer->GetParameters (active_parameter).param2;
+						switch (renderer->GetParameters (active_parameter).model)
 						{
 						case 0:
 						case 2:
 						case 3:
-							font.Print ("Ignored ", val);
+							font.Print ("Ignored: ", val);
 							break;
 						case 1:
-							font.Print ("Gauss factor ", val);
+							font.Print ("Gauss factor: ", val);
 							break;
 						case 4:
-							font.Print ("Fresnel factor ", val);
+							font.Print ("Fresnel factor: ", val);
 							break;
 						}
 					}, [&] (int what) {
@@ -944,24 +916,21 @@ Interface::Interface (Renderer *parent)
 							float defaults[NUM_SPECULAR_MODELS] = {
 								1.0, 1.0, 1.0, 1.0, 1.0
 							};
-							renderer->GetParameters (active_parameter).specular.param2
-							= defaults [renderer->GetParameters (active_parameter)
-													.specular.model];
+							renderer->GetParameters (active_parameter).param2
+							= defaults [renderer->GetParameters (active_parameter).model];
 							renderer->UpdateParameters (active_parameter);
 						} else {
 							float val;
-							val = renderer->GetParameters (active_parameter)
-							.specular.param2;
+							val = renderer->GetParameters (active_parameter).param2;
 							val += what * timefactor;
-							renderer->GetParameters (active_parameter).specular.param2
-							= val;
+							renderer->GetParameters (active_parameter).param2 = val;
 							renderer->UpdateParameters (active_parameter);
 						}
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{
-							menu = EDIT_PARAMS;
+							menu = MAIN_MENU;
 							submenu = 0;
 						}
 					}, false }
