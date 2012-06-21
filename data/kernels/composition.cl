@@ -392,19 +392,37 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	return pixel;
 }
 
-// determine whether a light affects a given bounding sphere
-bool culllight (global struct Light *light, float3 sphere, float radius)
+// determine whether a light affects a given bounding box
+// TODO: maybe this can be simplified further
+bool culllight (global struct Light *light, float3 boxmin, float3 boxmax)
 {
-	float dist;
-
-	// frustum culling for each plane
 	#pragma unroll
 	for (uchar i = 0; i < 6; i++)
 	{
-		dist = dot (light->frustum.planes[i].xyz, sphere)
-	       	       + light->frustum.planes[i].w;
-		if (dist <= -radius)
-	   	   return false;
+		float4 plane = light->frustum.planes[i];
+		if (dot (plane.xyz, boxmin) + plane.w > 0)
+		    continue;
+		if (plane.x * boxmax.x + plane.y * boxmin.y
+		    + plane.z * boxmin.z + plane.w > 0)
+		    continue;
+		if (plane.x * boxmin.x + plane.y * boxmax.y
+		    + plane.z * boxmin.z + plane.w > 0)
+		    continue;
+		if (plane.x * boxmax.x + plane.y * boxmax.y
+		    + plane.z * boxmin.z + plane.w > 0)
+		    continue;
+		if (plane.x * boxmin.x + plane.y * boxmin.y
+		    + plane.z * boxmax.z + plane.w > 0)
+		    continue;
+		if (plane.x * boxmax.x + plane.y * boxmin.y
+		    + plane.z * boxmax.z + plane.w > 0)
+		    continue;
+		if (plane.x * boxmin.x + plane.y * boxmax.y
+		    + plane.z * boxmax.z + plane.w > 0)
+		    continue;
+		if (dot (plane.xyz, boxmax) + plane.w > 0)
+		    continue;
+		return false;
 	}
 
 	return true;
@@ -415,7 +433,7 @@ void getlightindices (local ushort *light_indices,
      		      local uint *num_light_indices,
      		      int boxmin_int, int boxmax_int,
 		      global struct Light *lights, uint num_lights,
-		      float4 sphere, float radius)
+		      float3 boxmin, float3 boxmax)
 {
 	uint offset = mad24 (get_local_id (1), get_local_size (0),
 	     	      	     get_local_id (0));
@@ -431,7 +449,7 @@ void getlightindices (local ushort *light_indices,
 		{
 			// perform the light culling
 			if (culllight (&lights[(pass<<8) + offset],
-			   	       sphere.xyz, radius))
+			   	       boxmin, boxmax))
 			{
 				// add the light to the per work-group
 				// (i.e. per tile) list of lights
@@ -482,8 +500,6 @@ kernel void composition (write_only image2d_t screen,
 	    y = get_global_id (1);
 
 	local float gxf, gyf;
-	local float4 sphere;
-	local float radius;
 	local uint boxmin_int, boxmax_int;
 	local uint num_light_indices;
 
@@ -601,15 +617,13 @@ kernel void composition (write_only image2d_t screen,
 	boxmax.y = gyf;
 	boxmax.z = native_divide ((float)boxmax_int, 4294967295.0);
 	getpos (&boxmax, &info);
-	radius = 0.5 * fast_distance (boxmin, boxmax);
-	sphere = 0.5 * (boxmin + boxmax);
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
 	// obtain the light indices affecting the current tile
 	getlightindices (light_indices, &num_light_indices, boxmin_int,
 			 boxmax_int, lights, info.num_lights,
-			 sphere, radius);
+			 boxmin.xyz, boxmax.xyz);
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
