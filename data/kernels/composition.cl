@@ -457,7 +457,10 @@ void getlightindices (local ushort *light_indices,
 				if (index < 256)
 			   	   light_indices[index] = (pass<<8) + offset;
 				else
+				{
 				   *num_light_indices = 255;
+				   return;
+				}
 			}
 		}
 	}
@@ -632,7 +635,17 @@ kernel void composition (write_only image2d_t screen,
 	if (info.mode == 1) { // output number of lighs per tile
 	
 	float f = native_divide ((float) num_light_indices, 255.0f);
-	pixel = f * ((float4) (1, 1, 1, 1));
+
+	if (f < 0.25)
+	   pixel = 2 * f * ((float4) (0, 0, 1, 1));
+	else if (f < 0.5)
+	   pixel = (0.5 + 2 * (f - 0.25)) * ((float4) (0, 1, 0, 1));
+	else if (f < 0.75)
+	   pixel = (0.5 + 2 * (f - 0.5)) * ((float4) (1, 1, 0, 1));
+	else if (f < 1)
+	   pixel = (0.5 + 2 * (f - 0.75)) * ((float4) (1, 0, 0, 1));
+	else
+	   pixel = (float4) (1, 1, 1, 1);
 	write_imagef (screen, (int2) (x, y), pixel);
 	write_imagef (glowmap, (int2) (x, y), (float4) (0, 0, 0, 0));
 

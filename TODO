@@ -2,4 +2,5 @@
 
 * Think about removing the initial glow map produced by the composition
   kernel and use the screen map instead.
-  
+
+* Fix light culling for all angles.  
