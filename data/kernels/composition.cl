@@ -118,8 +118,6 @@ float3 reflect (float3 I, float3 N)
 float getpos (float4 *pos, struct Info *info)
 {
 	float depth = pos->z;
-	if (depth == 1.0)
-	   return depth;
 	pos->w = 1;
 	pos->xyz = mad (pos->xyz, 2, -1);
 
@@ -131,6 +129,15 @@ float getpos (float4 *pos, struct Info *info)
 	      		     + pos->w * (info->projinfo.z + info->projinfo.w),
 			     2 * info->projinfo.z * info->projinfo.w);
 
+	if (depth == 1.0)
+	{
+		pos->x = dot ((float4) (info->vmatinv[0].xyz, 0), p);
+		pos->y = dot ((float4) (info->vmatinv[1].xyz, 0), p);
+		pos->z = dot ((float4) (info->vmatinv[2].xyz, 0), p);
+		pos->w = 1.0;
+		return depth;
+	}
+
 	pos->x = dot (info->vmatinv[0], p);
 	pos->y = dot (info->vmatinv[1], p);
 	pos->z = dot (info->vmatinv[2], p);
@@ -141,14 +148,141 @@ float getpos (float4 *pos, struct Info *info)
 	return depth;
 }
 
+float perez (float cos_theta, float gamma, float cos_gamma,
+      	     float A, float B, float C, float D, float E)
+{
+	return (1 + A * exp (B / cos_theta))
+	       * (1 + C * exp (D * gamma) + E * cos_gamma * cos_gamma);
+}
+
+float zenith_Y (float T, float theta_s)
+{
+	float chi = (4.0 / 9.0 - T / 120.0) * (M_PI - 2.0 * theta_s);
+	float Y = (4.0453 * T - 4.9710) * tan (chi) - 0.2155 * T + 2.4192;
+	return Y;
+}
+
+float zenith_x (float T, float theta_s)
+{
+	float4 theta;
+	theta.w = 1;
+	theta.z = theta_s;
+	theta.y = theta_s * theta_s;
+	theta.x = theta_s * theta.y;
+
+	float3 tmp;
+	tmp.x = dot ((float4) (0.00165, -0.00374, 0.00208, 0), theta);
+	tmp.y = dot ((float4) (-0.02902, 0.06377, -0.03202, 0.00394), theta);
+	tmp.z = dot ((float4) (0.11693, -0.21196, 0.06052, 0.25886), theta);
+
+	return dot ((float3) (T * T, T, 1), tmp);
+}
+
+float zenith_y (float T, float theta_s)
+{
+	float4 theta;
+	theta.w = 1;
+	theta.z = theta_s;
+	theta.y = theta_s * theta_s;
+	theta.x = theta_s * theta.y;
+
+	float3 tmp;
+	tmp.x = dot ((float4) (0.00275, -0.00610, 0.00316, 0), theta);
+	tmp.y = dot ((float4) (-0.04214, 0.08970, -0.04153, 0.00515), theta);
+	tmp.z = dot ((float4) (0.15346, -0.26756, 0.06669, 0.26688), theta);
+
+	return dot ((float3) (T * T, T, 1), tmp);
+}
+
+float3 Yxy2RGB (float3 Yxy)
+{
+	float3 XYZ;
+	float3 rgb;
+	XYZ.x = Yxy.x * Yxy.y / Yxy.z;
+	XYZ.y = Yxy.x;
+	XYZ.z = Yxy.x * (1 - Yxy.y - Yxy.z) / Yxy.z;
+
+	rgb.x = dot ((float3) (2.3706743f, -0.9000405f,-0.4706338f), XYZ);
+	rgb.y = dot ((float3) (-0.5138850f, 1.4253036f, 0.0885814f), XYZ);
+	rgb.z = dot ((float3) (0.0052982f, -0.0146949f, 1.0093968f), XYZ);
+
+	return rgb;
+}
+
 // computes sky color (TODO)
 float4 compute_sky (float4 p, struct Info *info)
 {
-	float4 color;
-	color.xyz = (float3) (0.0, 0.0, 0.10);
-	color.w = 1.0;
+	float T = 2.0; // Turbidity
 
-	return color;
+	float phi_s = 0;
+	float theta_s = M_PI / 4.0;
+	float cos_theta_s = cos (theta_s);
+
+	float3 sun_direction = (sin (phi_s) * cos (theta_s),
+		      	        sin (phi_s) * sin (theta_s),
+			 	cos (theta_s));
+
+	float3 dir;
+	float3 sundir;
+
+	sundir = fast_normalize (sun_direction);
+	dir = fast_normalize (p.xyz);
+
+	float AY, BY, CY, DY, EY;
+	AY = 0.17872 * T - 1.46303;
+	BY = -0.35540 * T + 0.42749;
+	CY = -0.02266 * T + 5.32505;
+	DY = 0.12064 * T - 2.57705;
+	EY = -0.06696 * T + 0.37027;
+
+	float Ax, Bx, Cx, Dx, Ex;
+	Ax = -0.01925 * T - 0.25922;
+	Bx = -0.06651 * T + 0.00081;
+	Cx = -0.00041 * T + 0.21247;
+	Dx = -0.06409 * T - 0.89887;
+	Ex = -0.00325 * T + 0.04517;
+
+	float Ay, By, Cy, Dy, Ey;
+	Ay = -0.01669 * T - 0.26078;
+	By = -0.09495 * T + 0.00921;
+	Cy = -0.00792 * T + 0.21023;
+	Dy = -0.04405 * T - 1.65369;
+	Ey = -0.01092 * T + 0.05291;
+
+	float cos_theta = dir.y;
+	float theta = acos (cos_theta);
+	if (cos_theta < 0)
+	{
+	   //return (float4) (0, 0, 0, 1);
+	   cos_theta = -cos_theta;
+	}
+
+	float cos_gamma = dot (sundir, dir);
+	float gamma = acos (cos_gamma);
+
+	float Yz = zenith_Y (T, theta_s);
+	float xz = zenith_x (T, theta_s);
+	float yz = zenith_y (T, theta_s);
+
+	float3 Yxy;
+
+	Yxy.x = Yz * perez (cos_theta, gamma, cos_gamma,
+	      	       	    AY, BY, CY, DY, EY)
+		/ perez (1, theta_s, cos_theta_s,
+		    	 AY, BY, CY, DY, EY);
+
+	Yxy.y = xz * perez (cos_theta, gamma, cos_gamma,
+	      	       	    Ax, Bx, Cx, Dx, Ex)
+		/ perez (1, theta_s, cos_theta_s,
+		    	 Ax, Bx, Cx, Dx, Ex);
+
+	Yxy.z = yz * perez (cos_theta, gamma, cos_gamma,
+	      	       	    Ay, By, Cy, Dy, Ey)
+		/ perez (1, theta_s, cos_theta_s,
+		    	 Ay, By, Cy, Dy, Ey);
+
+	float4 color = (float4) (0.04*Yxy2RGB (Yxy), 1.0);
+	return clamp (color, 0.0, 2.0);
 }
 
 float specular_gaussian (float3 normal, float3 halfVec,
