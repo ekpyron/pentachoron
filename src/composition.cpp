@@ -216,8 +216,32 @@ void Composition::Frame (float timefactor)
 	info.screenlimit = GetScreenLimit ();
 
 	{
-		float phi = 0.0f;
-		info.sky.sun.theta = DRE_PI / 4.0f;
+
+		float standardMeridian = 0; // timezone * 15.0
+		float longitude = 0;
+		float latitude = 50.0 * DRE_PI / 180.0; // in radians!
+		int julianDay = 151 + 22;
+		float timeOfDay = 5.0;
+
+		float solarTime = timeOfDay +
+			 (0.170 * sin (4 * DRE_PI * (julianDay - 80) / 373)
+				- 0.129 * sin (2 * DRE_PI * (julianDay - 8) / 355))
+			 + (standardMeridian - longitude) / 15.0;
+		float solarDeclination = (0.4093 * sin (2 * DRE_PI
+																						* (julianDay - 81) / 368));
+		float solarAltitude = asin (sin (latitude) * sin (solarDeclination)
+																- cos (latitude) * cos (solarDeclination)
+																* cos (DRE_PI * solarTime / 12));
+		float opp = -cos (solarDeclination) * sin (DRE_PI * solarTime / 12);
+		float adj = -(cos (latitude) * sin (solarDeclination)
+									+ sin (latitude) * cos (solarDeclination)
+									* cos (DRE_PI * solarTime / 12));
+		float solarAzimuth = atan2 (opp, adj);
+
+
+		float phi = -solarAzimuth;
+		info.sky.sun.theta = DRE_PI / 2.0 - solarAltitude;
+
 		float sin_theta = sin (info.sky.sun.theta);
 		info.sky.sun.cos_theta = cos (info.sky.sun.theta);
 		info.sky.sun.direction = glm::vec4 (sin_theta * sin (phi),
