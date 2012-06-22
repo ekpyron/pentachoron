@@ -84,6 +84,19 @@ public:
 		* \returns a referene to the screen texture
 		*/
 	 const gl::Texture &GetScreen (void);
+
+	 typedef struct SkyParams
+	 {
+			float turbidity;
+			float latitude;
+			float longitude;
+			int timezone;
+			int month;
+			int day;
+			float time;
+	 } SkyParams;
+
+	 SkyParams &GetSkyParams (void);
 	 /** Get glow.
 		* Returns a reference to the internal glow effect class.
 		* \returns a referene to the Glow class
@@ -133,6 +146,9 @@ private:
 		* Stores the mode of composition.
 		*/
 	 GLuint mode;
+
+	 SkyParams sky;
+
 	 /** Parent renderer.
 		* The Renderer this class belongs to.
 		*/

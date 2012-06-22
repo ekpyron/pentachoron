@@ -19,7 +19,8 @@
 
 Composition::Composition (Renderer *parent)
 	: renderer (parent), glow (parent), shadow_alpha (0.7),
-		luminance_threshold (0.75), screenlimit (64.0), mode (0)
+		luminance_threshold (0.75), screenlimit (64.0), mode (0),
+		sky ( { 3.0, 0.0, 50.0, 0, 4, 22, 10.0 } )
 {
 }
 
@@ -152,6 +153,11 @@ GLuint Composition::GetMode (void)
 	return mode;
 }
 
+Composition::SkyParams &Composition::GetSkyParams (void)
+{
+	return sky;
+}
+
 void Composition::Frame (float timefactor)
 {
 	typedef struct Info
@@ -216,12 +222,14 @@ void Composition::Frame (float timefactor)
 	info.screenlimit = GetScreenLimit ();
 
 	{
-
-		float standardMeridian = 0; // timezone * 15.0
-		float longitude = 0;
-		float latitude = 50.0 * DRE_PI / 180.0; // in radians!
-		int julianDay = 151 + 22;
-		float timeOfDay = 5.0;
+		// TODO: clean this up
+		float standardMeridian = sky.timezone * 15.0;
+		float longitude = sky.longitude * DRE_PI / 180.0;
+		float latitude = sky.latitude * DRE_PI / 180.0;
+		int monthdays[12] = { 0, 31, 59, 90, 120, 151, 181,
+													212, 243, 273, 304, 334 };
+		int julianDay = monthdays[sky.month] + sky.day;
+		float timeOfDay = sky.time;
 
 		float solarTime = timeOfDay +
 			 (0.170 * sin (4 * DRE_PI * (julianDay - 80) / 373)
@@ -247,7 +255,7 @@ void Composition::Frame (float timefactor)
 		info.sky.sun.direction = glm::vec4 (sin_theta * sin (phi),
 																				info.sky.sun.cos_theta,
 																				sin_theta * cos (phi), 0.0f);
-		float T = 6.0;
+		float T = sky.turbidity;
 		info.sky.turbidity = T;
 
 		info.sky.perezY[0] = 0.17872 * T - 1.46303;
