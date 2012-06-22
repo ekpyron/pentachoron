@@ -212,16 +212,15 @@ float3 Yxy2RGB (float3 Yxy)
 // computes sky color (TODO)
 float4 compute_sky (float4 p, struct Info *info)
 {
-	float T = 2.0; // Turbidity
+	float T = 6.0; // Turbidity
 
 	float phi_s = 0;
-	float theta_s = M_PI / 4.0;
+	float theta_s = M_PI/4.0;
 	float cos_theta_s = cos (theta_s);
 
-	float3 sun_direction = (sin (phi_s) * cos (theta_s),
-		      	        sin (phi_s) * sin (theta_s),
-			 	cos (theta_s));
-
+	float3 sun_direction = (float3) (sin (theta_s) * sin (phi_s),
+	       		       		 cos (theta_s),
+					 sin (theta_s) * cos (phi_s));
 	float3 dir;
 	float3 sundir;
 
