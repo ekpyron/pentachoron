@@ -85,6 +85,21 @@ struct Info
 		float limit;
 		
 	} glow;
+	struct
+	{
+		struct
+		{
+			float4 direction;
+			float theta;
+			float cos_theta;
+			float padding[2];
+		} sun;
+		float turbidity;
+		float perezY[5];
+		float perezx[5];
+		float perezy[5];
+		float4 zenithYxy;
+	} sky;
 	float shadow_alpha;
 	unsigned int mode;
 	unsigned int num_lights;
@@ -149,49 +164,11 @@ float getpos (float4 *pos, struct Info *info)
 }
 
 float perez (float cos_theta, float gamma, float cos_gamma,
-      	     float A, float B, float C, float D, float E)
+      	     float c[5])
 {
-	return (1 + A * exp (B / cos_theta))
-	       * (1 + C * exp (D * gamma) + E * cos_gamma * cos_gamma);
-}
-
-float zenith_Y (float T, float theta_s)
-{
-	float chi = (4.0 / 9.0 - T / 120.0) * (M_PI - 2.0 * theta_s);
-	float Y = (4.0453 * T - 4.9710) * tan (chi) - 0.2155 * T + 2.4192;
-	return Y;
-}
-
-float zenith_x (float T, float theta_s)
-{
-	float4 theta;
-	theta.w = 1;
-	theta.z = theta_s;
-	theta.y = theta_s * theta_s;
-	theta.x = theta_s * theta.y;
-
-	float3 tmp;
-	tmp.x = dot ((float4) (0.00165, -0.00374, 0.00208, 0), theta);
-	tmp.y = dot ((float4) (-0.02902, 0.06377, -0.03202, 0.00394), theta);
-	tmp.z = dot ((float4) (0.11693, -0.21196, 0.06052, 0.25886), theta);
-
-	return dot ((float3) (T * T, T, 1), tmp);
-}
-
-float zenith_y (float T, float theta_s)
-{
-	float4 theta;
-	theta.w = 1;
-	theta.z = theta_s;
-	theta.y = theta_s * theta_s;
-	theta.x = theta_s * theta.y;
-
-	float3 tmp;
-	tmp.x = dot ((float4) (0.00275, -0.00610, 0.00316, 0), theta);
-	tmp.y = dot ((float4) (-0.04214, 0.08970, -0.04153, 0.00515), theta);
-	tmp.z = dot ((float4) (0.15346, -0.26756, 0.06669, 0.26688), theta);
-
-	return dot ((float3) (T * T, T, 1), tmp);
+	return (1 + c[0] * exp (c[1] / cos_theta))
+	       * (1 + c[2] * exp (c[3] * gamma)
+	       	  + c[4] * cos_gamma * cos_gamma);
 }
 
 float3 Yxy2RGB (float3 Yxy)
@@ -212,41 +189,16 @@ float3 Yxy2RGB (float3 Yxy)
 // computes sky color (TODO)
 float4 compute_sky (float4 p, struct Info *info)
 {
-	float T = 6.0; // Turbidity
+	float T = info->sky.turbidity;
 
-	float phi_s = 0;
-	float theta_s = M_PI/4.0;
-	float cos_theta_s = cos (theta_s);
+	float theta_s = info->sky.sun.theta;
+	float cos_theta_s = info->sky.sun.cos_theta;
 
-	float3 sun_direction = (float3) (sin (theta_s) * sin (phi_s),
-	       		       		 cos (theta_s),
-					 sin (theta_s) * cos (phi_s));
 	float3 dir;
 	float3 sundir;
 
-	sundir = fast_normalize (sun_direction);
+	sundir = info->sky.sun.direction.xyz;
 	dir = fast_normalize (p.xyz);
-
-	float AY, BY, CY, DY, EY;
-	AY = 0.17872 * T - 1.46303;
-	BY = -0.35540 * T + 0.42749;
-	CY = -0.02266 * T + 5.32505;
-	DY = 0.12064 * T - 2.57705;
-	EY = -0.06696 * T + 0.37027;
-
-	float Ax, Bx, Cx, Dx, Ex;
-	Ax = -0.01925 * T - 0.25922;
-	Bx = -0.06651 * T + 0.00081;
-	Cx = -0.00041 * T + 0.21247;
-	Dx = -0.06409 * T - 0.89887;
-	Ex = -0.00325 * T + 0.04517;
-
-	float Ay, By, Cy, Dy, Ey;
-	Ay = -0.01669 * T - 0.26078;
-	By = -0.09495 * T + 0.00921;
-	Cy = -0.00792 * T + 0.21023;
-	Dy = -0.04405 * T - 1.65369;
-	Ey = -0.01092 * T + 0.05291;
 
 	float cos_theta = dir.y;
 	float theta = acos (cos_theta);
@@ -259,26 +211,25 @@ float4 compute_sky (float4 p, struct Info *info)
 	float cos_gamma = dot (sundir, dir);
 	float gamma = acos (cos_gamma);
 
-	float Yz = zenith_Y (T, theta_s);
-	float xz = zenith_x (T, theta_s);
-	float yz = zenith_y (T, theta_s);
-
 	float3 Yxy;
 
-	Yxy.x = Yz * perez (cos_theta, gamma, cos_gamma,
-	      	       	    AY, BY, CY, DY, EY)
+	Yxy.x = info->sky.zenithYxy.x
+	      	* perez (cos_theta, gamma, cos_gamma,
+	      	         info->sky.perezY)
 		/ perez (1, theta_s, cos_theta_s,
-		    	 AY, BY, CY, DY, EY);
+		    	 info->sky.perezY);
 
-	Yxy.y = xz * perez (cos_theta, gamma, cos_gamma,
-	      	       	    Ax, Bx, Cx, Dx, Ex)
+	Yxy.y = info->sky.zenithYxy.y
+	      	* perez (cos_theta, gamma, cos_gamma,
+	      	       	 info->sky.perezx)
 		/ perez (1, theta_s, cos_theta_s,
-		    	 Ax, Bx, Cx, Dx, Ex);
+		    	 info->sky.perezx);
 
-	Yxy.z = yz * perez (cos_theta, gamma, cos_gamma,
-	      	       	    Ay, By, Cy, Dy, Ey)
+	Yxy.z = info->sky.zenithYxy.z
+	      	* perez (cos_theta, gamma, cos_gamma,
+	      	       	 info->sky.perezy)
 		/ perez (1, theta_s, cos_theta_s,
-		    	 Ay, By, Cy, Dy, Ey);
+		    	 info->sky.perezy);
 
 	float4 color = (float4) (0.04*Yxy2RGB (Yxy), 1.0);
 	return clamp (color, 0.0, 2.0);
@@ -378,7 +329,8 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		      read_only image2d_t shadowmap,
 		      struct Info *info,
 		      unsigned int num_parameters,
-		      global struct Parameter *parameters)
+		      global struct Parameter *parameters,
+		      bool *issky)
 {
 	float4 pos;
 	uint offset = mad24 (get_local_id (1), get_local_size (0),
@@ -395,7 +347,12 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 
 	// reconstruct world space position
 	if (getpos (&pos, info) == 1.0)
+	{
+	   *issky = true;
 	   return compute_sky (pos, info);
+	}
+
+	*issky = false;
 
 	float3 viewDir = fast_normalize
 	       	       	 (info->eye.xyz - pos.xyz);
@@ -808,22 +765,26 @@ kernel void composition (write_only image2d_t screen,
 	opaquedata.normal = read_imagef (normalmap, sampler, (int2) (x, y));
 	opaquedata.depth = depth;
 
+	// TODO: this variable is an evil hack
+	bool issky;
+
 	// compute the opaque color
 	pixel = compute_pixel (&opaquedata, pos, lights, num_light_indices,
 	      		       light_indices, shadowmap, &info,
-			       num_parameters, parameters);
+			       num_parameters, parameters, &issky);
 
 	// iterate over the depth layers
 	for (uchar i = 0; i < num; i++)
 	{
 		float4 pixel2;
+		bool ignored; // TODO: evil hack continued...
 
 		// compute the color for a depth layer
 		// (back to front)
 		pixel2 = compute_pixel (&data[num - i - 1], pos, lights,
 		       	 	        num_light_indices, light_indices,
 		       	 	        shadowmap, &info,
-					num_parameters, parameters);
+					num_parameters, parameters, &ignored);
 		// blend the next layer with the current colot
 		pixel = mix (pixel, pixel2, pixel2.w);
 	}
@@ -834,6 +795,13 @@ kernel void composition (write_only image2d_t screen,
 	// glow effect
 	if (info.glow.size > 0)
 	{
+		if (issky)
+		{
+			write_imagef (glowmap, (int2) (x, y),
+				      (float4) (0.0, 0.0, 0.0, 0.0));
+			return;
+		}
+
 		pixel = native_powr (pixel, info.glow.exponent);
 		// compute the luminance of the current pixel
 		float luminance = dot ((float3) (0.2126, 0.7152, 0.0722),

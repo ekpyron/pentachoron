@@ -168,6 +168,21 @@ void Composition::Frame (float timefactor)
 				GLfloat threshold;
 				GLfloat glowlimit;
 		 } glow;
+		 struct
+		 {
+				struct
+				{
+					 glm::vec4 direction;
+					 float theta;
+					 float cos_theta;
+					 float padding[2];
+				} sun;
+				float turbidity;
+				float perezY[5];
+				float perezx[5];
+				float perezy[5];
+				glm::vec4 zenithYxy;
+		 } sky;
 		 GLfloat shadow_alpha;
 		 GLuint mode;
 		 cl_uint num_lights;
@@ -199,6 +214,66 @@ void Composition::Frame (float timefactor)
 	info.glow.exponent = glow.GetExponent ();
 	info.mode = mode;
 	info.screenlimit = GetScreenLimit ();
+
+	{
+		float phi = 0.0f;
+		info.sky.sun.theta = DRE_PI / 4.0f;
+		float sin_theta = sin (info.sky.sun.theta);
+		info.sky.sun.cos_theta = cos (info.sky.sun.theta);
+		info.sky.sun.direction = glm::vec4 (sin_theta * sin (phi),
+																				info.sky.sun.cos_theta,
+																				sin_theta * cos (phi), 0.0f);
+		float T = 6.0;
+		info.sky.turbidity = T;
+
+		info.sky.perezY[0] = 0.17872 * T - 1.46303;
+		info.sky.perezY[1] = -0.35540 * T + 0.42749;
+		info.sky.perezY[2] = -0.02266 * T + 5.32505;
+		info.sky.perezY[3] = 0.12064 * T - 2.57705;
+		info.sky.perezY[4] = -0.06696 * T + 0.37027;
+
+		info.sky.perezx[0] = -0.01925 * T - 0.25922;
+		info.sky.perezx[1] = -0.06651 * T + 0.00081;
+		info.sky.perezx[2] = -0.00041 * T + 0.21247;
+		info.sky.perezx[3] = -0.06409 * T - 0.89887;
+		info.sky.perezx[4] = -0.00325 * T + 0.04517;
+
+
+		info.sky.perezy[0] = -0.01669 * T - 0.26078;
+		info.sky.perezy[1] = -0.09495 * T + 0.00921;
+		info.sky.perezy[2] = -0.00792 * T + 0.21023;
+		info.sky.perezy[3] = -0.04405 * T - 1.65369;
+		info.sky.perezy[4] = -0.01092 * T + 0.05291;
+
+		{
+			float chi = (4.0 / 9.0 - T / 120.0) * (M_PI - 2.0 * info.sky.sun.theta);
+			info.sky.zenithYxy.x = (4.0453 * T - 4.9710) * tan (chi)
+				 - 0.2155 * T + 2.4192;
+		}
+		{
+			glm::vec4 th;
+			th.w = 1;
+			th.z = info.sky.sun.theta;
+			th.y = th.z * th.z;
+			th.x = th.y * th.z;
+
+			glm::vec3 T3 (T * T, T, 1);
+
+			glm::mat4x3 matx (0.00165, -0.02902, 0.11693,
+											 -0.00374, 0.06377, -0.21196,
+											 0.00208, -0.03202, 0.06052,
+											 0, 0.00394, 0.25886);
+
+			info.sky.zenithYxy.y = glm::dot (T3, matx * th);
+
+			glm::mat4x3 maty (0.00275, -0.04214, 0.15346,
+												-0.00610, 0.08970, -0.26756,
+												0.00316, -0.04153, 0.06669,
+												0, 0.00515, 0.26688);
+
+			info.sky.zenithYxy.z = glm::dot (T3, maty * th);
+		}
+	}
 
 	composition.SetArg (9, renderer->GetLightMem ());
 	composition.SetArg (10, sizeof (Info), &info);
