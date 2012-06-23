@@ -2,13 +2,12 @@
 #pragma OPENCL EXTENSION cl_nv_pragma_unroll : enable
 #endif
 
-
 const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE|CLK_FILTER_NEAREST
 			  |CLK_ADDRESS_CLAMP_TO_EDGE;
 const sampler_t samplerB = CLK_NORMALIZED_COORDS_TRUE|CLK_FILTER_LINEAR
 			  |CLK_ADDRESS_CLAMP_TO_EDGE;
 
-constant float4 small4 = (float4) (0.001, 0.001, 0.001, 0.001);
+constant float4 small4 = (float4) (0.001f, 0.001f, 0.001f, 0.001f);
 
 // maximum depth layers
 #define DEPTHLAYERS 8
@@ -126,7 +125,7 @@ struct Parameter
 // compute reflection vector
 float3 reflect (float3 I, float3 N)
 {
-	return mad (-2.0 * dot (N, I), N, I);
+	return mad (-2.0f * dot (N, I), N, I);
 }
 
 // reconstruct position from depth
@@ -144,12 +143,12 @@ float getpos (float4 *pos, struct Info *info)
 	      		     + pos->w * (info->projinfo.z + info->projinfo.w),
 			     2 * info->projinfo.z * info->projinfo.w);
 
-	if (depth == 1.0)
+	if (depth == 1.0f)
 	{
 		pos->x = dot ((float4) (info->vmatinv[0].xyz, 0), p);
 		pos->y = dot ((float4) (info->vmatinv[1].xyz, 0), p);
 		pos->z = dot ((float4) (info->vmatinv[2].xyz, 0), p);
-		pos->w = 1.0;
+		pos->w = 1.0f;
 		return depth;
 	}
 
@@ -158,16 +157,16 @@ float getpos (float4 *pos, struct Info *info)
 	pos->z = dot (info->vmatinv[2], p);
 	pos->w = dot (info->vmatinv[3], p);
 	pos->xyz = native_divide (pos->xyz, pos->w);
-	pos->w = 1.0;
+	pos->w = 1.0f;
 
 	return depth;
 }
 
 float perez (float cos_theta, float gamma, float cos_gamma,
-      	     float c[5])
+      	      float c[5])
 {
-	return (1 + c[0] * exp (c[1] / cos_theta))
-	       * (1 + c[2] * exp (c[3] * gamma)
+	return (1 + c[0] * native_exp (native_divide (c[1], cos_theta)))
+	       * (1 + c[2] * native_exp (c[3] * gamma)
 	       	  + c[4] * cos_gamma * cos_gamma);
 }
 
@@ -175,9 +174,9 @@ float3 Yxy2RGB (float3 Yxy)
 {
 	float3 XYZ;
 	float3 rgb;
-	XYZ.x = Yxy.x * Yxy.y / Yxy.z;
+	XYZ.x = native_divide (Yxy.x * Yxy.y, Yxy.z);
 	XYZ.y = Yxy.x;
-	XYZ.z = Yxy.x * (1 - Yxy.y - Yxy.z) / Yxy.z;
+	XYZ.z = native_divide (Yxy.x * (1 - Yxy.y - Yxy.z), Yxy.z);
 
 	rgb.x = dot ((float3) (2.3706743f, -0.9000405f,-0.4706338f), XYZ);
 	rgb.y = dot ((float3) (-0.5138850f, 1.4253036f, 0.0885814f), XYZ);
@@ -204,7 +203,6 @@ float4 compute_sky (float4 p, struct Info *info)
 	float theta = acos (cos_theta);
 	if (cos_theta < 0)
 	{
-	   //return (float4) (0, 0, 0, 1);
 	   cos_theta = -cos_theta;
 	}
 
@@ -214,25 +212,25 @@ float4 compute_sky (float4 p, struct Info *info)
 	float3 Yxy;
 
 	Yxy.x = info->sky.zenithYxy.x
-	      	* perez (cos_theta, gamma, cos_gamma,
-	      	         info->sky.perezY)
-		/ perez (1, theta_s, cos_theta_s,
-		    	 info->sky.perezY);
+	      	* native_divide (perez (cos_theta, gamma, cos_gamma,
+	      	         	        info->sky.perezY),
+			 	 perez (1, theta_s, cos_theta_s,
+		    	 	        info->sky.perezY));
 
 	Yxy.y = info->sky.zenithYxy.y
-	      	* perez (cos_theta, gamma, cos_gamma,
-	      	       	 info->sky.perezx)
-		/ perez (1, theta_s, cos_theta_s,
-		    	 info->sky.perezx);
+	      	* native_divide (perez (cos_theta, gamma, cos_gamma,
+	      	       	 	        info->sky.perezx),
+				 perez (1, theta_s, cos_theta_s,
+		    	 	        info->sky.perezx));
 
 	Yxy.z = info->sky.zenithYxy.z
-	      	* perez (cos_theta, gamma, cos_gamma,
-	      	       	 info->sky.perezy)
-		/ perez (1, theta_s, cos_theta_s,
-		    	 info->sky.perezy);
+	      	* native_divide (perez (cos_theta, gamma, cos_gamma,
+	      	       	 	        info->sky.perezy),
+				 perez (1, theta_s, cos_theta_s,
+		    	 	        info->sky.perezy));
 
-	float4 color = (float4) (0.04*Yxy2RGB (Yxy), 1.0);
-	return clamp (color, 0.0, 2.0);
+	float4 color = (float4) (0.04f * Yxy2RGB (Yxy), 1.0f);
+	return clamp (color, 0.0f, 2.0f);
 }
 
 float specular_gaussian (float3 normal, float3 halfVec,
@@ -240,7 +238,7 @@ float specular_gaussian (float3 normal, float3 halfVec,
 {
 	float e;
 	e = acos (dot (normal, halfVec));
-	e = native_divide (clamp (e, 0.0, 1.0), param->smoothness);
+	e = native_divide (clamp (e, 0.0f, 1.0f), param->smoothness);
 	return param->gaussfactor * native_exp (-e * e);
 }
 
@@ -258,7 +256,7 @@ float specular_beckmann (float3 normal, float3 halfVec,
 {
 	float e, m;
 	e = acos (dot (normal, halfVec));
-	e = clamp (e, 0.0, 1.0);
+	e = clamp (e, 0.0f, 1.0f);
 	e = native_cos (e);
 	e = e * e;
 	m = param->smoothness;
@@ -287,7 +285,7 @@ float specular_cooktorrance (float3 viewDir, float3 lightDir,
 	float g, g1, g2;
 	g1 = native_divide (2 * NdotH * NdotV, VdotH);
 	g2 = native_divide (2 * NdotH * NdotL, VdotH);
-	g = min (1.0, min (g1, g2));
+	g = min (1.0f, min (g1, g2));
 	return native_divide (k * f * g, NdotV);
 }
 
@@ -304,21 +302,21 @@ float compute_shadow (read_only image2d_t shadowmap, float4 pos,
 	if (lspos.w < 0 || lspos.x < 0 || lspos.y < 0
 	    || lspos.x > 1 || lspos.y > 1)
 	{
-		return 1.0;
+		return 1.0f;
 	}
 	float2 moments = read_imagef (shadowmap, samplerB,
 	       	       	 	      lspos.xy).xy;
 
 	if (lspos.z <= moments.x)
 	{
-	   return 1.0;
+	   return 1.0f;
 	}
 
 	float variance = moments.y - (moments.x * moments.x);
-	variance = max (variance, 0.00001);
+	variance = max (variance, 0.00001f);
 	float d = lspos.z - moments.x;
 	float p = native_divide (variance, variance + d * d);
-	return smoothstep (0.1, 1.0, p);
+	return smoothstep (0.1f, 1.0f, p);
 }
 
 // compute the pixel value for some given gbuffer data
@@ -343,10 +341,10 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 
 	pos.xy = p;
 	pos.z = data->depth;
-	pos.w = 1.0;
+	pos.w = 1.0f;
 
 	// reconstruct world space position
-	if (getpos (&pos, info) == 1.0)
+	if (getpos (&pos, info) == 1.0f)
 	{
 	   *issky = true;
 	   return compute_sky (pos, info);
@@ -358,10 +356,10 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	       	       	 (info->eye.xyz - pos.xyz);
 
 	// get material information
-	material = data->specular.w * 255.0;
+	material = data->specular.w * 255.0f;
 	if (material >= num_parameters)
 	{
-		return (float4) (1.0, 0.0, 0.0, 1.0);
+		return (float4) (1.0f, 0.0f, 0.0f, 1.0f);
 	}
 	param = parameters[material];
 
@@ -385,7 +383,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 			    (mad (light->attenuation.quadratic, dist * dist,
 			    	  mad (light->attenuation.linear,
 			    	       dist, light->attenuation.scalar)));
-		if (attenuation < 0.001)
+		if (attenuation < 0.001f)
 		   continue;
 
 		float angle;
@@ -409,7 +407,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		// apply spot exponent
 		attenuation *= native_powr (angle, light->spot.exponent);
 
-		if (attenuation < 0.001)
+		if (attenuation < 0.001f)
 		   continue;
 		
 		// fetch normal
@@ -477,7 +475,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	}
 
 	// clamp the pixel
-	pixel = clamp (pixel, 0.0, info->screenlimit);
+	pixel = clamp (pixel, 0.0f, info->screenlimit);
 
 	float shadow = compute_shadow (shadowmap, pos, info);
 	pixel *= mad (shadow, info->shadow_alpha, 1 - info->shadow_alpha);
@@ -492,8 +490,8 @@ bool culllight (global struct Light *light, float3 boxmin, float3 boxmax)
 {
 	float3 sphere;
 	float radius;
-	radius = 0.5 * fast_distance (boxmin, boxmax);
-	sphere = 0.5 * (boxmin + boxmax);
+	radius = 0.5f * fast_distance (boxmin, boxmax);
+	sphere = 0.5f * (boxmin + boxmax);
 
 	float dist;
 	#pragma unroll
@@ -699,7 +697,7 @@ kernel void composition (write_only image2d_t screen,
 	// compute minimum/maximum
 	if (depth < 1.0)
 	{
-		uint d = (uint) (depth * 4294967295.0);
+		uint d = (uint) (depth * 4294967295.0f);
 		atomic_min (&boxmin_int, d);
 		atomic_max (&boxmax_int, d);
 	}
@@ -709,7 +707,7 @@ kernel void composition (write_only image2d_t screen,
 	{
 		if (data[i].depth < 1.0)
 		{
-			uint d = (uint) (data[i].depth * 4294967295.0);
+			uint d = (uint) (data[i].depth * 4294967295.0f);
 			atomic_min (&boxmin_int, d);
 			atomic_max (&boxmax_int, d);
 		}
@@ -721,11 +719,11 @@ kernel void composition (write_only image2d_t screen,
 	float4 boxmin, boxmax;
 	boxmin.x = gxf;
 	boxmin.y = gyf;
-	boxmin.z = native_divide ((float)boxmin_int, 4294967295.0);
+	boxmin.z = native_divide ((float)boxmin_int, 4294967295.0f);
 	getpos (&boxmin, &info);
 	boxmax.x = gxf;
 	boxmax.y = gyf;
-	boxmax.z = native_divide ((float)boxmax_int, 4294967295.0);
+	boxmax.z = native_divide ((float)boxmax_int, 4294967295.0f);
 	getpos (&boxmax, &info);
 
 	// obtain the light indices affecting the current tile
@@ -742,14 +740,14 @@ kernel void composition (write_only image2d_t screen,
 	float f = native_divide ((float) num_light_indices,
 	      	  		 MAX_LIGHTS_PER_TILE - 1);
 
-	if (f < 0.25)
+	if (f < 0.25f)
 	   pixel = 2 * f * ((float4) (0, 0, 1, 1));
-	else if (f < 0.5)
-	   pixel = (0.5 + 2 * (f - 0.25)) * ((float4) (0, 1, 0, 1));
-	else if (f < 0.75)
-	   pixel = (0.5 + 2 * (f - 0.5)) * ((float4) (1, 1, 0, 1));
+	else if (f < 0.5f)
+	   pixel = (0.5f + 2 * (f - 0.25f)) * ((float4) (0, 1, 0, 1));
+	else if (f < 0.75f)
+	   pixel = (0.5f + 2 * (f - 0.5f)) * ((float4) (1, 1, 0, 1));
 	else if (f < 1)
-	   pixel = (0.5 + 2 * (f - 0.75)) * ((float4) (1, 0, 0, 1));
+	   pixel = (0.5f + 2 * (f - 0.75f)) * ((float4) (1, 0, 0, 1));
 	else
 	   pixel = (float4) (1, 1, 1, 1);
 	write_imagef (screen, (int2) (x, y), pixel);
@@ -798,16 +796,16 @@ kernel void composition (write_only image2d_t screen,
 		if (issky)
 		{
 			write_imagef (glowmap, (int2) (x, y),
-				      (float4) (0.0, 0.0, 0.0, 0.0));
+				      (float4) (0.0f, 0.0f, 0.0f, 0.0f));
 			return;
 		}
 
 		pixel = native_powr (pixel, info.glow.exponent);
 		// compute the luminance of the current pixel
-		float luminance = dot ((float3) (0.2126, 0.7152, 0.0722),
+		float luminance = dot ((float3) (0.2126f, 0.7152f, 0.0722f),
 		      		       pixel.xyz);
 
-		float4 glow = (float4) (0.0, 0.0, 0.0, 0.0);
+		float4 glow = (float4) (0.0f, 0.0f, 0.0f, 0.0f);
 
 		// check against the luminance threshold
 		if (luminance > info.glow.threshold)
@@ -816,7 +814,7 @@ kernel void composition (write_only image2d_t screen,
 			glow.w = luminance;
 		}
 
-		glow = clamp (glow, 0.0, info.glow.limit);
+		glow = clamp (glow, 0.0f, info.glow.limit);
 
 		// write to glow map
 		write_imagef (glowmap, (int2) (x, y), glow);
