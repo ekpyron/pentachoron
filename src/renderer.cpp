@@ -118,7 +118,6 @@ bool Renderer::Init (void)
 			sizeof (Light) * lights.size (),
 			&lights[0], 0, NULL, NULL);
 
-	interface.AddLight ();
 	interface.AddShadow ();
 
 	{

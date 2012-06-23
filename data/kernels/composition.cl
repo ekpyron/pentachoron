@@ -185,11 +185,36 @@ float3 Yxy2RGB (float3 Yxy)
 	return rgb;
 }
 
-// computes sky color (TODO)
+float compute_sky_diffuse (float3 normal, struct Info *info)
+{
+	float theta_s = info->sky.sun.theta;
+	float cos_theta_s = info->sky.sun.cos_theta;
+
+	float3 dir;
+	float3 sundir;
+
+	sundir = info->sky.sun.direction.xyz;
+	dir = fast_normalize (normal);
+
+	float cos_theta = dir.y;
+	float theta = acos (cos_theta);
+	if (cos_theta < 0)
+	{
+	   cos_theta = -cos_theta;
+	}
+
+	float cos_gamma = dot (sundir, dir);
+	float gamma = acos (cos_gamma);
+
+	return 0.04 * info->sky.zenithYxy.x
+	      	* native_divide (perez (cos_theta, gamma, cos_gamma,
+	      	         	        info->sky.perezY),
+			 	 perez (1, theta_s, cos_theta_s,
+		    	 	        info->sky.perezY));
+}
+
 float4 compute_sky (float4 p, struct Info *info)
 {
-	float T = info->sky.turbidity;
-
 	float theta_s = info->sky.sun.theta;
 	float cos_theta_s = info->sky.sun.cos_theta;
 
@@ -338,6 +363,9 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	float3 specular = (float3) (0, 0, 0);
 	uint material;
 	struct Parameter param;
+	
+	// fetch normal
+	float3 normal = mad (data->normal.xyz, 2, -1);
 
 	pos.xy = p;
 	pos.z = data->depth;
@@ -362,6 +390,37 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		return (float4) (1.0f, 0.0f, 0.0f, 1.0f);
 	}
 	param = parameters[material];
+
+	float sky_intensity = compute_sky_diffuse (normal, info);
+	diffuse = sky_intensity * (float3) (1, 1, 1);
+
+	{
+		float3 lightDir = fast_normalize (info->sky.sun.direction.xyz);
+		float3 halfVec = fast_normalize (viewDir + lightDir);
+		float s;
+		switch (param.model)
+		{
+			case 1:
+			     s = specular_gaussian (normal, halfVec, &param);
+			     break;
+			case 2:
+			     s = specular_phong (viewDir, lightDir,
+			       	 		 normal, &param);
+			     break;
+			case 3:
+			     s = specular_beckmann (normal, halfVec,
+				       	 	    &param);
+			     break;
+			case 4:
+			     s = specular_cooktorrance (viewDir, lightDir,
+			       	 		        normal, halfVec,
+							&param);
+			     break;
+			default:
+			     break;
+		}
+		specular = s * sky_intensity * (float3) (1, 1, 1);
+	}
 
 	// iterate over lights
 	for (int i = 0; i < min ((uint)MAX_LIGHTS_PER_TILE,
@@ -410,9 +469,6 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		if (attenuation < 0.001f)
 		   continue;
 		
-		// fetch normal
-		float3 normal = mad (data->normal.xyz, 2, -1);
-
 		// compute normal dot light direction
 		float NdotL;
 		NdotL = max (dot (normal, lightDir), 0.0f);
@@ -472,6 +528,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 			specular *= data->specular.xyz;
 			pixel.xyz += specular;
 		}
+
 	}
 
 	// clamp the pixel
