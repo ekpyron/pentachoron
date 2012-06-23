@@ -18,9 +18,12 @@
 #include "renderer.h"
 
 Composition::Composition (Renderer *parent)
-	: renderer (parent), glow (parent), shadow_alpha (0.7),
-		luminance_threshold (0.75), screenlimit (64.0), mode (0),
-		sky ( { 3.0, 0.0, 50.0, 0, 4, 22, 10.0 } )
+	: renderer (parent), glow (parent),
+		luminance_threshold (0.75),
+		sky ( { 3.0, 50.0, 142, 10.0 } ),
+		info ( { glm::vec4 (0), glm::mat4 (0), glm::mat4 (0),
+					 glm::vec4 (0), glm::vec4 (0), { 0, 0.0f, 0.0f, 0.0f },
+				{}, 0.7, 0, 0, 2.0 } )
 {
 }
 
@@ -112,12 +115,12 @@ float Composition::GetLuminanceThreshold (void)
 
 void Composition::SetScreenLimit (float limit)
 {
-	screenlimit = limit;
+	info.screenlimit = limit;
 }
 
 GLfloat Composition::GetScreenLimit (void)
 {
-	return screenlimit;
+	return info.screenlimit;
 }
 
 void Composition::SetShadowAlpha (float alpha)
@@ -126,12 +129,12 @@ void Composition::SetShadowAlpha (float alpha)
 		 alpha = 0;
 	if (alpha > 1)
 		 alpha = 1;
-	shadow_alpha = alpha;
+	info.shadow_alpha = alpha;
 }
 
 float Composition::GetShadowAlpha (void)
 {
-	return shadow_alpha;
+	return info.shadow_alpha;
 }
 
 const gl::Texture &Composition::GetScreen (void)
@@ -143,57 +146,58 @@ const gl::Texture &Composition::GetScreen (void)
 
 void Composition::SetMode (GLuint m)
 {
-	mode = m;
-	if (mode >= NUM_COMPOSITIONMODES)
-		 mode = NUM_COMPOSITIONMODES - 1;
+	info.mode = m;
+	if (info.mode >= NUM_COMPOSITIONMODES)
+		 info.mode = NUM_COMPOSITIONMODES - 1;
 }
 
 GLuint Composition::GetMode (void)
 {
-	return mode;
+	return info.mode;
 }
 
-Composition::SkyParams &Composition::GetSkyParams (void)
+float Composition::GetTurbidity (void)
 {
-	return sky;
+	return sky.turbidity;
+}
+
+void Composition::SetTurbidity (float f)
+{
+	sky.turbidity = f;
+}
+
+float Composition::GetLatitude (void)
+{
+	return sky.latitude;
+}
+
+void Composition::SetLatitude (float l)
+{
+	sky.latitude = l;
+}
+
+int Composition::GetDate (void)
+{
+	return sky.date;
+}
+
+void Composition::SetDate (int d)
+{
+	sky.date = d;
+}
+
+float Composition::GetTimeOfDay (void)
+{
+	return sky.time;
+}
+
+void Composition::SetTimeOfDay (float t)
+{
+	sky.time = t;
 }
 
 void Composition::Frame (float timefactor)
 {
-	typedef struct Info
-	{
-		 glm::vec4 projinfo;
-		 glm::mat4 vmatinv;
-		 glm::mat4 shadowmat;
-		 glm::vec4 eye;
-		 glm::vec4 center;
-		 struct
-		 {
-				GLuint size;
-				GLfloat exponent;
-				GLfloat threshold;
-				GLfloat glowlimit;
-		 } glow;
-		 struct
-		 {
-				struct
-				{
-					 glm::vec4 direction;
-					 float theta;
-					 float cos_theta;
-					 float padding[2];
-				} sun;
-				float turbidity;
-				float perezY[5];
-				float perezx[5];
-				float perezy[5];
-				glm::vec4 zenithYxy;
-		 } sky;
-		 GLfloat shadow_alpha;
-		 GLuint mode;
-		 cl_uint num_lights;
-		 GLfloat screenlimit;
-	} Info;
 	std::vector<cl::Memory> mem = { screenmem, glowmem,
 																	renderer->gbuffer.colormem,
 																	renderer->gbuffer.normalmem,
@@ -202,7 +206,6 @@ void Composition::Frame (float timefactor)
 																	renderer->gbuffer.fraglistmem,
 																	renderer->gbuffer.fragidxmem,
 																	renderer->shadowmap.GetMem () };
-	Info info;
 
 	info.num_lights = renderer->GetNumLights ();
 
@@ -213,30 +216,22 @@ void Composition::Frame (float timefactor)
 		 (renderer->shadowmap.GetMat ());
 	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
 	info.center = glm::vec4 (renderer->camera.GetCenter (), 0.0);
-	info.shadow_alpha = shadow_alpha;
 	info.glow.threshold = luminance_threshold;
 	info.glow.size = glow.GetSize ();
 	info.glow.glowlimit = glow.GetLimit ();
 	info.glow.exponent = glow.GetExponent ();
-	info.mode = mode;
-	info.screenlimit = GetScreenLimit ();
 
 	{
 		// TODO: clean this up
-		float standardMeridian = sky.timezone * 15.0;
-		float longitude = sky.longitude * DRE_PI / 180.0;
 		float latitude = sky.latitude * DRE_PI / 180.0;
-		int monthdays[12] = { 0, 31, 59, 90, 120, 151, 181,
-													212, 243, 273, 304, 334 };
-		int julianDay = monthdays[sky.month] + sky.day;
-		float timeOfDay = sky.time;
 
-		float solarTime = timeOfDay +
-			 (0.170 * sin (4 * DRE_PI * (julianDay - 80) / 373)
-				- 0.129 * sin (2 * DRE_PI * (julianDay - 8) / 355))
-			 + (standardMeridian - longitude) / 15.0;
-		float solarDeclination = (0.4093 * sin (2 * DRE_PI
-																						* (julianDay - 81) / 368));
+		int day = sky.date;
+
+		float solarTime = sky.time +
+			 (0.170 * sin (4 * DRE_PI * (sky.date - 80) / 373)
+				- 0.129 * sin (2 * DRE_PI * (sky.date - 8) / 355));
+		float solarDeclination;
+		solarDeclination = (0.4093 * sin (2 * DRE_PI * (sky.date - 81) / 368));
 		float solarAltitude = asin (sin (latitude) * sin (solarDeclination)
 																- cos (latitude) * cos (solarDeclination)
 																* cos (DRE_PI * solarTime / 12));
@@ -244,10 +239,8 @@ void Composition::Frame (float timefactor)
 		float adj = -(cos (latitude) * sin (solarDeclination)
 									+ sin (latitude) * cos (solarDeclination)
 									* cos (DRE_PI * solarTime / 12));
-		float solarAzimuth = atan2 (opp, adj);
 
-
-		float phi = -solarAzimuth;
+		float phi = -atan2 (opp, adj);
 		info.sky.sun.theta = DRE_PI / 2.0 - solarAltitude;
 
 		float sin_theta = sin (info.sky.sun.theta);

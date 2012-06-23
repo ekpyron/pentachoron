@@ -79,6 +79,7 @@ public:
 		* \returns the composition mode
 		*/
 	 GLuint GetMode (void);
+
 	 /** Get screen texture.
 		* Returns a reference to the screen texture.
 		* \returns a referene to the screen texture
@@ -89,14 +90,19 @@ public:
 	 {
 			float turbidity;
 			float latitude;
-			float longitude;
-			int timezone;
-			int month;
-			int day;
+			int date;
 			float time;
 	 } SkyParams;
 
-	 SkyParams &GetSkyParams (void);
+	 float GetTurbidity (void);
+	 void SetTurbidity (float t);
+	 float GetLatitude (void);
+	 void SetLatitude (float l);
+	 int GetDate (void);
+	 void SetDate (int m);
+	 float GetTimeOfDay (void);
+	 void SetTimeOfDay (float t);
+
 	 /** Get glow.
 		* Returns a reference to the internal glow effect class.
 		* \returns a referene to the Glow class
@@ -142,12 +148,45 @@ private:
 		* OpenCL memory object referring to the glow map.
 		*/
 	 cl::Memory glowmem;
-	 /** Composition mode.
-		* Stores the mode of composition.
-		*/
-	 GLuint mode;
 
 	 SkyParams sky;
+
+	 typedef struct Info
+	 {
+			glm::vec4 projinfo;
+			glm::mat4 vmatinv;
+			glm::mat4 shadowmat;
+			glm::vec4 eye;
+			glm::vec4 center;
+			struct
+			{
+				 GLuint size;
+				 GLfloat exponent;
+				 GLfloat threshold;
+				 GLfloat glowlimit;
+			} glow;
+			struct
+			{
+				 struct
+				 {
+						glm::vec4 direction;
+						float theta;
+						float cos_theta;
+						float padding[2];
+				 } sun;
+				 float turbidity;
+				 float perezY[5];
+				 float perezx[5];
+				 float perezy[5];
+				 glm::vec4 zenithYxy;
+			} sky;
+			GLfloat shadow_alpha;
+			GLuint mode;
+			cl_uint num_lights;
+			GLfloat screenlimit;
+	 } Info;
+
+	 Info info;
 
 	 /** Parent renderer.
 		* The Renderer this class belongs to.

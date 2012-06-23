@@ -16,6 +16,7 @@
  */
 #include "interface.h"
 #include "renderer.h"
+#include <ctime>
 
 #define MAIN_MENU                 0
 #define EDIT_COMPOSITION          1
@@ -36,6 +37,22 @@
 #define EDIT_SKY                  16
 
 extern bool running;
+
+int ToOrdinalDate (int month, int day)
+{
+	if (month < 2)
+		 return month * 31 + day;
+	return int (30.6 * (month + 1) - 91.4) + day + 59;
+}
+
+void ToCalendarDate (int ordinal, int *month, int *day)
+{
+	time_t t = ordinal * 24 * 3600;
+	struct tm *tm = gmtime (&t);
+	if (month) *month = tm->tm_mon;
+	if (day) *day = tm->tm_mday;
+	return;
+}
 
 Interface::Interface (Renderer *parent)
 	: showInterface (0), menu (MAIN_MENU), submenu (0), renderer (parent),
@@ -949,71 +966,60 @@ Interface::Interface (Renderer *parent)
 			"Edit Sky Parameters", NULL,
 			{
 				{ "Turbidity ", [&] (void) {
-						font.Print (renderer->composition.GetSkyParams ().turbidity);
+						font.Print (renderer->composition.GetTurbidity ());
 					}, [&] (int what) {
-						renderer->composition.GetSkyParams ().turbidity
-						+= what * timefactor;
+						float T = renderer->composition.GetTurbidity ();
+						T += what * timefactor;
+						renderer->composition.SetTurbidity (T);
 					}, true },
 				{ "Latitude ", [&] (void) {
-						font.Print (renderer->composition.GetSkyParams ().latitude);
+						font.Print (renderer->composition.GetLatitude ());
 					}, [&] (int what) {
-						renderer->composition.GetSkyParams ().latitude
-						+= what * timefactor;
+						float L = renderer->composition.GetLatitude ();
+						L += what * timefactor;
+						renderer->composition.SetLatitude (L);
 					}, true },
-				{ "Longitude ", [&] (void) {
-						font.Print (renderer->composition.GetSkyParams ().longitude);
-					}, [&] (int what) {
-						renderer->composition.GetSkyParams ().longitude
-						+= what * timefactor;
-					}, true },
-				{ "Timezone ", [&] (void) {
-						font.Print (renderer->composition.GetSkyParams ().timezone);
-					}, [&] (int what) {
-						renderer->composition.GetSkyParams ().timezone
-						+= what;
-					}, false },
 				{ "Month ", [&] (void) {
 						const char *months[] = {
 							"January", "February","March", "April", "May", "June",
 							"July", "August", "September", "October", "November",
 							"December"
 						};
-						font.Print (months[renderer->composition.GetSkyParams ().month]);
+						int month;
+						ToCalendarDate (renderer->composition.GetDate (), &month, NULL);
+						font.Print (months[month]);
 					}, [&] (int what) {
-						int month =	renderer->composition.GetSkyParams ().month + what;
-						if (month < 0) month += 12;
-						renderer->composition.GetSkyParams ().month = month % 12;
-
-						int daysinmonth[] = { 31, 28, 31, 30, 31, 30, 31,
-																	31, 30, 31, 30, 31 };
-						if (renderer->composition.GetSkyParams ().day >= daysinmonth[month])
-						{
-							renderer->composition.GetSkyParams ().day
-								 = daysinmonth[month] - 1;
-						}
+							int month, day;
+							ToCalendarDate (renderer->composition.GetDate (), &month, &day);
+							month += what;
+							if (month < 0) month += 12;
+							month %= 12;
+							renderer->composition.SetDate (ToOrdinalDate (month, day));
 					}, false },
 				{ "Day ", [&] (void) {
-						font.Print (renderer->composition.GetSkyParams ().day + 1);
+						int day;
+						font.Print (renderer->composition.GetDate (), " => ");
+						ToCalendarDate (renderer->composition.GetDate (), NULL, &day);
+						font.Print (day);
 					}, [&] (int what) {
-						int day = renderer->composition.GetSkyParams ().day + what;
-						int daysinmonth[] = { 31, 28, 31, 30, 31, 30, 31,
-																	31, 30, 31, 30, 31 };
-						if (day <= 0)
-							 day += daysinmonth [renderer->composition.GetSkyParams ().month];
-						renderer->composition.GetSkyParams ().day
-						= day % daysinmonth [renderer->composition.GetSkyParams ().month];
+						int date;
+						date = renderer->composition.GetDate ();
+						date += what;
+						if (date <= 0) date = 1;
+						if (date > 365) date = 365;
+						renderer->composition.SetDate (date);
 					}, false },
 				{ "Time ", [&] (void) {
-						font.Print (renderer->composition.GetSkyParams ().time);
+						font.Print (renderer->composition.GetTimeOfDay ());
 					}, [&] (int what) {
 						float time;
-						time = renderer->composition.GetSkyParams ().time;
+						time = renderer->composition.GetTimeOfDay ();
 						time += what * timefactor;
 						if (time >= 24)
 							 time = 24;
 						if (time < 0)
 							 time = 0;
-						renderer->composition.GetSkyParams ().time = time;
+						renderer->composition.SetTimeOfDay (time);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -1159,13 +1165,15 @@ void Interface::Frame (float tf)
 	}
 	frames++;
 
-	if (glfwGetKey (GLFW_KEY_RIGHT))
+	if (glfwGetKey (GLFW_KEY_RIGHT) || glfwGetKey ('+')
+			|| glfwGetKey (GLFW_KEY_KP_ADD))
 	{
 		if (menus[menu].entries[submenu].repeating)
 			 menus[menu].entries[submenu].handler (1);
 	}
 
-	if (glfwGetKey (GLFW_KEY_LEFT))
+	if (glfwGetKey (GLFW_KEY_LEFT) || glfwGetKey ('-')
+			|| glfwGetKey (GLFW_KEY_KP_SUBTRACT))
 	{
 		if (menus[menu].entries[submenu].repeating)
 			 menus[menu].entries[submenu].handler (-1);
