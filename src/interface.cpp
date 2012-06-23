@@ -998,7 +998,6 @@ Interface::Interface (Renderer *parent)
 					}, false },
 				{ "Day ", [&] (void) {
 						int day;
-						font.Print (renderer->composition.GetDate (), " => ");
 						ToCalendarDate (renderer->composition.GetDate (), NULL, &day);
 						font.Print (day);
 					}, [&] (int what) {
