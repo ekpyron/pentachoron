@@ -102,6 +102,8 @@ public:
 	 void SetDate (int m);
 	 float GetTimeOfDay (void);
 	 void SetTimeOfDay (float t);
+	 glm::vec3 GetSunDirection (float &theta, float &cos_theta);
+	 glm::vec3 GetSunDirection (void);
 
 	 /** Get glow.
 		* Returns a reference to the internal glow effect class.

@@ -29,6 +29,13 @@ ShadowMap::~ShadowMap (void)
 bool ShadowMap::Init (void)
 {
 	{
+		std::vector<float> weightoffsets;
+		ComputeWeightOffsets (weightoffsets, 17);
+		buffer.Data (sizeof (GLfloat) * weightoffsets.size (),
+								 &weightoffsets[0], GL_STATIC_DRAW);
+		buffertex.Buffer (GL_RG32F, buffer);
+	}
+	{
 		gl::Shader vshader (GL_VERTEX_SHADER),
 			 fshader (GL_FRAGMENT_SHADER);
 		std::string src;
@@ -188,16 +195,80 @@ glm::mat4 ShadowMap::GetMat (void)
 		 * projmat.Get () * vmat;
 }
 
+void ShadowMap::Clear (void)
+{
+	vblurfb.Bind (GL_FRAMEBUFFER);
+	gl::ClearBufferfv (GL_COLOR, 0, (const float[]) {1.0f, 1.0f, 0.0f, 0.0f});
+	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
+}
+
 void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 												const Shadow &shadow)
 {
 	vmat = glm::lookAt (glm::vec3 (shadow.position),
 											glm::vec3 (shadow.position + shadow.direction),
 											glm::vec3 (1, 0, 0));
-	projmat.Set (glm::perspective (2 * shadow.spot.angle
-																 * 180.0f / float (DRE_PI),
-																 (float) width / (float) height,
-																 3.0f, 500.0f));
+	if (shadow.direction.w != 0.0f)
+	{
+		projmat.Set (glm::perspective (2 * shadow.spot.angle
+																	 * 180.0f / float (DRE_PI),
+																	 (float) width / (float) height,
+																	 3.0f, 500.0f));
+	}
+	else
+	{
+		/* TODO: This must be configurable */
+		glm::vec3 corners[8] = {
+			glm::vec3 (-30, -3, -30),
+			glm::vec3 (-30, -3, 30),
+			glm::vec3 (30, -3, -30),
+			glm::vec3 (30, -3, 30),
+
+			glm::vec3 (-30, 0, -30),
+			glm::vec3 (-30, 0, 30),
+			glm::vec3 (30, 0, -30),
+			glm::vec3 (30, 0, 30)
+		};
+		float dist = 42.0f;
+
+		glm::vec3 centroid (0, 0, 0);
+		for (auto i = 0; i < 8; i++)
+			 centroid += corners[i];
+		centroid /= 8;
+
+		glm::vec3 lightpos;
+
+		lightpos = centroid - dist * glm::vec3 (shadow.direction);
+		
+		vmat = glm::lookAt (lightpos, centroid, glm::vec3 (0, 1, 0));
+		for (auto i = 0; i < 8; i++)
+		{
+			corners[i] = glm::vec3 (vmat * glm::vec4 (corners[i], 1.0f));
+		}
+
+
+		glm::vec3 mins, maxes;
+		mins = maxes = corners[0];
+		for (auto i = 0; i < 8; i++)
+		{
+			if (corners[i].x > maxes.x)
+				 maxes.x = corners[i].x;
+			if (corners[i].y > maxes.y)
+				 maxes.y = corners[i].y;
+			if (corners[i].z > maxes.z)
+				 maxes.z = corners[i].z;
+			if (corners[i].x < mins.x)
+				 mins.x = corners[i].x;
+			if (corners[i].y < mins.y)
+				 mins.y = corners[i].y;
+			if (corners[i].z < mins.z)
+				 mins.z = corners[i].z;
+		}
+
+		projmat.Set (glm::ortho (mins.x, maxes.x,
+														 mins.y, maxes.y,
+														 -maxes.z, -mins.z));
+	}
 	renderer->culling.SetProjMatrix (projmat.Get ());
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
@@ -219,6 +290,9 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	gl::DepthMask (GL_FALSE);
 
 	gl::Program::UseNone ();
+
+	buffertex.Bind (GL_TEXTURE1, GL_TEXTURE_BUFFER);
+	sampler.Bind (1);
 
 	hblurfb.Bind (GL_FRAMEBUFFER);
 	hblurpipeline.Bind ();

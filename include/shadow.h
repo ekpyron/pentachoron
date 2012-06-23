@@ -27,7 +27,6 @@ typedef struct _Shadow
 	 {
 			float cosine;
 			float angle;
-			float padding[2];
 	 } spot;
 } Shadow;
 

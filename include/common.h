@@ -113,4 +113,7 @@ extern std::ostream *logstream;
 #define DRE_PI 3.14159265358979323846
 #endif
 
+float ComputeWeight (unsigned long n, unsigned long k);
+void ComputeWeightOffsets (std::vector<float> &data, GLuint size);
+
 #endif /* COMMON_H */

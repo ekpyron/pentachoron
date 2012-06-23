@@ -172,8 +172,6 @@ float compute_weight (unsigned long n, unsigned long k)
 
 void Glow::SetSize (GLuint s)
 {
-	std::vector<float> weights_data;
-	std::vector<float> offsets_data;
 	std::vector<float> data;
 
 	if (!s)
@@ -186,32 +184,7 @@ void Glow::SetSize (GLuint s)
 	if (!size)
 		 return;
 
-	for (int i = 0; i < (size+1)/2; i++)
-	{
-		weights_data.push_back
-			 (compute_weight (size + 3, ((size - 1) / 2) - i + 2));
-	}
-
-	for (int i = 0; i < weights_data.size (); i++)
-	{
-		offsets_data.push_back (float (i));
-	}
-
-	data.push_back (weights_data[0]);
-	data.push_back (offsets_data[0]);
-
-	for (int i = 1; i <= weights_data.size() >> 1; i++)
-	{
-		float weight;
-		weight = weights_data[i * 2 - 1] +
-			 weights_data[i * 2];
-		data.push_back (weight);
-		data.push_back ((offsets_data[i * 2 - 1]
-										 * weights_data[i * 2 - 1]
-										 + offsets_data[i * 2]
-										 * weights_data[i * 2])
-										/ weight);
-	}
+	ComputeWeightOffsets (data, size);
 
 	buffer.Data (sizeof (GLfloat) * data.size (),
 								&data[0], GL_STATIC_DRAW);

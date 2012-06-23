@@ -344,7 +344,19 @@ void Renderer::Frame (void)
 
 	gbuffer.Render (geometry);
 
-	shadowmap.Render (0, geometry, shadows[0]);
+	{
+		float theta, cos_theta;
+		shadows[0].direction = -glm::vec4 (composition.GetSunDirection (theta,
+																																		cos_theta),
+																			 0.0f);
+		shadows[0].position = -shadows[0].direction * 25;
+		
+
+		if (cos_theta < 0.05)
+			 shadowmap.Clear ();
+		else
+			 shadowmap.Render (0, geometry, shadows[0]);
+	}
 
 	composition.Frame (timefactor);
 

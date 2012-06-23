@@ -76,3 +76,49 @@ bool ReadFile (const std::string &filename, std::string &str)
 	}
 	return true;
 }
+
+float ComputeWeight (unsigned long n, unsigned long k)
+{
+	long double tmp;
+	tmp = 1.0 / (powl (2, n) - 2 * (1 + n));
+	for (int i = 1; i <= k; i++)
+	{
+		tmp *= (n - k + i);
+		tmp /= i;
+	}
+	return tmp;
+	
+}
+
+void ComputeWeightOffsets (std::vector<float> &data, GLuint size)
+{
+	std::vector<float> weights_data;
+	std::vector<float> offsets_data;
+	
+	for (int i = 0; i < (size+1)/2; i++)
+	{
+		weights_data.push_back
+			 (ComputeWeight (size + 3, ((size - 1) / 2) - i + 2));
+	}
+
+	for (int i = 0; i < weights_data.size (); i++)
+	{
+		offsets_data.push_back (float (i));
+	}
+
+	data.push_back (weights_data[0]);
+	data.push_back (offsets_data[0]);
+	for (int i = 1; i <= weights_data.size() >> 1; i++)
+	{
+		float weight;
+		weight = weights_data[i * 2 - 1] +
+			 weights_data[i * 2];
+		data.push_back (weight);
+		data.push_back ((offsets_data[i * 2 - 1]
+										 * weights_data[i * 2 - 1]
+										 + offsets_data[i * 2]
+										 * weights_data[i * 2])
+										/ weight);
+	}
+	return;
+}

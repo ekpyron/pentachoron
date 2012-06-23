@@ -42,6 +42,7 @@ public:
 		* \returns Whether the initialization was successful.
 		*/
 	 bool Init (void);
+	 void Clear (void);
 	 /** Render the shadow map.
 		* Renders a shadow map for the given geometry.
 		* \param shadowid ID of the shadow that is rendered.
@@ -111,6 +112,10 @@ private:
 
 	 gl::Framebuffer vblurfb;
 	 gl::Framebuffer hblurfb;
+
+	 gl::Buffer buffer;
+	 gl::Texture buffertex;
+
 	 /** Parent renderer.
 		* The Renderer this class belongs to.
 		*/

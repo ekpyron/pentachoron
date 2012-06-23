@@ -196,6 +196,42 @@ void Composition::SetTimeOfDay (float t)
 	sky.time = t;
 }
 
+glm::vec3 Composition::GetSunDirection (void)
+{
+	float theta, cos_theta;
+	return GetSunDirection (theta, cos_theta);
+}
+
+glm::vec3 Composition::GetSunDirection (float &theta, float &cos_theta)
+{
+		float latitude = sky.latitude * DRE_PI / 180.0;
+
+		int day = sky.date;
+
+		float solarTime = sky.time +
+			 (0.170 * sin (4 * DRE_PI * (sky.date - 80) / 373)
+				- 0.129 * sin (2 * DRE_PI * (sky.date - 8) / 355));
+		float solarDeclination;
+		solarDeclination = (0.4093 * sin (2 * DRE_PI * (sky.date - 81) / 368));
+		float solarAltitude = asin (sin (latitude) * sin (solarDeclination)
+																- cos (latitude) * cos (solarDeclination)
+																* cos (DRE_PI * solarTime / 12));
+		float opp = -cos (solarDeclination) * sin (DRE_PI * solarTime / 12);
+		float adj = -(cos (latitude) * sin (solarDeclination)
+									+ sin (latitude) * cos (solarDeclination)
+									* cos (DRE_PI * solarTime / 12));
+
+		float phi = -atan2 (opp, adj);
+		theta = DRE_PI / 2.0 - solarAltitude;
+
+		float sin_theta = sin (info.sky.sun.theta);
+		cos_theta = cos (info.sky.sun.theta);
+		return glm::vec3 (sin_theta * sin (phi),
+											info.sky.sun.cos_theta,
+											sin_theta * cos (phi));
+
+}
+
 void Composition::Frame (float timefactor)
 {
 	std::vector<cl::Memory> mem = { screenmem, glowmem,
@@ -222,7 +258,7 @@ void Composition::Frame (float timefactor)
 	info.glow.exponent = glow.GetExponent ();
 
 	{
-		// TODO: clean this up
+/*		// TODO: clean this up
 		float latitude = sky.latitude * DRE_PI / 180.0;
 
 		int day = sky.date;
@@ -247,7 +283,9 @@ void Composition::Frame (float timefactor)
 		info.sky.sun.cos_theta = cos (info.sky.sun.theta);
 		info.sky.sun.direction = glm::vec4 (sin_theta * sin (phi),
 																				info.sky.sun.cos_theta,
-																				sin_theta * cos (phi), 0.0f);
+																				sin_theta * cos (phi), 0.0f);*/
+		info.sky.sun.direction = glm::vec4
+			 (GetSunDirection (info.sky.sun.theta, info.sky.sun.cos_theta), 0);
 		float T = sky.turbidity;
 		info.sky.turbidity = T;
 

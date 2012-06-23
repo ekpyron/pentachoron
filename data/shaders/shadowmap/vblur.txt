@@ -1,28 +1,29 @@
 #version 420 core
 
 layout (binding = 0) uniform sampler2D image;
+layout (binding = 1) uniform samplerBuffer buffer;
 uniform vec2 invviewport;
 
 layout (location = 0) out vec2 color;
 
-const float offset[3] = float[] (0.0, 1.3846153846, 3.2307692308);
-const float weight[3] = float[] (0.2270270270, 0.3162162162, 0.0702702703);
-
 void main(void)
 {
 	vec2 c;
-	c = texture2D (image, gl_FragCoord.xy * invviewport).xy * weight[0];
+	c = texture2D (image, gl_FragCoord.xy * invviewport).xy
+	    * texelFetch (buffer, 0).r;
 
-	for (int i = 1; i < 3; i++)
+	for (int i = 1; i < textureSize (buffer); i++)
 	{
 		vec2 coord;
-		coord = gl_FragCoord.xy + vec2 (0, offset[i]);
-		c += texture (image, coord * invviewport).xy
-		     * weight[i];
+		vec2 weightoffset = texelFetch (buffer, i).rg;
 
-		coord = gl_FragCoord.xy - vec2 (0, offset[i]);
+		coord = gl_FragCoord.xy + vec2 (0, weightoffset.g);
 		c += texture (image, coord * invviewport).xy
-		     * weight[i];
+		     * weightoffset.r;
+
+		coord = gl_FragCoord.xy - vec2 (0, weightoffset.g);
+		c += texture (image, coord * invviewport).xy
+		     * weightoffset.r;
 	}
 	color = c;
 }
