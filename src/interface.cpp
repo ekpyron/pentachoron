@@ -1059,8 +1059,8 @@ void Interface::AddLight (void)
 void Interface::AddShadow (void)
 {
 	Shadow shadow;
-	shadow.position = glm::vec4 (0, 10, 0, 0);
-	shadow.direction = glm::vec4 (0, -1, 0, 0);
+	shadow.position = glm::vec4 (0, 10, 0, 1);
+	shadow.direction = glm::vec4 (0, -1, 0, 1);
 	shadow.spot.angle = DRE_PI/4.0f;
 	shadow.spot.cosine = cosf (shadow.spot.angle);
 	renderer->shadows.push_back (shadow);
