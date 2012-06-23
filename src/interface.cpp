@@ -262,6 +262,8 @@ Interface::Interface (Renderer *parent)
 						if (!what)
 						{
 							renderer->RemoveLight (active_light);
+							if (active_light >= renderer->GetNumLights ())
+								 active_light = 0;
 						}
 					}, false },
 				{ "Randomize lights", NULL, [&] (int what) {
