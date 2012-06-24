@@ -1058,35 +1058,35 @@ Interface::Interface (Renderer *parent)
 		{
 			"Edit Sky Coeficients Y", NULL,
 			{
-				{ "A ", [&] (void) {
+				{ "Darkening/Brightening of the horizon ", [&] (void) {
 						font.Print (renderer->composition.GetPerezY (0));
 					}, [&] (int what) {
 						float v = renderer->composition.GetPerezY (0);
 						v += what * timefactor;
 						renderer->composition.SetPerezY (0, v);
 					}, true },
-				{ "B ", [&] (void) {
+				{ "Luminance gradient near the horizon ", [&] (void) {
 						font.Print (renderer->composition.GetPerezY (1));
 					}, [&] (int what) {
 						float v = renderer->composition.GetPerezY (1);
 						v += what * timefactor;
 						renderer->composition.SetPerezY (1, v);
 					}, true },
-				{ "C ", [&] (void) {
+				{ "Relative intensity of circumsolar region ", [&] (void) {
 						font.Print (renderer->composition.GetPerezY (2));
 					}, [&] (int what) {
 						float v = renderer->composition.GetPerezY (2);
 						v += what * timefactor;
 						renderer->composition.SetPerezY (2, v);
 					}, true },
-				{ "D ", [&] (void) {
+				{ "Width of the circumsolar region ", [&] (void) {
 						font.Print (renderer->composition.GetPerezY (3));
 					}, [&] (int what) {
 						float v = renderer->composition.GetPerezY (3);
 						v += what * timefactor;
 						renderer->composition.SetPerezY (3, v);
 					}, true },
-				{ "E ", [&] (void) {
+				{ "Relative backscatered light at the earth surface ", [&] (void) {
 						font.Print (renderer->composition.GetPerezY (4));
 					}, [&] (int what) {
 						float v = renderer->composition.GetPerezY (4);
