@@ -95,7 +95,63 @@ bool Composition::Init (void)
 
 	glow.SetSize (0);
 
+	GeneratePerezCoefficients ();
+
 	return true;
+}
+
+void Composition::GeneratePerezCoefficients (void)
+{
+	float T = sky.turbidity;
+	sky.perezY[0] = 0.17872 * T - 1.46303;
+	sky.perezY[1] = -0.35540 * T + 0.42749;
+	sky.perezY[2] = -0.02266 * T + 5.32505;
+	sky.perezY[3] = 0.12064 * T - 2.57705;
+	sky.perezY[4] = -0.06696 * T + 0.37027;
+	
+	sky.perezx[0] = -0.01925 * T - 0.25922;
+	sky.perezx[1] = -0.06651 * T + 0.00081;
+	sky.perezx[2] = -0.00041 * T + 0.21247;
+	sky.perezx[3] = -0.06409 * T - 0.89887;
+	sky.perezx[4] = -0.00325 * T + 0.04517;
+
+	sky.perezy[0] = -0.01669 * T - 0.26078;
+	sky.perezy[1] = -0.09495 * T + 0.00921;
+	sky.perezy[2] = -0.00792 * T + 0.21023;
+	sky.perezy[3] = -0.04405 * T - 1.65369;
+	sky.perezy[4] = -0.01092 * T + 0.05291;
+}
+
+float Composition::GetPerezY (int idx)
+{
+	return sky.perezY[idx];
+}
+
+void Composition::SetPerezY (int idx, float val)
+{
+	sky.perezY[idx] = val;
+}
+
+
+float Composition::GetPerezx (int idx)
+{
+	return sky.perezx[idx];
+}
+
+void Composition::SetPerezx (int idx, float val)
+{
+	sky.perezx[idx] = val;
+}
+
+
+float Composition::GetPerezy (int idx)
+{
+	return sky.perezy[idx];
+}
+
+void Composition::SetPerezy (int idx, float val)
+{
+	sky.perezy[idx] = val;
 }
 
 Glow &Composition::GetGlow (void)
@@ -164,6 +220,7 @@ float Composition::GetTurbidity (void)
 void Composition::SetTurbidity (float f)
 {
 	sky.turbidity = f;
+	GeneratePerezCoefficients ();
 }
 
 float Composition::GetLatitude (void)
@@ -289,24 +346,12 @@ void Composition::Frame (float timefactor)
 		float T = sky.turbidity;
 		info.sky.turbidity = T;
 
-		info.sky.perezY[0] = 0.17872 * T - 1.46303;
-		info.sky.perezY[1] = -0.35540 * T + 0.42749;
-		info.sky.perezY[2] = -0.02266 * T + 5.32505;
-		info.sky.perezY[3] = 0.12064 * T - 2.57705;
-		info.sky.perezY[4] = -0.06696 * T + 0.37027;
-
-		info.sky.perezx[0] = -0.01925 * T - 0.25922;
-		info.sky.perezx[1] = -0.06651 * T + 0.00081;
-		info.sky.perezx[2] = -0.00041 * T + 0.21247;
-		info.sky.perezx[3] = -0.06409 * T - 0.89887;
-		info.sky.perezx[4] = -0.00325 * T + 0.04517;
-
-
-		info.sky.perezy[0] = -0.01669 * T - 0.26078;
-		info.sky.perezy[1] = -0.09495 * T + 0.00921;
-		info.sky.perezy[2] = -0.00792 * T + 0.21023;
-		info.sky.perezy[3] = -0.04405 * T - 1.65369;
-		info.sky.perezy[4] = -0.01092 * T + 0.05291;
+		for (auto i = 0; i < 5; i++)
+		{
+			info.sky.perezY[i] = sky.perezY[i];
+			info.sky.perezx[i] = sky.perezx[i];
+			info.sky.perezy[i] = sky.perezy[i];
+		}
 
 		{
 			float chi = (4.0 / 9.0 - T / 120.0) * (M_PI - 2.0 * info.sky.sun.theta);

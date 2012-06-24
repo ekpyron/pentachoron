@@ -92,8 +92,18 @@ public:
 			float latitude;
 			int date;
 			float time;
+			float perezY[5];
+			float perezx[5];
+			float perezy[5];
 	 } SkyParams;
 
+	 void GeneratePerezCoefficients (void);
+	 float GetPerezY (int idx);
+	 void SetPerezY (int idx, float val);
+	 float GetPerezx (int idx);
+	 void SetPerezx (int idx, float val);
+	 float GetPerezy (int idx);
+	 void SetPerezy (int idx, float val);
 	 float GetTurbidity (void);
 	 void SetTurbidity (float t);
 	 float GetLatitude (void);

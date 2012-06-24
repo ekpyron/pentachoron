@@ -35,6 +35,9 @@
 #define EDIT_ANTIALIASING         14
 #define EDIT_PARAMS               15
 #define EDIT_SKY                  16
+#define EDIT_SKY_COEFFICIENTS_Y   17
+#define EDIT_SKY_COEFFICIENTS_x   18
+#define EDIT_SKY_COEFFICIENTS_y   19
 
 extern bool running;
 
@@ -974,6 +977,27 @@ Interface::Interface (Renderer *parent)
 						T += what * timefactor;
 						renderer->composition.SetTurbidity (T);
 					}, true },
+				{ "Coefficients Y", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_SKY_COEFFICIENTS_Y;
+							submenu = 0;
+						}
+					}, false },
+				{ "Coefficients x", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_SKY_COEFFICIENTS_x;
+							submenu = 0;
+						}
+					}, false },
+				{ "Coefficients y", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_SKY_COEFFICIENTS_y;
+							submenu = 0;
+						}
+					}, false },
 				{ "Latitude ", [&] (void) {
 						font.Print (renderer->composition.GetLatitude ());
 					}, [&] (int what) {
@@ -1030,7 +1054,149 @@ Interface::Interface (Renderer *parent)
 						}
 					}, false }
 			}
+		},
+		{
+			"Edit Sky Coeficients Y", NULL,
+			{
+				{ "A ", [&] (void) {
+						font.Print (renderer->composition.GetPerezY (0));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezY (0);
+						v += what * timefactor;
+						renderer->composition.SetPerezY (0, v);
+					}, true },
+				{ "B ", [&] (void) {
+						font.Print (renderer->composition.GetPerezY (1));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezY (1);
+						v += what * timefactor;
+						renderer->composition.SetPerezY (1, v);
+					}, true },
+				{ "C ", [&] (void) {
+						font.Print (renderer->composition.GetPerezY (2));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezY (2);
+						v += what * timefactor;
+						renderer->composition.SetPerezY (2, v);
+					}, true },
+				{ "D ", [&] (void) {
+						font.Print (renderer->composition.GetPerezY (3));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezY (3);
+						v += what * timefactor;
+						renderer->composition.SetPerezY (3, v);
+					}, true },
+				{ "E ", [&] (void) {
+						font.Print (renderer->composition.GetPerezY (4));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezY (4);
+						v += what * timefactor;
+						renderer->composition.SetPerezY (4, v);
+					}, true },
+				{ "Back", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_SKY;
+							submenu = 0;
+						}
+					}, false }
+			}
+		},
+		{
+			"Edit Sky Coeficients x", NULL,
+			{
+				{ "A ", [&] (void) {
+						font.Print (renderer->composition.GetPerezx (0));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezx (0);
+						v += what * timefactor;
+						renderer->composition.SetPerezx (0, v);
+					}, true },
+				{ "B ", [&] (void) {
+						font.Print (renderer->composition.GetPerezx (1));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezx (1);
+						v += what * timefactor;
+						renderer->composition.SetPerezx (1, v);
+					}, true },
+				{ "C ", [&] (void) {
+						font.Print (renderer->composition.GetPerezx (2));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezx (2);
+						v += what * timefactor;
+						renderer->composition.SetPerezx (2, v);
+					}, true },
+				{ "D ", [&] (void) {
+						font.Print (renderer->composition.GetPerezx (3));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezx (3);
+						v += what * timefactor;
+						renderer->composition.SetPerezx (3, v);
+					}, true },
+				{ "E ", [&] (void) {
+						font.Print (renderer->composition.GetPerezx (4));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezx (4);
+						v += what * timefactor;
+						renderer->composition.SetPerezx (4, v);
+					}, true },
+				{ "Back", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_SKY;
+							submenu = 0;
+						}
+					}, false }
+			}
+		},
+		{
+			"Edit Sky Coeficients y", NULL,
+			{
+				{ "A ", [&] (void) {
+						font.Print (renderer->composition.GetPerezy (0));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezy (0);
+						v += what * timefactor;
+						renderer->composition.SetPerezy (0, v);
+					}, true },
+				{ "B ", [&] (void) {
+						font.Print (renderer->composition.GetPerezy (1));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezy (1);
+						v += what * timefactor;
+						renderer->composition.SetPerezy (1, v);
+					}, true },
+				{ "C ", [&] (void) {
+						font.Print (renderer->composition.GetPerezy (2));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezy (2);
+						v += what * timefactor;
+						renderer->composition.SetPerezy (2, v);
+					}, true },
+				{ "D ", [&] (void) {
+						font.Print (renderer->composition.GetPerezy (3));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezy (3);
+						v += what * timefactor;
+						renderer->composition.SetPerezy (3, v);
+					}, true },
+				{ "E ", [&] (void) {
+						font.Print (renderer->composition.GetPerezy (4));
+					}, [&] (int what) {
+						float v = renderer->composition.GetPerezy (4);
+						v += what * timefactor;
+						renderer->composition.SetPerezy (4, v);
+					}, true },
+				{ "Back", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_SKY;
+							submenu = 0;
+						}
+					}, false }
+			}
 		}
+
 	};
 }
 
