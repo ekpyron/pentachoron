@@ -144,22 +144,6 @@ private:
 		* written to the glow map.
 		*/
 	 GLfloat luminance_threshold;
-	 /** OpenCL program.
-		* The OpenCL program containing the composition kernel.
-		*/
-	 cl::Program program;
-	 /** OpenCL kernel
-		* The OpenCL kernel that does the actual computations.
-		*/
-	 cl::Kernel composition;
-	 /** Screen texture (OpenCL memory object).
-		* OpenCL memory object referring to the screen texture.
-		*/
-	 cl::Memory screenmem;
-	 /** Glow map (OpenCL memory object).
-		* OpenCL memory object referring to the glow map.
-		*/
-	 cl::Memory glowmem;
 
 	 SkyParams sky;
 
@@ -199,6 +183,10 @@ private:
 	 } Info;
 
 	 Info info;
+
+	 gl::Framebuffer framebuffer;
+	 gl::ProgramPipeline pipeline;
+	 gl::Program fprogram;
 
 	 /** Parent renderer.
 		* The Renderer this class belongs to.

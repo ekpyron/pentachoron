@@ -1,0 +1,111 @@
+/*  
+ * This file is part of DRE.
+ *
+ * DRE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DRE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#version 420 core
+
+layout(location = 0) out vec4 screen;
+layout(location = 1) out vec4 glow;
+
+layout(binding = 0) uniform sampler2D colorbuffer;
+layout(binding = 1) uniform sampler2D depthbuffer;
+layout(binding = 2) uniform sampler2D normalbuffer;
+layout(binding = 3) uniform sampler2D specularbuffer;
+layout(binding = 4) uniform sampler2D shadowmap;
+layout(binding = 5) uniform isampler2D fragidx;
+layout(binding = 6) uniform usamplerBuffer fraglist;
+
+#define DEPTHLAYERS 8
+
+uniform vec2 invviewport;
+
+struct PixelData {
+       vec4 color;
+       vec4 specular;
+       vec4 normal;
+       float depth;
+};
+
+vec4 getpos (float depth)
+{
+	return vec4 (0, 0, 0, 1);
+}
+
+vec4 compute_pixel (struct PixelData data)
+{
+	return data.color;
+}
+
+void main (void)
+{
+	struct PixelData data;
+	vec2 coord = invviewport * gl_FragCoord.xy;
+
+	int idx = texture (fragidx, coord).r;
+	uint num = 0;
+	uint indices[DEPTHLAYERS];
+
+	while (idx != -1)
+	{
+		float d = uintBitsToFloat (texelFetch (fraglist,
+		      	  		  	       idx * 5 + 3).r);
+		if (num < DEPTHLAYERS)
+		{
+		   num++;
+		}
+		else if (uintBitsToFloat (texelFetch
+		     		(fraglist, int (indices[num - 1] * 5 + 3)).r)
+				<= d)
+		{
+			idx = int (texelFetch (fraglist, 5 * idx + 4).r);
+			continue;
+		}
+
+		uint i = num - 1;
+		while (i > 0)
+		{
+			if (d >= uintBitsToFloat (texelFetch
+		      	     	 (fraglist, int (indices[i - 1] * 5 + 3)).r))
+				 break;
+			indices[i] = indices[i - 1];
+			i--;
+		}
+		indices[i] = idx;
+		idx = int (texelFetch (fraglist, idx * 5 + 4).r);
+	}
+
+	data.color = texture (colorbuffer, coord);
+	data.specular = texture (specularbuffer, coord);
+	data.normal = texture (normalbuffer, coord);
+	data.depth = texture (depthbuffer, coord).r;
+
+	screen = compute_pixel (data);
+
+	for (uint i = 0; i < num; i++)
+	{
+		vec4 tmp;
+		idx = int (indices[i]);
+		data.color = unpackUnorm4x8 (texelFetch (fraglist,
+			     		    		 idx * 5 + 0).r);
+		data.specular = unpackUnorm4x8 (texelFetch (fraglist,
+			     		    		    idx * 5 + 1).r);
+		data.normal = unpackUnorm4x8 (texelFetch (fraglist,
+			     		    		  idx * 5 + 2).r);
+		data.depth = uintBitsToFloat (texelFetch (fraglist,
+			     		    		  idx * 5 + 3).r);
+		tmp = compute_pixel (data);
+		screen = mix (screen, tmp, tmp.w);
+	}
+}

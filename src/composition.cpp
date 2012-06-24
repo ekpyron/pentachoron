@@ -33,21 +33,40 @@ Composition::~Composition (void)
 
 bool Composition::Init (void)
 {
-	std::string src;
-	if (!ReadFile (MakePath ("kernels", "composition.cl"), src))
-		 return false;
-
-	program = renderer->clctx.CreateProgramWithSource (src);
 	{
-		std::string options ("-cl-fast-relaxed-math -cl-mad-enable "
-												 "-cl-no-signed-zeros");
-		if (renderer->clctx.IsExtensionSupported ("cl_nv_compiler_options"))
+		gl::Shader obj (GL_FRAGMENT_SHADER);
+		std::string source;
+		if (!ReadFile (MakePath ("shaders", "composition.txt"), source))
+			 return false;
+		obj.Source (source);
+		if (!obj.Compile ())
 		{
-			options.append (" -cl-nv-maxrregcount=32");
+			(*logstream) << "Could not compile "
+									 << MakePath ("shaders", "composition.txt")
+									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
+			 return false;
 		}
-		program.Build (options);
+		
+		fprogram.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
+		fprogram.Attach (obj);
+		if (!fprogram.Link ())
+		{
+			(*logstream) << "Could not link the shader program "
+									 << MakePath ("shaders", "composition.txt")
+									 << ": " << std::endl << fprogram.GetInfoLog ()
+									 << std::endl;
+			 return false;
+		}
 	}
-	composition = program.CreateKernel ("composition");
+
+	fprogram["invviewport"]
+		 = glm::vec2 (1.0f / float (renderer->gbuffer.GetWidth ()),
+									1.0f / float (renderer->gbuffer.GetHeight ()));
+
+	pipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
+														 renderer->windowgrid.vprogram);
+	pipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT,
+														 fprogram);
 
 	screen.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
 									renderer->gbuffer.GetWidth (),
@@ -74,24 +93,13 @@ bool Composition::Init (void)
 									config["glow"]["mipmaplevel"].as<unsigned int> (2)))
 		 return false;
 
-	screenmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, screen);
-	glowmem = renderer->clctx.CreateFromGLTexture2D
-		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, glowmap);
-
-	composition.SetArg (0, screenmem);
-	composition.SetArg (1, glowmem);
-	composition.SetArg (2, renderer->gbuffer.colormem);
-	composition.SetArg (3, renderer->gbuffer.depthmem);
-	composition.SetArg (4, renderer->gbuffer.normalmem);
-	composition.SetArg (5, renderer->gbuffer.specularmem);
-	composition.SetArg (6, renderer->shadowmap.GetMem ());
-	composition.SetArg (7, renderer->gbuffer.fragidxmem);
-	composition.SetArg (8, renderer->gbuffer.fraglistmem);
-
-	cl_uint num_parameters = renderer->GetNumParameters ();
-	composition.SetArg (11, sizeof (cl_uint), &num_parameters);
-	composition.SetArg (12, renderer->GetParameterMem ());
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0,
+												 GL_TEXTURE_2D,
+												 screen, 0);
+	framebuffer.Texture2D (GL_COLOR_ATTACHMENT1,
+												 GL_TEXTURE_2D,
+												 glowmap, 0);
+	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 });
 
 	glow.SetSize (0);
 
@@ -291,15 +299,6 @@ glm::vec3 Composition::GetSunDirection (float &theta, float &cos_theta)
 
 void Composition::Frame (float timefactor)
 {
-	std::vector<cl::Memory> mem = { screenmem, glowmem,
-																	renderer->gbuffer.colormem,
-																	renderer->gbuffer.normalmem,
-																	renderer->gbuffer.specularmem,
-																	renderer->gbuffer.depthmem,
-																	renderer->gbuffer.fraglistmem,
-																	renderer->gbuffer.fragidxmem,
-																	renderer->shadowmap.GetMem () };
-
 	info.num_lights = renderer->GetNumLights ();
 
 	info.projinfo = renderer->camera.GetProjInfo ();
@@ -357,17 +356,36 @@ void Composition::Frame (float timefactor)
 		}
 	}
 
-	composition.SetArg (9, renderer->GetLightMem ());
-	composition.SetArg (10, sizeof (Info), &info);
+	framebuffer.Bind (GL_FRAMEBUFFER);
+	pipeline.Bind ();
+	gl::Viewport (0, 0, renderer->gbuffer.GetWidth (),
+								renderer->gbuffer.GetHeight ());
 
-	const size_t work_dim[] = { renderer->gbuffer.GetWidth (),
-															renderer->gbuffer.GetHeight () };
-	const size_t local_dim[] = { 16, 16 };
+	renderer->windowgrid.sampler.Bind (0);
+	renderer->gbuffer.colorbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+	
+	renderer->windowgrid.sampler.Bind (1);
+	renderer->gbuffer.depthtexture.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 
-	renderer->queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
-	renderer->queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
-																				local_dim, 0, NULL, NULL);
-	renderer->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
+	renderer->windowgrid.sampler.Bind (2);
+	renderer->gbuffer.normalbuffer.Bind (GL_TEXTURE2, GL_TEXTURE_2D);
+
+	renderer->windowgrid.sampler.Bind (3);
+	renderer->gbuffer.specularbuffer.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
+
+	renderer->windowgrid.sampler.Bind (4);
+	renderer->shadowmap.GetMap ().Bind (GL_TEXTURE4, GL_TEXTURE_2D);
+
+	renderer->windowgrid.sampler.Bind (5);
+	renderer->gbuffer.fragidx.Bind (GL_TEXTURE5, GL_TEXTURE_2D);
+
+	renderer->windowgrid.sampler.Bind (6);
+	renderer->gbuffer.fraglisttex.Bind (GL_TEXTURE6, GL_TEXTURE_BUFFER);
+
+
+	renderer->windowgrid.Render ();
+
+	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 
 	if (glow.GetSize () > 0)
 	{
