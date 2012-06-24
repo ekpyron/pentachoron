@@ -74,7 +74,7 @@ bool Renderer::Init (void)
 	if (!shadowmap.Init ())
 		 return false;
 
-	float max = -100;
+/*	float max = -100;
 
 	srand (time (NULL));
 	for (int y = -7; y <= 7; y++)
@@ -116,7 +116,7 @@ bool Renderer::Init (void)
 	queue.EnqueueWriteBuffer
 		 (lightmem, CL_TRUE, 0,
 			sizeof (Light) * lights.size (),
-			&lights[0], 0, NULL, NULL);
+			&lights[0], 0, NULL, NULL);*/
 
 	interface.AddShadow ();
 
