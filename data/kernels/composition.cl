@@ -222,7 +222,14 @@ float compute_sky_diffuse (float3 normal, struct Info *info)
 	float cos_gamma = dot (sundir, dir);
 	float gamma = acos (cos_gamma);
 
-	return 0.04 * info->sky.zenithYxy.x
+	float f = 0.04f;
+	if (cos_gamma > 0.999)
+	{
+	   f *= 1 + native_divide (cos_gamma - 0.999, 0.0001);
+	}
+
+
+	return f * info->sky.zenithYxy.x
 	      	* native_divide (perez (cos_theta, gamma, cos_gamma,
 	      	         	        info->sky.perezY),
 			 	 perez (1, theta_s, cos_theta_s,
@@ -258,6 +265,12 @@ float4 compute_sky (float4 p, struct Info *info)
 			 	 perez (1, theta_s, cos_theta_s,
 		    	 	        info->sky.perezY));
 
+	if (cos_gamma > 0.999)
+	{
+	   Yxy.x *= 1 + native_divide (cos_gamma - 0.999, 0.0001);
+	}
+
+
 	Yxy.y = info->sky.zenithYxy.y
 	      	* native_divide (perez (cos_theta, gamma, cos_gamma,
 	      	       	 	        info->sky.perezx),
@@ -270,7 +283,7 @@ float4 compute_sky (float4 p, struct Info *info)
 				 perez (1, theta_s, cos_theta_s,
 		    	 	        info->sky.perezy));
 
-	Yxy.x = 1.0f - native_exp (-0.04f * Yxy.x);
+	Yxy.x = 0.04f * Yxy.x;
 	float4 color = (float4) (Yxy2RGB (Yxy), 1.0f);
 	return clamp (color, 0.0f, 2.0f);
 }
