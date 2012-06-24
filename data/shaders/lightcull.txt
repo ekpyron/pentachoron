@@ -1,0 +1,53 @@
+/*  
+ * This file is part of DRE.
+ *
+ * DRE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DRE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#version 420 core
+
+uniform vec2 invviewport;
+
+layout(binding = 0, size1x32) writeonly uniform uimage2D lighttex;
+layout(binding = 1, size1x32) uniform uimage2D numlighttex;
+layout(binding = 2, size1x32) uniform uimage2D mindepthtex;
+layout(binding = 3, size1x32) uniform uimage2D maxdepthtex;
+
+layout(binding = 0) uniform sampler2D depthbuffer;
+layout(binding = 1) uniform isampler2D fragidx;
+layout(binding = 2) uniform usamplerBuffer fraglist;
+
+void main (void)
+{
+	uint offset;
+	vec2 coord;
+	float depth;
+
+	ivec2 p;
+
+	offset = uint (gl_FragCoord.x) & 15U;
+	offset += (uint (gl_FragCoord.y) & 15U) << 4U;
+
+	p.x = int (gl_FragCoord.x) >> 4;
+	p.y = int (gl_FragCoord.y) >> 4;
+
+	coord = invviewport * gl_FragCoord.xy;
+	depth = texture (depthbuffer, coord).r;
+
+	uint udepth;
+	udepth = uint (depth * 4294967295.0);
+
+	imageAtomicMin (mindepthtex, p, udepth);
+	imageAtomicMax (maxdepthtex, p, udepth);
+
+}
