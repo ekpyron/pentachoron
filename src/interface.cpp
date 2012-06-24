@@ -874,6 +874,17 @@ Interface::Interface (Renderer *parent)
 						if (active_parameter >= renderer->GetNumParameters ())
 							 active_parameter = 0;
 					}, false },
+				{ "Reflection: ", [&] (void) {
+						font.Print (renderer->GetParameters(active_parameter).reflect
+												* 100.0f,	" %");
+					}, [&] (int what) {
+						float r = renderer->GetParameters(active_parameter).reflect;
+						r += what * timefactor * 0.01f;
+						if (r < 0) r = 0;
+						if (r > 1) r = 1;
+						renderer->GetParameters(active_parameter).reflect = r;
+						renderer->UpdateParameters (active_parameter);
+					}, true },
 				{ "Model: ", [&] (void) {
 #define NUM_SPECULAR_MODELS 5
 						const char *models[NUM_SPECULAR_MODELS] = {

@@ -140,6 +140,7 @@ bool Renderer::Init (void)
 		for (const YAML::Node &node : parameterlist)
 		{
 			Parameter parameter;
+			parameter.reflect = node["reflect"].as<float> (0.0f);
 			{
 				YAML::Node specular = node["specular"];
 				std::string model = specular["model"].as<std::string> ("none");

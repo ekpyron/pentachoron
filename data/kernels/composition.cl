@@ -135,7 +135,7 @@ struct Parameter
 	      float gaussfactor;
 	      float param2;
 	};
-	float padding;
+	float reflect;
 };
 
 // compute reflection vector
@@ -450,7 +450,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 			default:
 			     break;
 		}
-		specular = s * compute_sky ((float4) (normal,1), info).xyz;
+		specular = s * compute_sky ((float4) (normal, 1.0), info).xyz;
 	}
 
 	// iterate over lights
@@ -564,6 +564,21 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 
 	// clamp the pixel
 	pixel = clamp (pixel, 0.0f, info->screenlimit);
+
+	if (param.reflect > 0)
+	{
+		float f;
+		f = dot (-viewDir, normal);
+		if (f < 0) f = -f;
+		f = param.reflect + pown (1 - f, 5) * (1 - param.reflect);
+		f = clamp (f, 0.1f, 0.9f);
+		float3 refl = compute_sky ((float4) (reflect (-viewDir,
+		       	      		  	    	      normal),1),
+	       	      		   	   info).xyz;
+
+		pixel.xyz =  mix (pixel.xyz, refl, f);
+	}
+
 
 	float shadow = compute_shadow (shadowmap, pos, info);
 	pixel *= mad (shadow, info->shadow_alpha, 1 - info->shadow_alpha);

@@ -34,7 +34,7 @@ typedef struct _Parameter
 			float fresnel;
 			float param2;
 	 };
-	 float padding;
+	 float reflect;
 } Parameter;
 
 
