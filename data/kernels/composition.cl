@@ -194,10 +194,10 @@ float3 Yxy2RGB (float3 Yxy)
 	XYZ.y = Yxy.x;
 	XYZ.z = native_divide (Yxy.x * (1 - Yxy.y - Yxy.z), Yxy.z);
 
-	rgb.x = dot ((float3) (2.3706743f, -0.9000405f,-0.4706338f), XYZ);
-	rgb.y = dot ((float3) (-0.5138850f, 1.4253036f, 0.0885814f), XYZ);
-	rgb.z = dot ((float3) (0.0052982f, -0.0146949f, 1.0093968f), XYZ);
-
+	rgb.x = dot ((float3) (3.2404790f, -1.537150f, -0.498535f), XYZ);
+	rgb.y = dot ((float3) (-0.969256f, 1.875992f, 0.041556f), XYZ);
+	rgb.z = dot ((float3) (0.0055648f, -0.204043f, 1.057311f), XYZ);
+	
 	return rgb;
 }
 
@@ -270,7 +270,8 @@ float4 compute_sky (float4 p, struct Info *info)
 				 perez (1, theta_s, cos_theta_s,
 		    	 	        info->sky.perezy));
 
-	float4 color = (float4) (0.04f * Yxy2RGB (Yxy), 1.0f);
+	Yxy.x = 1.0f - native_exp (-0.04f * Yxy.x);
+	float4 color = (float4) (Yxy2RGB (Yxy), 1.0f);
 	return clamp (color, 0.0f, 2.0f);
 }
 
