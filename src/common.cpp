@@ -44,8 +44,9 @@ void glCheckError (const std::string &file, unsigned int line)
 	if (err != 0)
 	{
 		(*logstream) << "OpenGL Error detected in " << file
-							 << " line " << std::dec << line << ": "
-							 << glErrorString (err) << std::endl;
+								 << " line " << std::dec << line << ": "
+								 << glErrorString (err) << " (" << std::hex
+								 << err << std::dec << ")" << std::endl;
 	}
 }
 

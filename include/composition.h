@@ -188,6 +188,16 @@ private:
 	 gl::ProgramPipeline pipeline;
 	 gl::Program fprogram;
 
+	 gl::Framebuffer lightfb;
+	 gl::Framebuffer clearfb;
+	 gl::ProgramPipeline lightpipeline;
+	 gl::Program lightprog;
+	 gl::Texture lighttex;
+	 gl::Texture numlighttex;
+	 gl::Texture mindepthtex;
+	 gl::Texture maxdepthtex;
+	 gl::Renderbuffer dummy;
+
 	 /** Parent renderer.
 		* The Renderer this class belongs to.
 		*/

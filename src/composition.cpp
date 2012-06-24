@@ -59,7 +59,36 @@ bool Composition::Init (void)
 		}
 	}
 
+	{
+		gl::Shader obj (GL_FRAGMENT_SHADER);
+		std::string source;
+		if (!ReadFile (MakePath ("shaders", "lightcull.txt"), source))
+			 return false;
+		obj.Source (source);
+		if (!obj.Compile ())
+		{
+			(*logstream) << "Could not compile "
+									 << MakePath ("shaders", "lightcull.txt")
+									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
+			 return false;
+		}
+		
+		lightprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
+		lightprog.Attach (obj);
+		if (!lightprog.Link ())
+		{
+			(*logstream) << "Could not link the shader program "
+									 << MakePath ("shaders", "lightcull.txt")
+									 << ": " << std::endl << lightprog.GetInfoLog ()
+									 << std::endl;
+			 return false;
+		}
+	}
+
 	fprogram["invviewport"]
+		 = glm::vec2 (1.0f / float (renderer->gbuffer.GetWidth ()),
+									1.0f / float (renderer->gbuffer.GetHeight ()));
+	lightprog["invviewport"]
 		 = glm::vec2 (1.0f / float (renderer->gbuffer.GetWidth ()),
 									1.0f / float (renderer->gbuffer.GetHeight ()));
 
@@ -67,6 +96,11 @@ bool Composition::Init (void)
 														 renderer->windowgrid.vprogram);
 	pipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT,
 														 fprogram);
+
+	lightpipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
+																	renderer->windowgrid.vprogram);
+	lightpipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT,
+																	lightprog);
 
 	screen.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
 									renderer->gbuffer.GetWidth (),
@@ -100,6 +134,46 @@ bool Composition::Init (void)
 												 GL_TEXTURE_2D,
 												 glowmap, 0);
 	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 });
+
+	lighttex.Image2D (GL_TEXTURE_2D, 0, GL_R32UI, renderer->gbuffer.GetWidth (),
+										renderer->gbuffer.GetHeight (), 0, GL_RED_INTEGER,
+										GL_UNSIGNED_INT, NULL);
+	numlighttex.Image2D (GL_TEXTURE_2D, 0, GL_R16UI,
+											 (renderer->gbuffer.GetWidth () + 15) >> 4,
+											 (renderer->gbuffer.GetHeight () + 15) >> 4,
+											 0, GL_RED_INTEGER,
+											 GL_UNSIGNED_SHORT, NULL);
+
+	mindepthtex.Image2D (GL_TEXTURE_2D, 0, GL_R32UI,
+											 (renderer->gbuffer.GetWidth () + 15) >> 4,
+											 (renderer->gbuffer.GetHeight () + 15) >> 4,
+											 0, GL_RED_INTEGER,
+											 GL_UNSIGNED_INT, NULL);
+
+	maxdepthtex.Image2D (GL_TEXTURE_2D, 0, GL_R32UI,
+											 (renderer->gbuffer.GetWidth () + 15) >> 4,
+											 (renderer->gbuffer.GetHeight () + 15) >> 4,
+											 0, GL_RED_INTEGER,
+											 GL_UNSIGNED_INT, NULL);
+
+	dummy.Storage (GL_R8, renderer->gbuffer.GetWidth (),
+								 renderer->gbuffer.GetHeight ());
+	lightfb.Renderbuffer (GL_COLOR_ATTACHMENT0, dummy);
+	lightfb.DrawBuffers ({ });
+
+	clearfb.Texture2D (GL_COLOR_ATTACHMENT0,
+										 GL_TEXTURE_2D,
+										 numlighttex, 0);
+	clearfb.Texture2D (GL_COLOR_ATTACHMENT1,
+										 GL_TEXTURE_2D,
+										 mindepthtex, 0);
+	clearfb.Texture2D (GL_COLOR_ATTACHMENT2,
+										 GL_TEXTURE_2D,
+										 maxdepthtex, 0);
+
+	
+	clearfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+				 GL_COLOR_ATTACHMENT2 });
 
 	glow.SetSize (0);
 
@@ -355,6 +429,33 @@ void Composition::Frame (float timefactor)
 			info.sky.zenithYxy.z = glm::dot (T3, maty * th);
 		}
 	}
+
+	clearfb.Bind (GL_FRAMEBUFFER);
+	gl::ClearBufferuiv (GL_COLOR, 0, (const GLuint[]) { 0, 0, 0, 0 });
+	gl::ClearBufferuiv (GL_COLOR, 1, (const GLuint[]) { (GLuint) -1, 0, 0, 0 });
+	gl::ClearBufferuiv (GL_COLOR, 2, (const GLuint[]) { 0, 0, 0, 0 });
+
+	lightfb.Bind (GL_FRAMEBUFFER);
+
+	lightpipeline.Bind ();
+	gl::Viewport (0, 0, renderer->gbuffer.GetWidth (),
+								renderer->gbuffer.GetHeight ());
+
+	lighttex.BindImage (0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);
+	numlighttex.BindImage (1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R16UI);
+	mindepthtex.BindImage (2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	maxdepthtex.BindImage (3, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+
+	renderer->windowgrid.sampler.Bind (0);
+	renderer->gbuffer.depthtexture.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+
+	renderer->windowgrid.sampler.Bind (1);
+	renderer->gbuffer.fragidx.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
+
+	renderer->windowgrid.sampler.Bind (2);
+	renderer->gbuffer.fraglisttex.Bind (GL_TEXTURE2, GL_TEXTURE_BUFFER);
+
+	renderer->windowgrid.Render ();
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
 	pipeline.Bind ();
