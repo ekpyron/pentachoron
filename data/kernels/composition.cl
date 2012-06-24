@@ -397,6 +397,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	{
 		float3 lightDir = fast_normalize (info->sky.sun.direction.xyz);
 		float3 halfVec = fast_normalize (viewDir + lightDir);
+
 		float s;
 		switch (param.model)
 		{
@@ -419,7 +420,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 			default:
 			     break;
 		}
-		specular = s * sky_intensity * (float3) (1, 1, 1);
+		specular = s * compute_sky ((float4) (normal,1), info).xyz;
 	}
 
 	// iterate over lights
