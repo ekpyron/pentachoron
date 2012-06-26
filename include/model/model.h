@@ -25,7 +25,7 @@ class Geometry;
 class Model
 {
 public:
-	 Model (Geometry *p);
+	 Model (void);
 	 Model (Model &&model);
 	 Model (const Model&) = delete;
 	 ~Model (void);
@@ -39,7 +39,6 @@ private:
 	 std::vector<Mesh> meshes;
 	 friend class Material;
 	 friend class Mesh;
-	 Geometry *parent;
 	 struct
 	 {
 			glm::vec3 min, max;

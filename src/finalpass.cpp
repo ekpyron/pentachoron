@@ -18,8 +18,8 @@
 #include "gbuffer.h"
 #include "renderer.h"
 
-FinalPass::FinalPass (Renderer *parent)
-	: renderer (parent), rendermode (0), 
+FinalPass::FinalPass (void)
+	: rendermode (0), 
 		tonemapping ({ 0.18f, 0.9f, 1.0f, 1.0f, 0, 0,
 				{ 0.5f, 0.0f, 0.01f, 0.0f } })
 {
@@ -197,17 +197,17 @@ bool FinalPass::Init (void)
 		}
 
 		gl::SmartUniform<glm::uvec2> uniform (fprograms.back ()["viewport"],
-																					renderer->camera.GetViewport ());
+																					r->camera.GetViewport ());
 		viewport_uniforms.push_back (uniform);
 	}
 
 	luminance.Image2D (GL_TEXTURE_2D, 0, GL_R32F,
-										 renderer->gbuffer.GetWidth (),
-										 renderer->gbuffer.GetHeight (),
+										 r->gbuffer.GetWidth (),
+										 r->gbuffer.GetHeight (),
 										 0, GL_RED, GL_FLOAT, NULL);
 #ifdef DEBUG
-	renderer->memory += renderer->gbuffer.GetWidth ()
-		 * renderer->gbuffer.GetHeight () * 4;
+	r->memory += r->gbuffer.GetWidth ()
+		 * r->gbuffer.GetHeight () * 4;
 #endif
 
 	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -223,13 +223,13 @@ bool FinalPass::Init (void)
 	{
 		pipelines.emplace_back ();
 		pipelines.back ().UseProgramStages (GL_VERTEX_SHADER_BIT,
-																				renderer->windowgrid.vprogram);
+																				r->windowgrid.vprogram);
 		pipelines.back ().UseProgramStages (GL_FRAGMENT_SHADER_BIT, fprogram);
 
-		fprogram["gbufferdim"] = glm::uvec2 (renderer->gbuffer.GetWidth (),
-																				 renderer->gbuffer.GetHeight ());
-		fprogram["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
-		fprogram["farClipPlane"] = renderer->camera.GetFarClipPlane ();
+		fprogram["gbufferdim"] = glm::uvec2 (r->gbuffer.GetWidth (),
+																				 r->gbuffer.GetHeight ());
+		fprogram["nearClipPlane"] = r->camera.GetNearClipPlane ();
+		fprogram["farClipPlane"] = r->camera.GetFarClipPlane ();
 	}
 
 	{
@@ -261,12 +261,12 @@ bool FinalPass::Init (void)
 	}
 
 	antialiasing = gl::SmartUniform<GLuint> (fprograms[0]["antialiasing"],
-																					 renderer->GetAntialiasing ());
+																					 r->GetAntialiasing ());
 	antialiasing_threshold 
 		 = gl::SmartUniform<GLfloat> (fprograms[0]["antialiasing_threshold"],
 																	0.02f);
 	glow = gl::SmartUniform<GLint> (fprograms[0]["glow"],
-																	renderer->composition.
+																	r->composition.
 																	GetGlow ().GetSize () > 0);
 
 	return true;
@@ -432,61 +432,61 @@ void FinalPass::Render (void)
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
 	pipelines.back ().Bind ();
-	renderer->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-	renderer->windowgrid.sampler.Bind (0);
-	renderer->windowgrid.Render ();
+	r->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+	r->windowgrid.sampler.Bind (0);
+	r->windowgrid.Render ();
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	luminance.GenerateMipmap (GL_TEXTURE_2D);
 
-	viewport = renderer->camera.GetViewport ();
+	viewport = r->camera.GetViewport ();
 	gl::Viewport (0, 0, viewport.x, viewport.y);
 
 	switch (rendermode)
 	{
 	case 0:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		if (renderer->GetAntialiasing ())
+		r->windowgrid.sampler.Bind (0);
+		r->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		if (r->GetAntialiasing ())
 		{
-			renderer->windowgrid.sampler.Bind (1);
-			renderer->gbuffer.msdepthtexture.Bind (GL_TEXTURE1,
+			r->windowgrid.sampler.Bind (1);
+			r->gbuffer.msdepthtexture.Bind (GL_TEXTURE1,
 																						 GL_TEXTURE_2D_MULTISAMPLE);
-			renderer->windowgrid.sampler.Bind (2);
-			renderer->gbuffer.depthtexture.Bind (GL_TEXTURE2, GL_TEXTURE_2D);
+			r->windowgrid.sampler.Bind (2);
+			r->gbuffer.depthtexture.Bind (GL_TEXTURE2, GL_TEXTURE_2D);
 		}
 		sampler.Bind (3);
 		luminance.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
 		program = 0;
 		break;
 	case 1:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.colorbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		r->windowgrid.sampler.Bind (0);
+		r->gbuffer.colorbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 2;
 		break;
 	case 2:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.normalbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		r->windowgrid.sampler.Bind (0);
+		r->gbuffer.normalbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 1;
 		break;
 	case 3:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.specularbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		r->windowgrid.sampler.Bind (0);
+		r->gbuffer.specularbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 2;
 		break;
 	case 4:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->gbuffer.depthtexture.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		r->windowgrid.sampler.Bind (0);
+		r->gbuffer.depthtexture.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 5;
 		break;
 	case 5:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->composition.GetGlow ().GetMap ().Bind (GL_TEXTURE0,
+		r->windowgrid.sampler.Bind (0);
+		r->composition.GetGlow ().GetMap ().Bind (GL_TEXTURE0,
 																										 GL_TEXTURE_2D);
 		program = 4;
 		break;
 	case 6:
-		renderer->windowgrid.sampler.Bind (0);
-		renderer->shadowmap.GetMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		r->windowgrid.sampler.Bind (0);
+		r->shadowmap.GetMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 2;
 		break;
 	default:
@@ -506,12 +506,12 @@ void FinalPass::Render (void)
 
 	viewport_uniforms[program].Set (viewport);
 	tonemappingBuffer.BindBase (GL_UNIFORM_BUFFER, 0);
-	glow.Set (renderer->composition.GetGlow ().GetSize () > 0);
-	antialiasing.Set (renderer->GetAntialiasing ());
+	glow.Set (r->composition.GetGlow ().GetSize () > 0);
+	antialiasing.Set (r->GetAntialiasing ());
 
 	gl::Disable (GL_DEPTH_TEST);
 
-	renderer->windowgrid.Render ();
+	r->windowgrid.Render ();
 
 	GL_CHECK_ERROR;
 }

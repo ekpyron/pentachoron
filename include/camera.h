@@ -19,8 +19,6 @@
 
 #include <common.h>
 
-class Renderer;
-
 /** Camera class.
  * Handles the camera.
  */
@@ -28,9 +26,8 @@ class Camera
 {
 public:
 	/** Constructor.
-	 * \param parent Parent renderer.
 	 */
-	 Camera (Renderer *parent);
+	 Camera (void);
 	 /** Destructor.
 		*/
 	 ~Camera (void);
@@ -153,10 +150,6 @@ private:
 		*/
 	 float horizontal_angle;
 	 float up_angle;
-	 /** Parent.
-		* Parent randerer.
-		*/
-	 Renderer *renderer;
 };
 
 #endif /* !defined CAMERA_H */

@@ -17,9 +17,8 @@
 #include "composition.h"
 #include "renderer.h"
 
-Composition::Composition (Renderer *parent)
-	: renderer (parent), glow (parent),
-		luminance_threshold (0.75),
+Composition::Composition (void)
+	: glow (), luminance_threshold (0.75),
 		sky ( { 3.0, 50.0, 142, 10.0 } ),
 		info ( { glm::vec4 (0), glm::mat4 (0), glm::mat4 (0),
 					 glm::vec4 (0), glm::vec4 (0), { 0, 0.0f, 0.0f, 0.0f },
@@ -37,11 +36,11 @@ bool Composition::Init (void)
 	if (!ReadFile (MakePath ("kernels", "composition.cl"), src))
 		 return false;
 
-	program = renderer->clctx.CreateProgramWithSource (src);
+	program = r->clctx.CreateProgramWithSource (src);
 	{
 		std::string options ("-cl-fast-relaxed-math -cl-mad-enable "
 												 "-cl-no-signed-zeros");
-		if (renderer->clctx.IsExtensionSupported ("cl_nv_compiler_options"))
+		if (r->clctx.IsExtensionSupported ("cl_nv_compiler_options"))
 		{
 			options.append (" -cl-nv-maxrregcount=32");
 		}
@@ -50,23 +49,23 @@ bool Composition::Init (void)
 	composition = program.CreateKernel ("composition");
 
 	screen.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
-									renderer->gbuffer.GetWidth (),
-									renderer->gbuffer.GetHeight (),
+									r->gbuffer.GetWidth (),
+									r->gbuffer.GetHeight (),
 									0, GL_RGBA, GL_FLOAT, NULL);
 	glowmap.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
-								renderer->gbuffer.GetWidth (),
-								renderer->gbuffer.GetHeight (),
+								r->gbuffer.GetWidth (),
+								r->gbuffer.GetHeight (),
 								0, GL_RGBA, GL_FLOAT, NULL);
 
 	glowmap.GenerateMipmap (GL_TEXTURE_2D);
 
 #ifdef DEBUG
-	renderer->memory += renderer->gbuffer.GetWidth ()
-		 * renderer->gbuffer.GetHeight () * (4 * 2 + 4 * 2 + 4);
-	renderer->memory += (renderer->gbuffer.GetWidth () >> 1) *
-		 (renderer->gbuffer.GetHeight () >> 1) * 4;
-	renderer->memory += (renderer->gbuffer.GetWidth () >> 1) *
-		 (renderer->gbuffer.GetHeight () >> 2) * 4;
+	r->memory += r->gbuffer.GetWidth ()
+		 * r->gbuffer.GetHeight () * (4 * 2 + 4 * 2 + 4);
+	r->memory += (r->gbuffer.GetWidth () >> 1) *
+		 (r->gbuffer.GetHeight () >> 1) * 4;
+	r->memory += (r->gbuffer.GetWidth () >> 1) *
+		 (r->gbuffer.GetHeight () >> 2) * 4;
   /* ignore smaller mipmap levels... */
 #endif
 
@@ -74,24 +73,24 @@ bool Composition::Init (void)
 									config["glow"]["mipmaplevel"].as<unsigned int> (2)))
 		 return false;
 
-	screenmem = renderer->clctx.CreateFromGLTexture2D
+	screenmem = r->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, screen);
-	glowmem = renderer->clctx.CreateFromGLTexture2D
+	glowmem = r->clctx.CreateFromGLTexture2D
 		 (CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, glowmap);
 
 	composition.SetArg (0, screenmem);
 	composition.SetArg (1, glowmem);
-	composition.SetArg (2, renderer->gbuffer.colormem);
-	composition.SetArg (3, renderer->gbuffer.depthmem);
-	composition.SetArg (4, renderer->gbuffer.normalmem);
-	composition.SetArg (5, renderer->gbuffer.specularmem);
-	composition.SetArg (6, renderer->shadowmap.GetMem ());
-	composition.SetArg (7, renderer->gbuffer.fragidxmem);
-	composition.SetArg (8, renderer->gbuffer.fraglistmem);
+	composition.SetArg (2, r->gbuffer.colormem);
+	composition.SetArg (3, r->gbuffer.depthmem);
+	composition.SetArg (4, r->gbuffer.normalmem);
+	composition.SetArg (5, r->gbuffer.specularmem);
+	composition.SetArg (6, r->shadowmap.GetMem ());
+	composition.SetArg (7, r->gbuffer.fragidxmem);
+	composition.SetArg (8, r->gbuffer.fraglistmem);
 
-	cl_uint num_parameters = renderer->GetNumParameters ();
+	cl_uint num_parameters = r->GetNumParameters ();
 	composition.SetArg (11, sizeof (cl_uint), &num_parameters);
-	composition.SetArg (12, renderer->GetParameterMem ());
+	composition.SetArg (12, r->GetParameterMem ());
 
 	glow.SetSize (0);
 
@@ -292,23 +291,23 @@ glm::vec3 Composition::GetSunDirection (float &theta, float &cos_theta)
 void Composition::Frame (float timefactor)
 {
 	std::vector<cl::Memory> mem = { screenmem, glowmem,
-																	renderer->gbuffer.colormem,
-																	renderer->gbuffer.normalmem,
-																	renderer->gbuffer.specularmem,
-																	renderer->gbuffer.depthmem,
-																	renderer->gbuffer.fraglistmem,
-																	renderer->gbuffer.fragidxmem,
-																	renderer->shadowmap.GetMem () };
+																	r->gbuffer.colormem,
+																	r->gbuffer.normalmem,
+																	r->gbuffer.specularmem,
+																	r->gbuffer.depthmem,
+																	r->gbuffer.fraglistmem,
+																	r->gbuffer.fragidxmem,
+																	r->shadowmap.GetMem () };
 
-	info.num_lights = renderer->GetNumLights ();
+	info.num_lights = r->GetNumLights ();
 
-	info.projinfo = renderer->camera.GetProjInfo ();
+	info.projinfo = r->camera.GetProjInfo ();
 	info.vmatinv = glm::transpose
-		 (glm::inverse (renderer->camera.GetViewMatrix ()));
+		 (glm::inverse (r->camera.GetViewMatrix ()));
 	info.shadowmat = glm::transpose
-		 (renderer->shadowmap.GetMat ());
-	info.eye = glm::vec4 (renderer->camera.GetEye (), 0.0);
-	info.center = glm::vec4 (renderer->camera.GetCenter (), 0.0);
+		 (r->shadowmap.GetMat ());
+	info.eye = glm::vec4 (r->camera.GetEye (), 0.0);
+	info.center = glm::vec4 (r->camera.GetCenter (), 0.0);
 	info.glow.threshold = luminance_threshold;
 	info.glow.size = glow.GetSize ();
 	info.glow.glowlimit = glow.GetLimit ();
@@ -357,17 +356,17 @@ void Composition::Frame (float timefactor)
 		}
 	}
 
-	composition.SetArg (9, renderer->GetLightMem ());
+	composition.SetArg (9, r->GetLightMem ());
 	composition.SetArg (10, sizeof (Info), &info);
 
-	const size_t work_dim[] = { renderer->gbuffer.GetWidth (),
-															renderer->gbuffer.GetHeight () };
+	const size_t work_dim[] = { r->gbuffer.GetWidth (),
+															r->gbuffer.GetHeight () };
 	const size_t local_dim[] = { 16, 16 };
 
-	renderer->queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
-	renderer->queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
-																				local_dim, 0, NULL, NULL);
-	renderer->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
+	r->queue.EnqueueAcquireGLObjects (mem, 0, NULL, NULL);
+	r->queue.EnqueueNDRangeKernel (composition, 2, NULL, work_dim,
+																 local_dim, 0, NULL, NULL);
+	r->queue.EnqueueReleaseGLObjects (mem, 0, NULL, NULL);
 
 	if (glow.GetSize () > 0)
 	{

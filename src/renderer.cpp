@@ -18,13 +18,10 @@
 #include <fstream>
 
 Renderer::Renderer (void)
-	: geometry (this), shadowmap (this),
-		finalpass (this), gbuffer (this),
+	: antialiasing (0)
 #ifdef DEBUG
-		memory (0),
+	,memory (0)
 #endif
-		interface (this), composition (this), antialiasing (0),
-		culling (this), camera (this)
 {
 }
 
@@ -45,7 +42,14 @@ bool Renderer::Init (void)
 		std::vector<char> ext;
 		ext.resize (len);
 		clctx.GetDeviceInfo (CL_DEVICE_EXTENSIONS, len, &ext[0], NULL);
-		std::cout << "OpenCL Extensions: " << &ext[0] << std::endl;
+		(*logstream) << "OpenCL Extensions: " << &ext[0] << std::endl;
+
+		cl_uint s;
+		clctx.GetDeviceInfo (CL_DEVICE_MAX_READ_IMAGE_ARGS, sizeof (cl_uint),
+												 &s, NULL);
+
+		(*logstream) << "Maximum number of read image args in OpenCL: "
+								 << s << std::endl;
 	}
 #endif
 

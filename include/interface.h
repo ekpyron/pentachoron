@@ -20,12 +20,10 @@
 #include <common.h>
 #include "font/all.h"
 
-class Renderer;
-
 class Interface
 {
 public:
-	 Interface (Renderer *parent);
+	 Interface (void);
 	 ~Interface (void);
 	 bool Init (void);
 	 void Frame (float timefactor);
@@ -61,8 +59,6 @@ private:
 	 int active_parameter;
 
 	 float timefactor;
-
-	 Renderer *renderer;
 };
 
 #endif /* !defined INTERFACE_H */

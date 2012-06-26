@@ -27,9 +27,8 @@ class Glow
 {
 public:
 	/** Constructor.
-	 * \param parent Specifies the parent Renderer class.
 	 */
-	Glow (Renderer *parent);
+	Glow (void);
 	 /** Destructor.
 		*/
 	 ~Glow (void);
@@ -128,8 +127,6 @@ private:
 	 GLuint size;
 
 	 gl::Texture *glowmap;
-
-	 Renderer *renderer;
 };
 
 #endif /* !defined GLOW_H */

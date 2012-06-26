@@ -17,10 +17,9 @@
 #include "gbuffer.h"
 #include "renderer.h"
 
-GBuffer::GBuffer (Renderer *parent)
-	: renderer (parent)
+GBuffer::GBuffer ()
 #ifdef DEBUG
-	  , numsamples (0)
+	: numsamples (0)
 #endif
 {
 }
@@ -136,7 +135,7 @@ bool GBuffer::Init (void)
 												0, GL_RED, GL_FLOAT, NULL);
 
 #ifdef DEBUG
-	renderer->memory += width * height * (4 * 4 + 4 + 4 + 4 + 4);
+	r->memory += width * height * (4 * 4 + 4 + 4 + 4 + 4);
 #endif
 
 	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
@@ -158,7 +157,7 @@ bool GBuffer::Init (void)
 	fraglisttex.Buffer (GL_R32UI, fraglist);
 
 #ifdef DEBUG
-	renderer->memory += width * height * (4 * 4 * 4 + 4);
+	r->memory += width * height * (4 * 4 * 4 + 4);
 #endif
 
 	transparencyfb.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
@@ -168,18 +167,18 @@ bool GBuffer::Init (void)
 																 fragidx, 0);
 	transparencyclearfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
-	depthmem = renderer->clctx.CreateFromGLTexture2D
+	depthmem = r->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, depthtexture);
-	colormem = renderer->clctx.CreateFromGLTexture2D
+	colormem = r->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, colorbuffer);
-	normalmem = renderer->clctx.CreateFromGLTexture2D
+	normalmem = r->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, normalbuffer);
-	specularmem = renderer->clctx.CreateFromGLTexture2D
+	specularmem = r->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, specularbuffer);
 
-	fragidxmem = renderer->clctx.CreateFromGLTexture2D
+	fragidxmem = r->clctx.CreateFromGLTexture2D
 		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, fragidx);
-	fraglistmem = renderer->clctx.CreateFromGLBuffer
+	fraglistmem = r->clctx.CreateFromGLBuffer
 		 (CL_MEM_READ_ONLY, fraglist);
 
 	const GLuint counters[64]
@@ -190,14 +189,14 @@ bool GBuffer::Init (void)
 	counter.Data (sizeof (GLuint) * 64, counters, GL_DYNAMIC_DRAW);
 
 	program["viewport"] = glm::uvec2 (width, height);
-	program["farClipPlane"] = renderer->camera.GetFarClipPlane ();
-	program["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+	program["farClipPlane"] = r->camera.GetFarClipPlane ();
+	program["nearClipPlane"] = r->camera.GetNearClipPlane ();
 	transparencyprog["viewport"] = glm::uvec2 (width, height);
-	transparencyprog["farClipPlane"] = renderer->camera.GetFarClipPlane ();
-	transparencyprog["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+	transparencyprog["farClipPlane"] = r->camera.GetFarClipPlane ();
+	transparencyprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
 	sraaprog["viewport"] = glm::uvec2 (width, height);
-	sraaprog["farClipPlane"] = renderer->camera.GetFarClipPlane ();
-	sraaprog["nearClipPlane"] = renderer->camera.GetNearClipPlane ();
+	sraaprog["farClipPlane"] = r->camera.GetFarClipPlane ();
+	sraaprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
 
 	GL_CHECK_ERROR;
 
@@ -207,7 +206,7 @@ bool GBuffer::Init (void)
 void GBuffer::SetAntialiasing (GLuint samples)
 {
 #ifdef DEBUG
-	renderer->memory -= width * height * numsamples * 4;
+	r->memory -= width * height * numsamples * 4;
 #endif
 	if (samples > 1)
 	{
@@ -220,7 +219,7 @@ void GBuffer::SetAntialiasing (GLuint samples)
 		multisamplefb.DrawBuffers ({ });
 
 #ifdef DEBUG
-		renderer->memory += width * height * numsamples * 4;
+		r->memory += width * height * numsamples * 4;
 #endif
 	}
 	else
@@ -250,7 +249,7 @@ void GBuffer::SetProjMatrix (const glm::mat4 &projmat)
 
 void GBuffer::Render (Geometry &geometry)
 {
-	renderer->culling.SetProjMatrix (renderer->camera.GetProjMatrix ());
+	r->culling.SetProjMatrix (r->camera.GetProjMatrix ());
 
 	gl::Enable (GL_DEPTH_TEST);
 	gl::DepthMask (GL_TRUE);
@@ -268,7 +267,7 @@ void GBuffer::Render (Geometry &geometry)
 	gl::ClearBufferfv (GL_DEPTH, 0, (const float[]) {1.0f});
 
 	geometry.Render (Geometry::Pass::GBuffer,
-									 program, renderer->camera.GetViewMatrix ());
+									 program, r->camera.GetViewMatrix ());
 
 	transparencyprog.Use ();
 
@@ -286,7 +285,7 @@ void GBuffer::Render (Geometry &geometry)
 	fragidx.BindImage (1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32I);
 	counter.BindBase (GL_ATOMIC_COUNTER_BUFFER, 0);
 	geometry.Render (Geometry::Pass::GBufferTransparency,
-									 transparencyprog, renderer->camera.GetViewMatrix ());
+									 transparencyprog, r->camera.GetViewMatrix ());
 
 	GLuint *ptr = (GLuint*) counter.MapRange (0, sizeof (GLuint) * 64,
 																						GL_MAP_WRITE_BIT
@@ -300,7 +299,7 @@ void GBuffer::Render (Geometry &geometry)
 
 	sraaprog.Use ();
 
-	if (renderer->GetAntialiasing ())
+	if (r->GetAntialiasing ())
 	{
 		gl::DepthMask (GL_TRUE);
 		multisamplefb.Bind (GL_FRAMEBUFFER);
@@ -308,7 +307,7 @@ void GBuffer::Render (Geometry &geometry)
 		gl::ClearBufferfv (GL_DEPTH, 0, (const float[]) {1.0f});
 			
 		geometry.Render (Geometry::Pass::GBufferSRAA,
-										 sraaprog, renderer->camera.GetViewMatrix ());
+										 sraaprog, r->camera.GetViewMatrix ());
 		gl::DepthMask (GL_FALSE);
 	}
 

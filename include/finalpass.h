@@ -19,12 +19,10 @@
 
 #include <common.h>
 
-class Renderer;
-
 class FinalPass
 {
 public:
-	 FinalPass (Renderer *parent);
+	 FinalPass (void);
 	 ~FinalPass (void);
 	 bool Init (void);
 	 void Render (void);
@@ -82,7 +80,6 @@ private:
 				 GLfloat lod;
 			} avgLum;
 	 } tonemapping;
-	 Renderer *renderer;
 };
 
 #endif /* !defined FINALPASS_H */

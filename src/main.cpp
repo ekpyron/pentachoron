@@ -20,13 +20,13 @@
 #include <yaml-cpp/yaml.h>
 #include <memory>
 
-std::unique_ptr<Renderer> renderer;
+std::unique_ptr<Renderer> r;
 YAML::Node config;
 bool running;
 
 void GLFWCALL resizecb (int w, int h)
 {
-	renderer->Resize (w, h);
+	r->Resize (w, h);
 }
 
 
@@ -39,9 +39,9 @@ int GLFWCALL closecb (void)
 void GLFWCALL keycb (int key, int action)
 {
 	if (action == GLFW_PRESS)
-		 renderer->OnKeyDown (key);
+		 r->OnKeyDown (key);
 	else if (action == GLFW_RELEASE)
-		 renderer->OnKeyUp (key);
+		 r->OnKeyUp (key);
 }
 
 std::ostream *logstream;
@@ -117,13 +117,13 @@ int main (int argc, char *argv[])
 
 		gl::Init (glfwGetProcAddress);
 
-		renderer = std::unique_ptr<Renderer> (new Renderer ());
+		r = std::unique_ptr<Renderer> (new Renderer ());
 
 		glfwSetWindowTitle ("Deferred Rendering Test");
 
-		if (!renderer->Init ())
+		if (!r->Init ())
 		{
-			renderer.reset ();
+			r.reset ();
 			glfwTerminate ();
 			return -1;
 		}
@@ -139,13 +139,13 @@ int main (int argc, char *argv[])
 		running = true;
 		while (running && glfwGetWindowParam (GLFW_OPENED) == GL_TRUE)
 		{
-			renderer->Frame ();
+			r->Frame ();
 			glfwSwapBuffers ();
 		}
 		
 		(*logstream) << "Main loop returned."	<< std::endl;
 
-		renderer.reset ();
+		r.reset ();
 		
 		(*logstream) << "Renderer class was freed." << std::endl;
 
@@ -156,14 +156,14 @@ int main (int argc, char *argv[])
 		exit (0);
 	} catch (std::exception &e) {
 		(*logstream) << "Exception: " << e.what () << std::endl;
-		renderer.reset ();
+		r.reset ();
 		(*logstream) << "Renderer class was freed." << std::endl;
 		glfwTerminate ();
 		(*logstream) << "Exiting." << std::endl;
 		exit (-1);
 	} catch (...) {
 		(*logstream) << "Unknown exception." << std::endl;
-		renderer.reset ();
+		r.reset ();
 		(*logstream) << "Renderer class was freed." << std::endl;
 		glfwTerminate ();
 		(*logstream) << "Exiting." << std::endl;

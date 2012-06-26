@@ -17,10 +17,9 @@
 #include "camera.h"
 #include "renderer.h"
 
-Camera::Camera (Renderer *parent)
+Camera::Camera (void)
 	: center (0, 0, 0), horizontal_angle (0), viewport (glm::ivec2 (0, 0)),
-		nearClipPlane (0.1f), farClipPlane (1000.0f), up_angle (0),
-		renderer (parent)
+		nearClipPlane (0.1f), farClipPlane (1000.0f), up_angle (0)
 {
 }
 
@@ -40,7 +39,7 @@ void Camera::Resize (int w, int h)
 
 	projmat = glm::perspective (45.0f, float (viewport.x) / float (viewport.y),
 															nearClipPlane, farClipPlane);
-	renderer->gbuffer.SetProjMatrix (projmat);
+	r->gbuffer.SetProjMatrix (projmat);
 }
 
 glm::vec3 Camera::GetEye (void) const

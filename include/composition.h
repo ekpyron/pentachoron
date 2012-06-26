@@ -21,8 +21,6 @@
 #include <gbuffer.h>
 #include <glow.h>
 
-class Renderer;
-
 /** Composition class.
  * This class handles the composition of the gbuffer data into
  * a final color value and creates a glow map.
@@ -31,9 +29,8 @@ class Composition
 {
 public:
 	/** Constructor.
-	 * \param parent Specifies the parent Renderer class.
 	 */
-	 Composition (Renderer *parent);
+	 Composition (void);
 	 /** Destructor.
 		*/
 	 ~Composition (void);
@@ -199,11 +196,6 @@ private:
 	 } Info;
 
 	 Info info;
-
-	 /** Parent renderer.
-		* The Renderer this class belongs to.
-		*/
-	 Renderer *renderer;
 };
 
 #endif /* !defined COMPOSITION_H */
