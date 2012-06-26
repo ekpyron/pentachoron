@@ -51,7 +51,7 @@ public:
 	 void RemoveLight (GLuint light);
 	 void AddLight (const Light &light);
 	 void UpdateLight (GLuint light);
-	 const cl::Memory &GetLightMem (void);
+	 gl::Buffer &GetLightBuffer (void);
 
 	 GLuint GetNumParameters (void);
 	 Parameter &GetParameters (GLuint params);
@@ -85,7 +85,7 @@ private:
 	 cl::Memory parametermem;
 
 	 std::vector<Light> lights;
-	 cl::Memory lightmem;
+	 gl::Buffer lightbuffer;
 
 	 Interface interface;
 };

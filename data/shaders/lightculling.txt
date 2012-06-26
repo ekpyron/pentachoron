@@ -1,0 +1,157 @@
+/*  
+ * This file is part of DRE.
+ *
+ * DRE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DRE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#version 420 core
+
+uniform vec2 invviewport;
+
+layout (binding = 0) uniform sampler2D mindepthtex;
+layout (binding = 1) uniform sampler2D maxdepthtex;
+layout (binding = 2) uniform samplerBuffer lightbuffertex;
+layout (location = 0) out vec4 dummy;
+
+layout (binding = 0) uniform atomic_uint counter[768];
+
+layout (binding = 0, size1x16) writeonly uniform uimage2D lighttex;
+
+#define SIZEOF_LIGHT 13
+
+uniform vec4 projinfo;
+uniform mat4 vmatinv;
+
+vec3 getpos (vec3 pin)
+{
+	vec4 pos;
+	pos.xyz = pin * 2 - 1;
+	pos.w = 1;
+
+	vec4 p;
+	p.x = pos.x * projinfo.x;
+	p.y = pos.y * projinfo.y;
+	p.z = -pos.w;
+	p.w = (pos.z * (projinfo.z - projinfo.w)
+	      + pos.w * (projinfo.z + projinfo.w))
+	      / (2 * projinfo.z * projinfo.w);
+	pos = vmatinv * p;
+	return pos.xyz / pos.w;
+}
+
+void main (void)
+{
+	int offset;
+	int tile;
+	ivec2 coord;
+	uint num_lights;
+	int lightidx;
+
+	num_lights = textureSize (lightbuffertex) / 13;
+
+	lightidx = ((int(gl_FragCoord.y)&0x1F)<<5)
+		   + (int (gl_FragCoord.x)&0x1F);
+
+	if (lightidx >= num_lights)
+	{
+		dummy = vec4 (0, 0, 0, 0);
+		return;
+	}
+
+	offset = lightidx * 13 + 6;
+
+	vec4 planes[6];
+	planes[0] = texelFetch (lightbuffertex, offset);
+	planes[1] = texelFetch (lightbuffertex, offset + 1);
+	planes[2] = texelFetch (lightbuffertex, offset + 2);
+	planes[3] = texelFetch (lightbuffertex, offset + 3);
+	planes[4] = texelFetch (lightbuffertex, offset + 4);
+	planes[5] = texelFetch (lightbuffertex, offset + 5);
+
+
+	coord.x = int (gl_FragCoord.x) >> 5;
+	coord.y = int (gl_FragCoord.y) >> 5;
+
+	tile = 32 * coord.y + coord.x;
+
+	float mindepth, maxdepth;
+
+	mindepth = texelFetch (mindepthtex, coord, 0).r;
+	maxdepth = texelFetch (maxdepthtex, coord, 0).r;
+
+	if (mindepth == 1.0)
+	{
+		dummy = vec4 (1, 0, 0, 0);
+		return;
+	}
+
+	vec3 boxmin, boxmax, bsphere;
+	float radius;
+
+	boxmin = getpos (vec3 (coord.x/32.0, coord.y/24.0, mindepth));
+	boxmax = getpos (vec3 ((coord.x + 1)/32.0,
+	       	 	 (coord.y + 1)/24.0, maxdepth));
+
+	radius = 0.5 * distance (boxmin, boxmax);
+	bsphere = 0.5 * (boxmin + boxmax);
+
+	float dist;
+	for (int i = 0; i < 6; i++)
+	{
+/*		vec4 plane = planes[i];
+
+		if (dot (plane.xyz, boxmin) + plane.w > 0)
+		    continue;
+		if (plane.x * boxmax.x + plane.y * boxmin.y
+		    + plane.z * boxmin.z + plane.w > 0)
+		    continue;
+		if (plane.x * boxmin.x + plane.y * boxmax.y
+		    + plane.z * boxmin.z + plane.w > 0)
+		    continue;
+		if (plane.x * boxmax.x + plane.y * boxmax.y
+		    + plane.z * boxmin.z + plane.w > 0)
+		    continue;
+		if (plane.x * boxmin.x + plane.y * boxmin.y
+		    + plane.z * boxmax.z + plane.w > 0)
+		    continue;
+		if (plane.x * boxmax.x + plane.y * boxmin.y
+		    + plane.z * boxmax.z + plane.w > 0)
+		    continue;
+		if (plane.x * boxmin.x + plane.y * boxmax.y
+		    + plane.z * boxmax.z + plane.w > 0)
+		    continue;
+		if (dot (plane.xyz, boxmax) + plane.w > 0)
+		    continue;
+		discard;*/
+		dist = dot (planes[i].xyz, bsphere)
+		       + planes[i].w;
+		if (dist <= -radius)
+		{
+		   dummy = vec4 (0, 0, 0, 0);
+		   return;
+		}
+	}
+
+	uint idx = atomicCounterIncrement (counter[tile]);
+
+	ivec2 p;
+
+	p.x = (coord.x << 5);
+	p.y = (coord.y << 5);
+	p.x += int (idx)&0x1F;
+	p.y += int (idx)>>5;
+
+	imageStore (lighttex, p, uvec4 (lightidx, 0, 0, 0));
+
+	dummy = vec4 (0,1,0,1);
+}

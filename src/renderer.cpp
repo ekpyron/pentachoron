@@ -74,7 +74,7 @@ bool Renderer::Init (void)
 	if (!shadowmap.Init ())
 		 return false;
 
-/*	float max = -100;
+	float max = -100;
 
 	srand (time (NULL));
 	for (int y = -7; y <= 7; y++)
@@ -111,12 +111,8 @@ bool Renderer::Init (void)
 			lights.push_back (light);
 		}
 	}
-	lightmem = clctx.CreateBuffer
-		 (CL_MEM_READ_ONLY,	sizeof (Light) * lights.size (), NULL);
-	queue.EnqueueWriteBuffer
-		 (lightmem, CL_TRUE, 0,
-			sizeof (Light) * lights.size (),
-			&lights[0], 0, NULL, NULL);*/
+	lightbuffer.Data (sizeof (Light) * lights.size (),
+										&lights[0], GL_STATIC_DRAW);
 
 	interface.AddShadow ();
 
@@ -276,21 +272,16 @@ void Renderer::RemoveLight (GLuint light)
 	if (lights.size () < 2)
 		 return;
 	lights.erase (lights.begin () + light);
-	queue.EnqueueWriteBuffer (lightmem, CL_TRUE, 0,
-														sizeof (Light) * lights.size (),
-														&lights[0], 0, NULL, NULL);
+	lightbuffer.Data (sizeof (Light) * lights.size (),
+										&lights[0], GL_STATIC_DRAW);
 }
 
 void Renderer::AddLight (const Light &light)
 {
 	lights.push_back (light);
 	lights.back ().CalculateFrustum ();
-	lightmem = clctx.CreateBuffer (CL_MEM_READ_ONLY,
-																 sizeof (Light) * lights.size (),
-																 NULL);
-	queue.EnqueueWriteBuffer (lightmem, CL_TRUE, 0,
-														sizeof (Light) * lights.size (),
-														&lights[0], 0, NULL, NULL);
+	lightbuffer.Data (sizeof (Light) * lights.size (),
+										&lights[0], GL_STATIC_DRAW);
 }
 
 void Renderer::UpdateLight (GLuint light)
@@ -311,15 +302,13 @@ void Renderer::UpdateLight (GLuint light)
 	if (lights[light].attenuation.w < 0)
 		 lights[light].attenuation.w = 0;
 	lights[light].CalculateFrustum ();
-	queue.EnqueueWriteBuffer (lightmem, CL_TRUE,
-														intptr_t (&lights[light]) - intptr_t (&lights[0]),
-														sizeof (lights[light]), &lights[light],
-														0, NULL, NULL);
+	lightbuffer.SubData (intptr_t (&lights[light]) - intptr_t (&lights[0]),
+											 sizeof (lights[light]), &lights[light]);
 }
 
-const cl::Memory &Renderer::GetLightMem (void)
+gl::Buffer &Renderer::GetLightBuffer (void)
 {
-	return lightmem;
+	return lightbuffer;
 }
 
 extern bool running;

@@ -20,7 +20,7 @@ void Light::CalculateFrustum (void)
 {
 	glm::mat4 mvpmat;
 
-	mvpmat = glm::perspective (2 * spot.angle * 180.0f / float (DRE_PI),
+	mvpmat = glm::perspective (2.5 * spot.angle * 180.0f / float (DRE_PI),
 														 1.0f, 0.1f, attenuation.w);
 	mvpmat *= glm::lookAt (glm::vec3 (position),
 												 glm::vec3 (position)

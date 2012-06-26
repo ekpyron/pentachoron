@@ -26,6 +26,10 @@ layout(binding = 3) uniform sampler2D specularbuffer;
 layout(binding = 4) uniform sampler2D shadowmap;
 layout(binding = 5) uniform isampler2D fragidx;
 layout(binding = 6) uniform usamplerBuffer fraglist;
+layout(binding = 7) uniform samplerBuffer lightbuffertex;
+layout(binding = 8) uniform usampler2D lighttex;
+
+layout (binding = 0) uniform atomic_uint counter[768];
 
 #define DEPTHLAYERS 8
 
@@ -38,14 +42,108 @@ struct PixelData {
        float depth;
 };
 
-vec4 getpos (float depth)
+uniform vec4 projinfo;
+uniform mat4 vmatinv;
+
+vec3 getpos (vec3 pin)
 {
-	return vec4 (0, 0, 0, 1);
+	vec4 pos;
+	pos.xyz = pin * 2 - 1;
+	pos.w = 1;
+
+	vec4 p;
+	p.x = pos.x * projinfo.x;
+	p.y = pos.y * projinfo.y;
+	p.z = -pos.w;
+	p.w = (pos.z * (projinfo.z - projinfo.w)
+	      + pos.w * (projinfo.z + projinfo.w))
+	      / (2 * projinfo.z * projinfo.w);
+	pos = vmatinv * p;
+	return pos.xyz / pos.w;
 }
 
 vec4 compute_pixel (struct PixelData data)
 {
-	return data.color;
+	uint num_lights;
+	vec3 pos;
+	vec3 normal;
+	vec3 diffuse = vec3 (0, 0, 0);
+
+	pos = getpos (vec3 (invviewport * gl_FragCoord.xy, data.depth));
+	normal = data.normal.xyz * 2 - 1;
+
+	uint tile;
+	ivec2 c;
+	c.x = int (gl_FragCoord.x) >> 5;
+	c.y = int (gl_FragCoord.y) >> 5;
+	tile = 32 * c.y + c.x;
+
+	num_lights = atomicCounter (counter[tile]);
+
+	for (uint i = 0; i < num_lights; i++)
+	{
+		int offset;
+
+		ivec2 p;
+		p.x = (c.x << 5);
+		p.y = (c.y << 5);
+		p.x += int (i) & 0x1F;
+		p.y += int (i) >> 5;
+		offset = int (texelFetch (lighttex, p, 0).r) * 13;
+
+		struct {
+		       vec4 pos;
+		       vec4 color;
+		       vec4 dir;
+		       vec4 spot, spot2;
+		       vec4 specular;
+		       vec4 attenuation;
+		} light;
+
+		light.pos = texelFetch (lightbuffertex, offset);
+		light.color = texelFetch (lightbuffertex, offset + 1);
+		light.dir = texelFetch (lightbuffertex, offset + 2);
+		light.spot = texelFetch (lightbuffertex, offset + 3);
+		light.spot2 = texelFetch (lightbuffertex, offset + 4);
+		light.specular = texelFetch (lightbuffertex, offset + 5);
+		light.attenuation = texelFetch (lightbuffertex,
+				    	        offset + 12);
+
+		vec3 lightdir = light.pos.xyz - pos.xyz;
+
+		float dist = length (lightdir);
+
+		if (dist > light.attenuation.w)
+		   continue;
+		
+		lightdir /= dist;
+
+		float attenuation;
+		attenuation = 1.0 / (light.attenuation.x
+			      	     + dist * light.attenuation.y
+				     + dist * dist * light.attenuation.z);
+
+		float angle = dot (normalize (light.dir.xyz),
+		      	      	   -lightdir);
+
+		if (angle < light.spot.x)
+		   continue;
+
+		if (angle < light.spot2.y)
+		{
+			attenuation *= (angle - light.spot.x)
+				       / (light.spot2.y - light.spot.x);
+		}
+
+		attenuation *= pow (angle, light.spot.y);
+
+		float NdotL;
+		NdotL = max (dot (normal, lightdir), 0.0);
+
+		diffuse += NdotL * attenuation * light.color.xyz;
+	}
+
+	return vec4 (data.color.xyz * diffuse, data.color.w);
 }
 
 void main (void)
@@ -90,7 +188,6 @@ void main (void)
 	data.specular = texture (specularbuffer, coord);
 	data.normal = texture (normalbuffer, coord);
 	data.depth = texture (depthbuffer, coord).r;
-
 	screen = compute_pixel (data);
 
 	for (uint i = 0; i < num; i++)

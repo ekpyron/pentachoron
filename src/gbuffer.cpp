@@ -113,8 +113,8 @@ bool GBuffer::Init (void)
 
 	width = config["gbuffer"]["width"].as<GLuint> ();
 	height = config["gbuffer"]["height"].as<GLuint> ();
-	width = (width + 15) & (~0xF);
-	height = (height + 15) & (~0xF);
+	width = (width + 31) & (~0x1F);
+	height = (height + 31) & (~0x1F);
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 

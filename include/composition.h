@@ -120,6 +120,10 @@ public:
 		* \returns a referene to the Glow class
 		*/
 	 Glow &GetGlow (void);
+
+	 gl::Texture dummy;
+
+
 private:
 	 /** Screen texture.
 		* A texture storing the combined, lit pixel value to be
@@ -188,12 +192,18 @@ private:
 	 gl::ProgramPipeline pipeline;
 	 gl::Program fprogram;
 
-	 gl::Framebuffer minmaxdepthfb;
 	 gl::Framebuffer clearfb;
+	 gl::Framebuffer lightcullfb;
+	 gl::ProgramPipeline lightcullpipeline;
+	 gl::Program lightcullprog;
+	 gl::Texture lighttex;
+	 gl::Buffer numlights;
+
+	 gl::Texture lightbuffertex;
+
+	 gl::Framebuffer minmaxdepthfb;
 	 gl::ProgramPipeline minmaxdepthpipeline;
 	 gl::Program minmaxdepthprog;
-	 gl::Texture lighttex;
-	 gl::Texture numlighttex;
 	 gl::Texture mindepthtex;
 	 gl::Texture maxdepthtex;
 
