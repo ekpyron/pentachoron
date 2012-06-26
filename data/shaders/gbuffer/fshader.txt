@@ -19,7 +19,6 @@
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 normal;
 layout(location = 2) out vec4 specular;
-layout(location = 3) out float depth;
 
 layout(binding = 0) uniform sampler2D diffusemap;
 layout(binding = 1) uniform sampler2D normalmap;
@@ -74,6 +73,4 @@ void main (void)
 	{
 		specular.w = 0;
 	}
-
-	depth = gl_FragCoord.z;
 }

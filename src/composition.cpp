@@ -476,7 +476,7 @@ void Composition::Frame (float timefactor)
 	minmaxdepthpipeline.Bind ();
 
 	r->windowgrid.sampler.Bind (0);
-	r->gbuffer.depthtexture.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+	r->gbuffer.depthbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 
 	r->windowgrid.sampler.Bind (1);
 	r->gbuffer.fragidx.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
@@ -541,7 +541,7 @@ void Composition::Frame (float timefactor)
 	r->gbuffer.colorbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 
 	r->windowgrid.sampler.Bind (1);
-	r->gbuffer.depthtexture.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
+	r->gbuffer.depthbuffer.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 
 	r->windowgrid.sampler.Bind (2);
 	r->gbuffer.normalbuffer.Bind (GL_TEXTURE2, GL_TEXTURE_2D);

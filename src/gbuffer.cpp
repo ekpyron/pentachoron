@@ -122,7 +122,8 @@ bool GBuffer::Init (void)
 	depthsampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	depthsampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	depthbuffer.Storage (GL_DEPTH_COMPONENT32, width, height);
+	depthbuffer.Image2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height,
+												0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
 	colorbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
 											 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -131,10 +132,8 @@ bool GBuffer::Init (void)
 	specularbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
 													0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	
-	depthtexture.Image2D (GL_TEXTURE_2D, 0, GL_R32F, width, height,
-												0, GL_RED, GL_FLOAT, NULL);
-
 #ifdef DEBUG
+	// not acurate anymore
 	r->memory += width * height * (4 * 4 + 4 + 4 + 4 + 4);
 #endif
 
@@ -144,12 +143,11 @@ bool GBuffer::Init (void)
 												 normalbuffer, 0);
 	framebuffer.Texture2D (GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
 												 specularbuffer, 0);
-	framebuffer.Texture2D (GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
-												 depthtexture, 0);
-	framebuffer.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
+	framebuffer.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+												 depthbuffer, 0);
 		
 	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
-				 GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 });
+				 GL_COLOR_ATTACHMENT2 });
 
 	fragidx.Image2D (GL_TEXTURE_2D, 0, GL_R32I, width, height,
 									 0, GL_RED_INTEGER, GL_INT, NULL);
@@ -160,26 +158,13 @@ bool GBuffer::Init (void)
 	r->memory += width * height * (4 * 4 * 4 + 4);
 #endif
 
-	transparencyfb.Renderbuffer (GL_DEPTH_ATTACHMENT, depthbuffer);
+	transparencyfb.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+														depthbuffer, 0);
 	transparencyfb.DrawBuffers ({ });
 
 	transparencyclearfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 																 fragidx, 0);
 	transparencyclearfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
-
-	depthmem = r->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, depthtexture);
-	colormem = r->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, colorbuffer);
-	normalmem = r->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, normalbuffer);
-	specularmem = r->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, specularbuffer);
-
-	fragidxmem = r->clctx.CreateFromGLTexture2D
-		 (CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, fragidx);
-	fraglistmem = r->clctx.CreateFromGLBuffer
-		 (CL_MEM_READ_ONLY, fraglist);
 
 	const GLuint counters[64]
 		 = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -263,7 +248,6 @@ void GBuffer::Render (Geometry &geometry)
 	gl::ClearBufferfv (GL_COLOR, 0, (const float[]) {0.0f, 0.0f, 0.0f, 1.0f} );
 	gl::ClearBufferfv (GL_COLOR, 1, (const float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
 	gl::ClearBufferfv (GL_COLOR, 2, (const float[]) {0.0f, 0.0f, 0.0f, 0.0f} );
-	gl::ClearBufferfv (GL_COLOR, 3, (const float[]) {1.0f, 0.0f, 0.0f, 0.0f} );
 	gl::ClearBufferfv (GL_DEPTH, 0, (const float[]) {1.0f});
 
 	geometry.Render (Geometry::Pass::GBuffer,

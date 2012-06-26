@@ -452,7 +452,7 @@ void FinalPass::Render (void)
 			r->gbuffer.msdepthtexture.Bind (GL_TEXTURE1,
 																						 GL_TEXTURE_2D_MULTISAMPLE);
 			r->windowgrid.sampler.Bind (2);
-			r->gbuffer.depthtexture.Bind (GL_TEXTURE2, GL_TEXTURE_2D);
+			r->gbuffer.depthbuffer.Bind (GL_TEXTURE2, GL_TEXTURE_2D);
 		}
 		sampler.Bind (3);
 		luminance.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
@@ -475,7 +475,7 @@ void FinalPass::Render (void)
 		break;
 	case 4:
 		r->windowgrid.sampler.Bind (0);
-		r->gbuffer.depthtexture.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		r->gbuffer.depthbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 5;
 		break;
 	case 5:

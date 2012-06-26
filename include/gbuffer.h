@@ -34,8 +34,7 @@ public:
 	 cl::Memory normalmem;
 	 gl::Texture specularbuffer;
 	 cl::Memory specularmem;
-	 gl::Texture depthtexture;
-	 gl::Renderbuffer depthbuffer;
+	 gl::Texture depthbuffer;
 	 cl::Memory depthmem;
 
 	 gl::Texture msdepthtexture;
