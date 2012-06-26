@@ -649,7 +649,7 @@ void getlightindices (local ushort *light_indices,
 	uint offset = mad24 (get_local_id (1), get_local_size (0),
 	     	      	     get_local_id (0));
 
-	if (boxmin_int == 4294967295 && boxmax_int == 0)
+	if (boxmin_int == as_int (1.0f))
 	   return;
 
 	// iterate over every light
@@ -719,7 +719,7 @@ kernel void composition (write_only image2d_t screen,
 	    y = get_global_id (1);
 
 	local float gxf, gyf;
-	local uint boxmin_int, boxmax_int;
+	local int boxmin_int, boxmax_int;
 	local uint num_light_indices;
 
 	struct PixelData data[DEPTHLAYERS];
@@ -731,8 +731,8 @@ kernel void composition (write_only image2d_t screen,
    	gyf = native_divide ((float)gy, 
       	 	             (float)get_image_width (depthbuffer));
 	num_light_indices = 0;
-	boxmin_int = 4294967295;
-	boxmax_int = 0;
+	boxmin_int = as_int (1.0f);
+	boxmax_int = as_int (0.0f);
 
 	local ushort light_indices[MAX_LIGHTS_PER_TILE];
 	uint indices[DEPTHLAYERS];
@@ -808,7 +808,7 @@ kernel void composition (write_only image2d_t screen,
 	// compute minimum/maximum
 	if (depth < 1.0)
 	{
-		uint d = (uint) (depth * 4294967295.0f);
+		int d = as_int (depth);
 		atomic_min (&boxmin_int, d);
 		atomic_max (&boxmax_int, d);
 	}
@@ -818,7 +818,7 @@ kernel void composition (write_only image2d_t screen,
 	{
 		if (data[i].depth < 1.0)
 		{
-			uint d = (uint) (data[i].depth * 4294967295.0f);
+			int d = as_int (data[i].depth);
 			atomic_min (&boxmin_int, d);
 			atomic_max (&boxmax_int, d);
 		}
@@ -831,11 +831,11 @@ kernel void composition (write_only image2d_t screen,
 	float4 boxmin, boxmax;
 	boxmin.x = gxf;
 	boxmin.y = gyf;
-	boxmin.z = native_divide ((float)boxmin_int, 4294967295.0f);
+	boxmin.z = as_float (boxmin_int);
 	getpos (&boxmin, &info);
 	boxmax.x = gxf;
 	boxmax.y = gyf;
-	boxmax.z = native_divide ((float)boxmax_int, 4294967295.0f);
+	boxmax.z = as_float (boxmax_int);
 	getpos (&boxmax, &info);
 
 	// obtain the light indices affecting the current tile
