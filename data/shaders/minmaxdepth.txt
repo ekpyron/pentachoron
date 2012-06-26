@@ -44,6 +44,9 @@ void main (void)
 		idx = int (texelFetch (fraglist, idx * 5 + 4).r);
 	}
 
+	if (mindepth == 1.0)
+	   discard;
+
 	mindepth = mind;
 	maxdepth = maxd;
 }
