@@ -145,7 +145,7 @@ float3 reflect (float3 I, float3 N)
 }
 
 // reconstruct position from depth
-float getpos (float4 *pos, global struct Info *info)
+float getpos (float4 *pos, local struct Info *info)
 {
 	float depth = pos->z;
 	pos->w = 1;
@@ -179,7 +179,7 @@ float getpos (float4 *pos, global struct Info *info)
 }
 
 float perez (float cos_theta, float gamma, float cos_gamma,
-      	     global float c[5])
+      	     local float c[5])
 {
 	return (1 + c[0] * native_exp (native_divide (c[1], cos_theta)))
 	       * (1 + c[2] * native_exp (c[3] * gamma)
@@ -201,7 +201,7 @@ float3 Yxy2RGB (float3 Yxy)
 	return rgb;
 }
 
-float compute_sky_diffuse (float3 normal, global struct Info *info)
+float compute_sky_diffuse (float3 normal, local struct Info *info)
 {
 	float theta_s = info->sun.theta;
 	float cos_theta_s = info->sun.cos_theta;
@@ -236,7 +236,7 @@ float compute_sky_diffuse (float3 normal, global struct Info *info)
 		    	 	        info->sky.perezY));
 }
 
-float4 compute_sky (float4 p, global struct Info *info)
+float4 compute_sky (float4 p, local struct Info *info)
 {
 	float theta_s = info->sun.theta;
 	float cos_theta_s = info->sun.cos_theta;
@@ -345,7 +345,7 @@ float specular_cooktorrance (float3 viewDir, float3 lightDir,
 }
 
 float compute_shadow (read_only image2d_t shadowmap, float4 pos,
-		      global struct Info *info)
+		      local struct Info *info)
 {
 	float4 lspos;
 	lspos.x = dot (info->shadowmat[0], pos);
@@ -380,7 +380,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		      unsigned int num_light_indices,
 		      local ushort *light_indices,
 		      read_only image2d_t shadowmap,
-		      global struct Info *info,
+		      local struct Info *info,
 		      unsigned int num_parameters,
 		      global struct Parameter *parameters,
 		      bool *issky)
@@ -697,7 +697,7 @@ kernel void composition (write_only image2d_t screen,
 			 read_only image2d_t fragidx,
 			 global uint *fraglist,
 			 global struct Light *lights,
-			 global struct Info *info,
+			 global struct Info *ginfo,
 			 unsigned int num_parameters,
 			 global struct Parameter *parameters)
 {
@@ -706,6 +706,14 @@ kernel void composition (write_only image2d_t screen,
 	uint offset = mad24 (ly, get_local_size (0), lx);
 	uint gx = mul24 (get_group_id (0), get_local_size (0)),
 	     gy = mul24 (get_group_id (1), get_local_size (1));
+	local struct Info info;
+
+	event_t infocpy;
+
+	infocpy = async_work_group_copy ((local float *)&info,
+		  			 (global float *)ginfo,
+					 sizeof (struct Info)
+					 / sizeof (float), 0);
 
 	uint x = get_global_id (0),
 	    y = get_global_id (1);
@@ -816,6 +824,7 @@ kernel void composition (write_only image2d_t screen,
 		}
 	}
 
+	wait_group_events (1, &infocpy);
 	barrier (CLK_LOCAL_MEM_FENCE);
 
 	// compute bounding box
@@ -823,22 +832,22 @@ kernel void composition (write_only image2d_t screen,
 	boxmin.x = gxf;
 	boxmin.y = gyf;
 	boxmin.z = native_divide ((float)boxmin_int, 4294967295.0f);
-	getpos (&boxmin, info);
+	getpos (&boxmin, &info);
 	boxmax.x = gxf;
 	boxmax.y = gyf;
 	boxmax.z = native_divide ((float)boxmax_int, 4294967295.0f);
-	getpos (&boxmax, info);
+	getpos (&boxmax, &info);
 
 	// obtain the light indices affecting the current tile
 	getlightindices (light_indices, &num_light_indices, boxmin_int,
-			 boxmax_int, lights, info->num_lights,
+			 boxmax_int, lights, info.num_lights,
 			 boxmin.xyz, boxmax.xyz);
 
 	barrier (CLK_LOCAL_MEM_FENCE);
 
 	float4 pixel;
 
-	if (info->mode == 1) { // output number of lighs per tile
+	if (info.mode == 1) { // output number of lighs per tile
 	
 	float f = native_divide ((float) num_light_indices,
 	      	  		 MAX_LIGHTS_PER_TILE - 1);
@@ -871,7 +880,7 @@ kernel void composition (write_only image2d_t screen,
 
 	// compute the opaque color
 	pixel = compute_pixel (&opaquedata, pos, lights, num_light_indices,
-	      		       light_indices, shadowmap, info,
+	      		       light_indices, shadowmap, &info,
 			       num_parameters, parameters, &issky);
 
 	// iterate over the depth layers
@@ -884,7 +893,7 @@ kernel void composition (write_only image2d_t screen,
 		// (back to front)
 		pixel2 = compute_pixel (&data[num - i - 1], pos, lights,
 		       	 	        num_light_indices, light_indices,
-		       	 	        shadowmap, info,
+		       	 	        shadowmap, &info,
 					num_parameters, parameters, &ignored);
 		// blend the next layer with the current colot
 		pixel = mix (pixel, pixel2, pixel2.w);
@@ -894,7 +903,7 @@ kernel void composition (write_only image2d_t screen,
 	write_imagef (screen, (int2) (x, y), pixel);
 
 	// glow effect
-	if (info->glow.size > 0)
+	if (info.glow.size > 0)
 	{
 		if (issky)
 		{
@@ -903,7 +912,7 @@ kernel void composition (write_only image2d_t screen,
 			return;
 		}
 
-		pixel = native_powr (pixel, info->glow.exponent);
+		pixel = native_powr (pixel, info.glow.exponent);
 		// compute the luminance of the current pixel
 		float luminance = dot ((float3) (0.2126f, 0.7152f, 0.0722f),
 		      		       pixel.xyz);
@@ -911,17 +920,17 @@ kernel void composition (write_only image2d_t screen,
 		float4 glow = (float4) (0.0f, 0.0f, 0.0f, 0.0f);
 
 		// check against the luminance threshold
-		if (luminance > info->glow.threshold)
+		if (luminance > info.glow.threshold)
 		{
 			glow.xyz = pixel.xyz;
 			glow.w = luminance;
 		}
 
-		glow = clamp (glow, 0.0f, info->glow.limit);
+		glow = clamp (glow, 0.0f, info.glow.limit);
 
 		// write to glow map
 		write_imagef (glowmap, (int2) (x, y), glow);
 	}
 
-	} /* info->mode */
+	} /* info.mode */
 }
