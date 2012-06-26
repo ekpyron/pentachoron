@@ -42,7 +42,10 @@ bool Composition::Init (void)
 												 "-cl-no-signed-zeros");
 		if (r->clctx.IsExtensionSupported ("cl_nv_compiler_options"))
 		{
-			options.append (" -cl-nv-maxrregcount=32");
+			std::stringstream stream;
+			stream << config["nv_maxrregcount"].as<cl_uint> (32);
+			options.append (" -cl-nv-maxrregcount=");
+			options.append (stream.str ());
 		}
 		program.Build (options);
 	}
