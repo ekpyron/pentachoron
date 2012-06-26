@@ -18,7 +18,7 @@
 #include "renderer.h"
 
 Composition::Composition (void)
-	: glow (), luminance_threshold (0.75),
+	: glow (),
 		sky ( { 3.0, 50.0, 142, 10.0 } )
 {
 }
@@ -106,6 +106,11 @@ bool Composition::Init (void)
 			 return false;
 		}
 	}
+
+	luminance_threshold = gl::SmartUniform<GLfloat>
+		 (fprogram["glow.threshold"], 0.75);
+	screenlimit = gl::SmartUniform<GLfloat>
+		 (fprogram["screenlimit"], 2.0);
 
 	fprogram["invviewport"]
 		 = glm::vec2 (1.0f / float (r->gbuffer.GetWidth ()),
@@ -281,22 +286,22 @@ Glow &Composition::GetGlow (void)
 
 void Composition::SetLuminanceThreshold (float threshold)
 {
-	luminance_threshold = threshold;
+	luminance_threshold.Set (threshold);
 }
 
 float Composition::GetLuminanceThreshold (void)
 {
-	return luminance_threshold;
+	return luminance_threshold.Get ();
 }
 
 void Composition::SetScreenLimit (float limit)
 {
-	info.SetScreenLimit (limit);
+	screenlimit.Set (limit);
 }
 
 GLfloat Composition::GetScreenLimit (void)
 {
-	return info.GetScreenLimit ();
+	return screenlimit.Get ();
 }
 
 void Composition::SetShadowAlpha (float alpha)
@@ -305,12 +310,12 @@ void Composition::SetShadowAlpha (float alpha)
 		 alpha = 0;
 	if (alpha > 1)
 		 alpha = 1;
-	info.SetShadowAlpha (alpha);
+//	info.SetShadowAlpha (alpha);
 }
 
 float Composition::GetShadowAlpha (void)
 {
-	return info.GetShadowAlpha ();
+//	return info.GetShadowAlpha ();
 }
 
 const gl::Texture &Composition::GetScreen (void)
@@ -324,12 +329,12 @@ void Composition::SetMode (GLuint m)
 {
 	if (m >= NUM_COMPOSITIONMODES)
 		 m = NUM_COMPOSITIONMODES - 1;
-	info.SetMode (m);
+//	info.SetMode (m);
 }
 
 GLuint Composition::GetMode (void)
 {
-	return info.GetMode ();
+//	return info.GetMode ();
 }
 
 float Composition::GetTurbidity (void)
@@ -401,11 +406,11 @@ glm::vec3 Composition::GetSunDirection (float &theta, float &cos_theta)
 		float phi = -atan2 (opp, adj);
 		theta = DRE_PI / 2.0 - solarAltitude;
 
-		float sin_theta = sin (info.GetSunTheta ());
-		cos_theta = cos (info.GetSunTheta ());
-		return glm::vec3 (sin_theta * sin (phi),
-											cos_theta,
-											sin_theta * cos (phi));
+//		float sin_theta = sin (info.GetSunTheta ());
+//		cos_theta = cos (info.GetSunTheta ());
+//		return glm::vec3 (sin_theta * sin (phi),
+//											cos_theta,
+//											sin_theta * cos (phi));
 
 }
 
@@ -573,295 +578,4 @@ void Composition::Frame (float timefactor)
 		glowmap.GenerateMipmap (GL_TEXTURE_2D);
 		glow.Apply ();
 	}
-}
-
-Composition::Info::Info (void)
-	: data ( { glm::vec4 (0), glm::mat4 (0), glm::mat4 (0),
-				 glm::vec4 (0), glm::vec4 (0), { 0, 0.0f, 0.0f, 0.0f },
-			{ glm::vec4 (0), 0.0f, 0.0f }, { 3.0f }, 0.7, 0, 0, 2.0 } )
-{
-}
-
-Composition::Info::~Info (void)
-{
-}
-
-bool Composition::Info::Init (void)
-{
-	return true;
-}
-
-void Composition::Info::SetProjInfo (const glm::vec4 &i)
-{
-	if (data.projinfo != i)
-	{
-		data.projinfo = i;
-	}
-}
-
-const glm::vec4 &Composition::Info::GetProjInfo (void)
-{
-	return data.projinfo;
-}
-
-void Composition::Info::SetInverseViewMatrix (const glm::mat4 &m)
-{
-	if (data.vmatinv != m)
-	{
-		data.vmatinv = m;
-	}
-}
-
-const glm::mat4 &Composition::Info::GetInverseViewMatrix (void)
-{
-	return data.vmatinv;
-}
-
-void Composition::Info::SetShadowMatrix (const glm::mat4 &m)
-{
-	if (data.shadowmat != m)
-	{
-		data.shadowmat = m;
-	}
-}
-
-const glm::mat4 &Composition::Info::GetShadowMatrix (void)
-{
-	return data.shadowmat;
-}
-
-void Composition::Info::SetEye (const glm::vec4 &e)
-{
-	if (data.eye != e)
-	{
-		data.eye = e;
-	}
-}
-
-const glm::vec4 &Composition::Info::GetEye (void)
-{
-	return data.eye;
-}
-
-void Composition::Info::SetCenter (const glm::vec4 &c)
-{
-	if (data.center != c)
-	{
-		data.center = c;
-	}
-}
-
-const glm::vec4 &Composition::Info::GetCenter (void)
-{
-	return data.center;
-}
-
-void Composition::Info::SetGlowSize (GLuint s)
-{
-	if (data.glow.size != s)
-	{
-		data.glow.size = s;
-	}
-}
-
-GLuint Composition::Info::GetGlowSize (void)
-{
-	return data.glow.size;
-}
-
-void Composition::Info::SetGlowExponent (GLfloat e)
-{
-	if (data.glow.exponent != e)
-	{
-		data.glow.exponent = e;
-	}
-}
-
-GLfloat Composition::Info::GetGlowExponent (void)
-{
-	return data.glow.exponent;
-}
-
-void Composition::Info::SetGlowThreshold (GLfloat t)
-{
-	if (data.glow.threshold != t)
-	{
-		data.glow.threshold = t;
-	}
-}
-
-GLfloat Composition::Info::GetGlowThreshold (void)
-{
-	return data.glow.threshold;
-}
-
-void Composition::Info::SetGlowLimit (GLfloat l)
-{
-	if (data.glow.glowlimit != l)
-	{
-		data.glow.glowlimit = l;
-	}
-}
-
-GLfloat Composition::Info::GetGlowLimit (void)
-{
-	return data.glow.glowlimit;
-}
-
-void Composition::Info::SetSunDirection (const glm::vec4 &d)
-{
-	if (data.sun.direction != d)
-	{
-		data.sun.direction = d;
-	}
-}
-
-const glm::vec4 &Composition::Info::GetSunDirection (void)
-{
-	return data.sun.direction;
-}
-
-void Composition::Info::SetSunTheta (GLfloat theta)
-{
-	if (data.sun.theta != theta)
-	{
-		data.sun.theta = theta;
-		data.sun.cos_theta = cosf (theta);
-	}
-}
-
-GLfloat Composition::Info::GetSunTheta (void)
-{
-	return data.sun.theta;
-}
-
-GLfloat Composition::Info::GetCosSunTheta (void)
-{
-	return data.sun.cos_theta;
-}
-
-void Composition::Info::SetSkyTurbidity (GLfloat T)
-{
-	if (data.sky.turbidity != T)
-	{
-		data.sky.turbidity = T;
-	}
-}
-
-GLfloat Composition::Info::GetSkyTurbidity (void)
-{
-	return data.sky.turbidity;
-}
-
-void Composition::Info::SetSkyPerezY (const GLfloat *p)
-{
-	for (auto i = 0; i < 5; i++)
-	{
-		if (data.sky.perezY[i] != p[i])
-		{
-			data.sky.perezY[i] = p[i];
-		}
-	}
-}
-
-const GLfloat *Composition::Info::GetSkyPerezY (void)
-{
-	return &data.sky.perezY[0];
-}
-
-void Composition::Info::SetSkyPerezx (const GLfloat *p)
-{
-	for (auto i = 0; i < 5; i++)
-	{
-		if (data.sky.perezx[i] != p[i])
-		{
-			data.sky.perezx[i] = p[i];
-		}
-	}
-}
-
-const GLfloat *Composition::Info::GetSkyPerezx (void)
-{
-	return &data.sky.perezx[0];
-}
-
-void Composition::Info::SetSkyPerezy (const GLfloat *p)
-{
-	for (auto i = 0; i < 5; i++)
-	{
-		if (data.sky.perezy[i] != p[i])
-		{
-			data.sky.perezy[i] = p[i];
-		}
-	}
-}
-
-const GLfloat *Composition::Info::GetSkyPerezy (void)
-{
-	return &data.sky.perezy[0];
-}
-
-void Composition::Info::SetSkyZenithYxy (const glm::vec4 &Yxy)
-{
-	if (data.sky.zenithYxy != Yxy)
-	{
-		data.sky.zenithYxy = Yxy;
-	}
-}
-
-const glm::vec4 &Composition::Info::GetSkyZenithYxy (void)
-{
-	return data.sky.zenithYxy;
-}
-
-void Composition::Info::SetShadowAlpha (GLfloat a)
-{
-	if (data.shadow_alpha != a)
-	{
-		data.shadow_alpha = a;
-	}
-}
-
-GLfloat Composition::Info::GetShadowAlpha (void)
-{
-	return data.shadow_alpha;
-}
-
-void Composition::Info::SetMode (GLuint m)
-{
-	if (data.mode != m)
-	{
-		data.mode = m;
-	}
-}
-
-GLuint Composition::Info::GetMode (void)
-{
-	return data.mode;
-}
-
-void Composition::Info::SetNumLights (GLuint n)
-{
-	if (data.num_lights != n)
-	{
-		data.num_lights = n;
-	}
-}
-
-GLuint Composition::Info::GetNumLights (void)
-{
-	return data.num_lights;
-}
-
-void Composition::Info::SetScreenLimit (GLfloat l)
-{
-	if (data.screenlimit != l)
-	{
-		data.screenlimit = l;
-	}
-}
-
-GLfloat Composition::Info::GetScreenLimit (void)
-{
-	return data.screenlimit;
 }

@@ -17,7 +17,7 @@
 #version 420 core
 
 layout(location = 0) out vec4 screen;
-layout(location = 1) out vec4 glow;
+layout(location = 1) out vec4 glowmap;
 
 layout(binding = 0) uniform sampler2D colorbuffer;
 layout(binding = 1) uniform sampler2D depthbuffer;
@@ -41,6 +41,12 @@ struct PixelData {
        vec4 normal;
        float depth;
 };
+
+uniform struct {
+	float threshold;
+} glow;
+
+uniform float screenlimit;
 
 uniform vec4 projinfo;
 uniform mat4 vmatinv;
@@ -149,6 +155,7 @@ vec4 compute_pixel (struct PixelData data)
 void main (void)
 {
 	struct PixelData data;
+	vec4 pixel;
 	vec2 coord = invviewport * gl_FragCoord.xy;
 
 	int idx = texture (fragidx, coord).r;
@@ -188,7 +195,7 @@ void main (void)
 	data.specular = texture (specularbuffer, coord);
 	data.normal = texture (normalbuffer, coord);
 	data.depth = texture (depthbuffer, coord).r;
-	screen = compute_pixel (data);
+	pixel = compute_pixel (data);
 
 	for (uint i = 0; i < num; i++)
 	{
@@ -203,6 +210,18 @@ void main (void)
 		data.depth = uintBitsToFloat (texelFetch (fraglist,
 			     		    		  idx * 5 + 3).r);
 		tmp = compute_pixel (data);
-		screen = mix (screen, tmp, tmp.w);
+		pixel = mix (pixel, tmp, tmp.w);
+	}
+
+	pixel = clamp (pixel, 0, screenlimit);
+	screen = pixel;
+
+	if (dot (pixel.xyz, vec3 (0.2126, 0.7152, 0.0722)) > glow.threshold)
+	{
+		glowmap = pixel;
+	}
+	else
+	{
+		glowmap = vec4 (0, 0, 0, 0);
 	}
 }
