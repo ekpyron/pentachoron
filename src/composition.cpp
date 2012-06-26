@@ -495,9 +495,9 @@ void Composition::Frame (float timefactor)
 	gl::BlendEquationi (1, GL_MAX);
 	gl::Enable (GL_BLEND);
 
-	for (auto y = 0; y < 16; y++)
+	for (auto y = 0; y < 32; y++)
 	{
-		for (auto x = 0; x < 16; x++)
+		for (auto x = 0; x < 32; x++)
 		{
 			minmaxdepthprog["offset"] = glm::uvec2 (x, y);
 			renderer->windowgrid.Render ();

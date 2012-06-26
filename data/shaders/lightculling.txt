@@ -102,13 +102,10 @@ void main (void)
 	boxmax = getpos (vec3 ((coord.x + 1)/32.0,
 	       	 	 (coord.y + 1)/24.0, maxdepth));
 
-	radius = 0.5 * distance (boxmin, boxmax);
-	bsphere = 0.5 * (boxmin + boxmax);
-
 	float dist;
 	for (int i = 0; i < 6; i++)
 	{
-/*		vec4 plane = planes[i];
+		vec4 plane = planes[i];
 
 		if (dot (plane.xyz, boxmin) + plane.w > 0)
 		    continue;
@@ -132,14 +129,7 @@ void main (void)
 		    continue;
 		if (dot (plane.xyz, boxmax) + plane.w > 0)
 		    continue;
-		discard;*/
-		dist = dot (planes[i].xyz, bsphere)
-		       + planes[i].w;
-		if (dist <= -radius)
-		{
-		   dummy = vec4 (0, 0, 0, 0);
-		   return;
-		}
+		discard;
 	}
 
 	uint idx = atomicCounterIncrement (counter[tile]);
