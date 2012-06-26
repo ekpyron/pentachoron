@@ -17,8 +17,7 @@
 #include "shadowmap.h"
 #include "renderer.h"
 
-ShadowMap::ShadowMap (Renderer *parent)
-	: renderer (parent)
+ShadowMap::ShadowMap (void)
 {
 }
 
@@ -123,10 +122,10 @@ bool ShadowMap::Init (void)
 	}
 
 	hblurpipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
-																	renderer->windowgrid.vprogram);
+																	r->windowgrid.vprogram);
 	hblurpipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, hblurprog);
 	vblurpipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
-																	renderer->windowgrid.vprogram);
+																	r->windowgrid.vprogram);
 	vblurpipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, vblurprog);
 
 	width = config["shadowmap"]["width"].as<GLuint> ();
@@ -145,9 +144,9 @@ bool ShadowMap::Init (void)
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
-	shadowmem = renderer->clctx.CreateFromGLTexture2D (CL_MEM_READ_ONLY,
-																										 GL_TEXTURE_2D, 0,
-																										 shadowmap);
+	shadowmem = r->clctx.CreateFromGLTexture2D (CL_MEM_READ_ONLY,
+																							GL_TEXTURE_2D, 0,
+																							shadowmap);
 
 	tmpstore.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
 										0, GL_RG, GL_FLOAT, NULL);
@@ -157,7 +156,7 @@ bool ShadowMap::Init (void)
 											 GL_FLOAT, NULL);
 
 #ifdef DEBUG
-	renderer->memory += width * height * (2 * 4 + 2 * 4 + 4);
+	r->memory += width * height * (2 * 4 + 2 * 4 + 4);
 #endif
 
 	framebuffer.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
@@ -269,7 +268,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 														 mins.y, maxes.y,
 														 -maxes.z, -mins.z));
 	}
-	renderer->culling.SetProjMatrix (projmat.Get ());
+	r->culling.SetProjMatrix (projmat.Get ());
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
 
@@ -299,7 +298,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 
 	depthbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	sampler.Bind (0);
-	renderer->windowgrid.Render ();
+	r->windowgrid.Render ();
 	
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 
@@ -308,7 +307,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 		
 	tmpstore.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	sampler.Bind (0);
-	renderer->windowgrid.Render ();
+	r->windowgrid.Render ();
 		
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 

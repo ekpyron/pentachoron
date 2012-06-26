@@ -90,4 +90,6 @@ private:
 	 Interface interface;
 };
 
+extern std::unique_ptr<Renderer> r;
+
 #endif /* !defined RENDERER_H */

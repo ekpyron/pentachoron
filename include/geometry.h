@@ -22,12 +22,10 @@
 #include "model/material.h"
 #include <map>
 
-class Renderer;
-
 class Geometry
 {
 public:
-	 Geometry (Renderer *parent);
+	 Geometry (void);
 	 ~Geometry (void);
 	 bool Init (void);
 	 void Render (GLuint pass, const gl::Program &program,
@@ -57,7 +55,6 @@ private:
 
 	 friend class Model;
 	 friend class Mesh;
-	 Renderer *renderer;
 };
 
 

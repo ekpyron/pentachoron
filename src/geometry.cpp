@@ -17,9 +17,7 @@
 #include "geometry.h"
 #include "renderer.h"
 
-Geometry::Geometry (Renderer *parent)
-	: renderer (parent), kitty (this), headglass (this),
-		box (this), grid (this)
+Geometry::Geometry (void)
 {
 }
 
@@ -143,7 +141,7 @@ void Geometry::Render (GLuint p,
 																				glm::vec3 (5 * x, -2.99, 8 * z));
 			program["mvmat"] = mvmat;
 			bboxprogram["mvmat"] = mvmat;
-			renderer->culling.SetModelViewMatrix (mvmat);
+			r->culling.SetModelViewMatrix (mvmat);
 			if ((x&1) + (z&1) == 0)
 			{
 				kitty.Render (pass, program);
@@ -159,7 +157,7 @@ void Geometry::Render (GLuint p,
 
 	program["mvmat"] = viewmat;
 	bboxprogram["mvmat"] = viewmat;
-	renderer->culling.SetModelViewMatrix (viewmat);
+	r->culling.SetModelViewMatrix (viewmat);
 
 	grid.Render (pass, program);
 }

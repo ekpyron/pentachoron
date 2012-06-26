@@ -219,7 +219,7 @@ void Mesh::Render (const gl::Program &program, GLuint passtype)
 {
 	if (passtype == Geometry::Pass::ShadowMap && !shadows)
 		 return;
-	if (!parent.parent->renderer->culling.IsVisible
+	if (!r->culling.IsVisible
 			(bsphere.center, bsphere.radius))
 		return;
 

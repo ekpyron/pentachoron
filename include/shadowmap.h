@@ -22,8 +22,6 @@
 #include "geometry.h"
 #include "shadow.h"
 
-class Renderer;
-
 /** Shadow map class.
  * This class handles the creation of shadow maps.
  */
@@ -31,9 +29,8 @@ class ShadowMap
 {
 public:
 	/** Constructor.
-	 * \param parent Specifies the parent Renderer class.
 	 */
-	ShadowMap (Renderer *parent);
+	ShadowMap (void);
 	/** Destructor.
 	 */
 	 ~ShadowMap (void);
@@ -115,11 +112,6 @@ private:
 
 	 gl::Buffer buffer;
 	 gl::Texture buffertex;
-
-	 /** Parent renderer.
-		* The Renderer this class belongs to.
-		*/
-	 Renderer *renderer;
 };
 
 

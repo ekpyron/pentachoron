@@ -20,12 +20,10 @@
 #include <common.h>
 #include "geometry.h"
 
-class Renderer;
-
 class GBuffer
 {
 public:
-	 GBuffer (Renderer *parent);
+	 GBuffer (void);
 	 ~GBuffer (void);
 	 bool Init (void);
 	 void Render (Geometry &geometry);
@@ -70,8 +68,6 @@ private:
 	 gl::Sampler depthsampler;
 
 	 gl::Buffer counter;
-
-	 Renderer *renderer;
 };
 
 

@@ -25,14 +25,21 @@
 #include <algorithm>
 #include "renderer.h"
 
-Model::Model (Geometry *p) : parent (p)
+Model::Model (void)
 {
 }
 
 Model::Model (Model &&model) : meshes (std::move (model.meshes)),
 															 materials (std::move (model.materials)),
-															 parent (model.parent)
+															 queries (std::move (model.queries))
 {
+	bbox.min = model.bbox.min;
+	bbox.max = model.bbox.max;
+	bbox.buffer = std::move (model.bbox.buffer);
+	bbox.indices = std::move (model.bbox.indices);
+	bbox.array = std::move (model.bbox.array);
+	bsphere.center = model.bsphere.center;
+	bsphere.radius = model.bsphere.radius;
 }
 
 Model::~Model (void)
@@ -43,7 +50,13 @@ Model &Model::operator= (Model &&model)
 {
 	meshes = std::move (model.meshes);
 	materials = std::move (model.materials);
-	parent = model.parent;
+	bbox.min = model.bbox.min;
+	bbox.max = model.bbox.max;
+	bbox.buffer = std::move (model.bbox.buffer);
+	bbox.indices = std::move (model.bbox.indices);
+	bbox.array = std::move (model.bbox.array);
+	bsphere.center = model.bsphere.center;
+	bsphere.radius = model.bsphere.radius;
 }
 
 /** @cond */
@@ -164,7 +177,7 @@ bool Model::Load (const std::string &filename)
 	for (const YAML::Node &node : desc["meshes"])
 	{
 		unsigned int mesh = node["number"].as<unsigned int> ();
-		const Material &material = parent->GetMaterial
+		const Material &material = r->geometry.GetMaterial
 			 (node["material"].as<std::string> ());
 		if (mesh >= scene->mNumMeshes)
 		{
@@ -248,7 +261,7 @@ void Model::Render (GLuint pass, const gl::Program &program)
 	GLuint result = GL_TRUE;
 	GLuint passtype;
 
-	if (!parent->renderer->culling.IsVisible
+	if (!r->culling.IsVisible
 			(bsphere.center, bsphere.radius))
 		return;
 
@@ -330,7 +343,7 @@ void Model::Render (GLuint pass, const gl::Program &program)
 			gl::DepthMask (GL_FALSE);
 			gl::Disable (GL_CULL_FACE);
 		}
-		parent->bboxprogram.Use ();
+		r->geometry.bboxprogram.Use ();
 		bbox.array.Bind ();
 		bbox.indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
 		gl::DrawElements (GL_TRIANGLES, 36,

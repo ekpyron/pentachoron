@@ -17,8 +17,7 @@
 #include "culling.h"
 #include "renderer.h"
 
-Culling::Culling (Renderer *parent)
-	: renderer (parent)
+Culling::Culling (void)
 {
 }
 
@@ -35,7 +34,7 @@ void Culling::Frame (void)
 void Culling::SetProjMatrix (const glm::mat4 &mat)
 {
 	projmat = mat;
-	renderer->geometry.SetProjMatrix (mat);
+	r->geometry.SetProjMatrix (mat);
 }
 
 const glm::mat4 &Culling::GetProjMatrix (void)

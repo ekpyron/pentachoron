@@ -102,13 +102,13 @@ struct Info
 	} glow;
 	struct
 	{
-		struct
-		{
-			float4 direction;
-			float theta;
-			float cos_theta;
-			float padding[2];
-		} sun;
+		float4 direction;
+		float theta;
+		float cos_theta;
+		float padding[2];
+	} sun;
+	struct
+	{
 		float turbidity;
 		float perezY[5];
 		float perezx[5];
@@ -135,7 +135,7 @@ struct Parameter
 	      float gaussfactor;
 	      float param2;
 	};
-	float padding;
+	float reflect;
 };
 
 // compute reflection vector
@@ -145,7 +145,7 @@ float3 reflect (float3 I, float3 N)
 }
 
 // reconstruct position from depth
-float getpos (float4 *pos, struct Info *info)
+float getpos (float4 *pos, local struct Info *info)
 {
 	float depth = pos->z;
 	pos->w = 1;
@@ -179,7 +179,7 @@ float getpos (float4 *pos, struct Info *info)
 }
 
 float perez (float cos_theta, float gamma, float cos_gamma,
-      	      float c[5])
+      	     local float c[5])
 {
 	return (1 + c[0] * native_exp (native_divide (c[1], cos_theta)))
 	       * (1 + c[2] * native_exp (c[3] * gamma)
@@ -201,15 +201,15 @@ float3 Yxy2RGB (float3 Yxy)
 	return rgb;
 }
 
-float compute_sky_diffuse (float3 normal, struct Info *info)
+float compute_sky_diffuse (float3 normal, local struct Info *info)
 {
-	float theta_s = info->sky.sun.theta;
-	float cos_theta_s = info->sky.sun.cos_theta;
+	float theta_s = info->sun.theta;
+	float cos_theta_s = info->sun.cos_theta;
 
 	float3 dir;
 	float3 sundir;
 
-	sundir = info->sky.sun.direction.xyz;
+	sundir = info->sun.direction.xyz;
 	dir = fast_normalize (normal);
 
 	float cos_theta = dir.y;
@@ -236,15 +236,15 @@ float compute_sky_diffuse (float3 normal, struct Info *info)
 		    	 	        info->sky.perezY));
 }
 
-float4 compute_sky (float4 p, struct Info *info)
+float4 compute_sky (float4 p, local struct Info *info)
 {
-	float theta_s = info->sky.sun.theta;
-	float cos_theta_s = info->sky.sun.cos_theta;
+	float theta_s = info->sun.theta;
+	float cos_theta_s = info->sun.cos_theta;
 
 	float3 dir;
 	float3 sundir;
 
-	sundir = info->sky.sun.direction.xyz;
+	sundir = info->sun.direction.xyz;
 	dir = fast_normalize (p.xyz);
 
 	float cos_theta = dir.y;
@@ -345,7 +345,7 @@ float specular_cooktorrance (float3 viewDir, float3 lightDir,
 }
 
 float compute_shadow (read_only image2d_t shadowmap, float4 pos,
-		      struct Info *info)
+		      local struct Info *info)
 {
 	float4 lspos;
 	lspos.x = dot (info->shadowmat[0], pos);
@@ -380,7 +380,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 		      unsigned int num_light_indices,
 		      local ushort *light_indices,
 		      read_only image2d_t shadowmap,
-		      struct Info *info,
+		      local struct Info *info,
 		      unsigned int num_parameters,
 		      global struct Parameter *parameters,
 		      bool *issky)
@@ -425,7 +425,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	diffuse = sky_intensity * (float3) (1, 1, 1);
 
 	{
-		float3 lightDir = fast_normalize (info->sky.sun.direction.xyz);
+		float3 lightDir = fast_normalize (info->sun.direction.xyz);
 		float3 halfVec = fast_normalize (viewDir + lightDir);
 
 		float s;
@@ -450,7 +450,7 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 			default:
 			     break;
 		}
-		specular = s * compute_sky ((float4) (normal,1), info).xyz;
+		specular = s * compute_sky ((float4) (normal, 1.0), info).xyz;
 	}
 
 	// iterate over lights
@@ -565,6 +565,21 @@ float4 compute_pixel (struct PixelData *data, float2 p,
 	// clamp the pixel
 	pixel = clamp (pixel, 0.0f, info->screenlimit);
 
+	if (param.reflect > 0)
+	{
+		float f;
+		f = dot (-viewDir, normal);
+		if (f < 0) f = -f;
+		f = param.reflect + pown (1 - f, 5) * (1 - param.reflect);
+		f = clamp (f, 0.1f, 0.9f);
+		float3 refl = compute_sky ((float4) (reflect (-viewDir,
+		       	      		  	    	      normal),1),
+	       	      		   	   info).xyz;
+
+		pixel.xyz =  mix (pixel.xyz, refl, f);
+	}
+
+
 	float shadow = compute_shadow (shadowmap, pos, info);
 	pixel *= mad (shadow, info->shadow_alpha, 1 - info->shadow_alpha);
 
@@ -634,7 +649,7 @@ void getlightindices (local ushort *light_indices,
 	uint offset = mad24 (get_local_id (1), get_local_size (0),
 	     	      	     get_local_id (0));
 
-	if (boxmin_int == 4294967295 && boxmax_int == 0)
+	if (boxmin_int == as_int (1.0f))
 	   return;
 
 	// iterate over every light
@@ -682,7 +697,7 @@ kernel void composition (write_only image2d_t screen,
 			 read_only image2d_t fragidx,
 			 global uint *fraglist,
 			 global struct Light *lights,
-			 struct Info info,
+			 global struct Info *ginfo,
 			 unsigned int num_parameters,
 			 global struct Parameter *parameters)
 {
@@ -691,12 +706,20 @@ kernel void composition (write_only image2d_t screen,
 	uint offset = mad24 (ly, get_local_size (0), lx);
 	uint gx = mul24 (get_group_id (0), get_local_size (0)),
 	     gy = mul24 (get_group_id (1), get_local_size (1));
+	local struct Info info;
+
+	event_t infocpy;
+
+	infocpy = async_work_group_copy ((local float *)&info,
+		  			 (global float *)ginfo,
+					 sizeof (struct Info)
+					 / sizeof (float), 0);
 
 	uint x = get_global_id (0),
 	    y = get_global_id (1);
 
 	local float gxf, gyf;
-	local uint boxmin_int, boxmax_int;
+	local int boxmin_int, boxmax_int;
 	local uint num_light_indices;
 
 	struct PixelData data[DEPTHLAYERS];
@@ -708,8 +731,8 @@ kernel void composition (write_only image2d_t screen,
    	gyf = native_divide ((float)gy, 
       	 	             (float)get_image_width (depthbuffer));
 	num_light_indices = 0;
-	boxmin_int = 4294967295;
-	boxmax_int = 0;
+	boxmin_int = as_int (1.0f);
+	boxmax_int = as_int (0.0f);
 
 	local ushort light_indices[MAX_LIGHTS_PER_TILE];
 	uint indices[DEPTHLAYERS];
@@ -785,7 +808,7 @@ kernel void composition (write_only image2d_t screen,
 	// compute minimum/maximum
 	if (depth < 1.0)
 	{
-		uint d = (uint) (depth * 4294967295.0f);
+		int d = as_int (depth);
 		atomic_min (&boxmin_int, d);
 		atomic_max (&boxmax_int, d);
 	}
@@ -795,23 +818,24 @@ kernel void composition (write_only image2d_t screen,
 	{
 		if (data[i].depth < 1.0)
 		{
-			uint d = (uint) (data[i].depth * 4294967295.0f);
+			int d = as_int (data[i].depth);
 			atomic_min (&boxmin_int, d);
 			atomic_max (&boxmax_int, d);
 		}
 	}
 
+	wait_group_events (1, &infocpy);
 	barrier (CLK_LOCAL_MEM_FENCE);
 
 	// compute bounding box
 	float4 boxmin, boxmax;
 	boxmin.x = gxf;
 	boxmin.y = gyf;
-	boxmin.z = native_divide ((float)boxmin_int, 4294967295.0f);
+	boxmin.z = as_float (boxmin_int);
 	getpos (&boxmin, &info);
 	boxmax.x = gxf;
 	boxmax.y = gyf;
-	boxmax.z = native_divide ((float)boxmax_int, 4294967295.0f);
+	boxmax.z = as_float (boxmax_int);
 	getpos (&boxmax, &info);
 
 	// obtain the light indices affecting the current tile

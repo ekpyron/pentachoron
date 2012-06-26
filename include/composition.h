@@ -21,8 +21,6 @@
 #include <gbuffer.h>
 #include <glow.h>
 
-class Renderer;
-
 /** Composition class.
  * This class handles the composition of the gbuffer data into
  * a final color value and creates a glow map.
@@ -31,9 +29,8 @@ class Composition
 {
 public:
 	/** Constructor.
-	 * \param parent Specifies the parent Renderer class.
 	 */
-	 Composition (Renderer *parent);
+	 Composition (void);
 	 /** Destructor.
 		*/
 	 ~Composition (void);
@@ -151,22 +148,71 @@ private:
 
 	 SkyParams sky;
 
-	 typedef struct Info
+	 class Info
 	 {
-			glm::vec4 projinfo;
-			glm::mat4 vmatinv;
-			glm::mat4 shadowmat;
-			glm::vec4 eye;
-			glm::vec4 center;
-			struct
-			{
-				 GLuint size;
-				 GLfloat exponent;
-				 GLfloat threshold;
-				 GLfloat glowlimit;
-			} glow;
-			struct
-			{
+	 public:
+			Info (void);
+			~Info (void);
+			bool Init (void);
+
+			void SetProjInfo (const glm::vec4 &i);
+			const glm::vec4 &GetProjInfo (void);
+			void SetInverseViewMatrix (const glm::mat4 &m);
+			const glm::mat4 &GetInverseViewMatrix (void);
+			void SetShadowMatrix (const glm::mat4 &m);
+			const glm::mat4 &GetShadowMatrix (void);
+			void SetEye (const glm::vec4 &e);
+			const glm::vec4 &GetEye (void);
+			void SetCenter (const glm::vec4 &c);
+			const glm::vec4 &GetCenter (void);
+			void SetGlowSize (GLuint s);
+			GLuint GetGlowSize (void);
+			void SetGlowExponent (GLfloat e);
+			GLfloat GetGlowExponent (void);
+			void SetGlowThreshold (GLfloat t);
+			GLfloat GetGlowThreshold (void);
+			void SetGlowLimit (GLfloat l);
+			GLfloat GetGlowLimit (void);
+			void SetSunDirection (const glm::vec4 &d);
+			const glm::vec4 &GetSunDirection (void);
+			void SetSunTheta (GLfloat theta);
+			GLfloat GetSunTheta (void);
+			GLfloat GetCosSunTheta (void);
+			void SetSkyTurbidity (GLfloat T);
+			GLfloat GetSkyTurbidity (void);
+			void SetSkyPerezY (const GLfloat *p);
+			const GLfloat *GetSkyPerezY (void);
+			void SetSkyPerezx (const GLfloat *p);
+			const GLfloat *GetSkyPerezx (void);
+			void SetSkyPerezy (const GLfloat *p);
+			const GLfloat *GetSkyPerezy (void);
+			void SetSkyZenithYxy (const glm::vec4 &Yxy);
+			const glm::vec4 &GetSkyZenithYxy (void);
+			void SetShadowAlpha (GLfloat a);
+			GLfloat GetShadowAlpha (void);
+			void SetMode (GLuint m);
+			GLuint GetMode (void);
+			void SetNumLights (GLuint n);
+			GLuint GetNumLights (void);
+			void SetScreenLimit (GLfloat f);
+			GLfloat GetScreenLimit (void);
+
+			const cl::Memory &GetMem (void);
+	 private:
+			cl::Memory mem;
+			typedef struct InfoData {
+				 glm::vec4 projinfo;
+				 glm::mat4 vmatinv;
+				 glm::mat4 shadowmat;
+				 glm::vec4 eye;
+				 glm::vec4 center;
+				 struct
+				 {
+						GLuint size;
+						GLfloat exponent;
+						GLfloat threshold;
+						GLfloat glowlimit;
+				 } glow;
 				 struct
 				 {
 						glm::vec4 direction;
@@ -174,17 +220,21 @@ private:
 						float cos_theta;
 						float padding[2];
 				 } sun;
-				 float turbidity;
-				 float perezY[5];
-				 float perezx[5];
-				 float perezy[5];
-				 glm::vec4 zenithYxy;
-			} sky;
-			GLfloat shadow_alpha;
-			GLuint mode;
-			cl_uint num_lights;
-			GLfloat screenlimit;
-	 } Info;
+				 struct
+				 {
+						float turbidity;
+						float perezY[5];
+						float perezx[5];
+						float perezy[5];
+						glm::vec4 zenithYxy;
+				 } sky;
+				 GLfloat shadow_alpha;
+				 GLuint mode;
+				 cl_uint num_lights;
+				 GLfloat screenlimit;
+			} InfoData;
+			InfoData data;
+	 };
 
 	 Info info;
 
@@ -206,11 +256,6 @@ private:
 	 gl::Program minmaxdepthprog;
 	 gl::Texture mindepthtex;
 	 gl::Texture maxdepthtex;
-
-	 /** Parent renderer.
-		* The Renderer this class belongs to.
-		*/
-	 Renderer *renderer;
 };
 
 #endif /* !defined COMPOSITION_H */

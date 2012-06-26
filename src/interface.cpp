@@ -57,8 +57,8 @@ void ToCalendarDate (int ordinal, int *month, int *day)
 	return;
 }
 
-Interface::Interface (Renderer *parent)
-	: showInterface (0), menu (MAIN_MENU), submenu (0), renderer (parent),
+Interface::Interface (void)
+	: showInterface (0), menu (MAIN_MENU), submenu (0),
 		active_light (0), active_shadow (0), timefactor (0),
 		active_parameter (0)
 {
@@ -69,6 +69,8 @@ Interface::Interface (Renderer *parent)
 				{ "Lights", NULL, [&] (int what) {
 						if (!what)
 						{
+							if (r->GetNumLights () == 0)
+								 AddLight ();
 							menu = EDIT_LIGHTS;
 							submenu = 0;
 						}
@@ -76,7 +78,7 @@ Interface::Interface (Renderer *parent)
 				{ "Shadows", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (!renderer->shadows.size ())
+							if (!r->shadows.size ())
 							{
 								AddShadow ();
 							}
@@ -116,15 +118,15 @@ Interface::Interface (Renderer *parent)
 							"glow",
 							"shadow mask"
 						};
-						font.Print (rendermodes[renderer->finalpass.GetRenderMode ()]);
+						font.Print (rendermodes[r->finalpass.GetRenderMode ()]);
 					}, [&] (int what) {
-						GLint rendermode = renderer->finalpass.GetRenderMode ();
+						GLint rendermode = r->finalpass.GetRenderMode ();
 						rendermode += what;
 						if (rendermode < 0)
 							 rendermode += NUM_RENDERMODES;
 						if (rendermode >= NUM_RENDERMODES)
 							 rendermode = 0;
-						renderer->finalpass.SetRenderMode (rendermode);
+						r->finalpass.SetRenderMode (rendermode);
 					}, false },
 				{ "Material Parameters", NULL,
 					[&] (int what) {
@@ -162,20 +164,20 @@ Interface::Interface (Renderer *parent)
 			"Edit Composition", NULL,
 			{
 				{ "Screen limit: ", [&] (void) {
-						font.Print (renderer->composition.GetScreenLimit ());
+						font.Print (r->composition.GetScreenLimit ());
 					}, [&] (int what) {
-						float limit = renderer->composition.GetScreenLimit ();
+						float limit = r->composition.GetScreenLimit ();
 						limit += what * timefactor;
-						renderer->composition.SetScreenLimit (limit);
+						r->composition.SetScreenLimit (limit);
 					}, true	},
 				{ "Compositionmode: ", [&] (void) {
-						font.Print (renderer->composition.GetMode ());
+						font.Print (r->composition.GetMode ());
 					}, [&] (int what) {
-						GLint mode = renderer->composition.GetMode ();
+						GLint mode = r->composition.GetMode ();
 						mode += what;
 						if (mode < 0)
 							 mode = 0;
-						renderer->composition.SetMode (mode);
+						r->composition.SetMode (mode);
 					}, false },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -188,7 +190,7 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Edit Lights ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
+				font.Print (active_light + 1, " / ", r->GetNumLights ());
 			},
 			{
 				{ "Add Light", NULL, [&] (int what) {
@@ -200,8 +202,8 @@ Interface::Interface (Renderer *parent)
 				{ "Select Light ", NULL , [&] (int what) {
 						active_light += what;
 						if (active_light < 0)
-							 active_light += renderer->GetNumLights ();
-						if (active_light >= renderer->GetNumLights ())
+							 active_light += r->GetNumLights ();
+						if (active_light >= r->GetNumLights ())
 							 active_light = 0;
 					}, false },
 				{ "Edit Position", NULL, [&] (int what) {
@@ -240,32 +242,32 @@ Interface::Interface (Renderer *parent)
 						}
 					}, false },
 				{ "Spot Angle ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).spot.angle
+						font.Print (r->GetLight (active_light).spot.angle
 												* 180.0f / DRE_PI);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).spot.angle += what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->GetLight (active_light).spot.angle += what * timefactor;
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Spot Penumbra Angle ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).spot.penumbra_angle
+						font.Print (r->GetLight (active_light).spot.penumbra_angle
 												* 180.0f / DRE_PI);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).spot.penumbra_angle
+						r->GetLight (active_light).spot.penumbra_angle
 						+= what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Spot Exponent ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).spot.exponent);
+						font.Print (r->GetLight (active_light).spot.exponent);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).spot.exponent
+						r->GetLight (active_light).spot.exponent
 						+= what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Remove", NULL, [&] (int what) {
 						if (!what)
 						{
-							renderer->RemoveLight (active_light);
-							if (active_light >= renderer->GetNumLights ())
+							r->RemoveLight (active_light);
+							if (active_light >= r->GetNumLights ())
 								 active_light = 0;
 						}
 					}, false },
@@ -273,9 +275,9 @@ Interface::Interface (Renderer *parent)
 						if (!what)
 						{
 							srand (time (NULL));
-							for (auto i = 0; i < renderer->GetNumLights (); i++)
+							for (auto i = 0; i < r->GetNumLights (); i++)
 							{
-								Light &light = renderer->GetLight (i);
+								Light &light = r->GetLight (i);
 								if (light.color == glm::vec4 (1, 1, 1, 1))
 									 continue;
 								light.position.x += ((float (rand ())
@@ -297,7 +299,7 @@ Interface::Interface (Renderer *parent)
 								};			
 								light.color = colors[rand () % 6];
 								light.specular.color = glm::vec3 (light.color);
-								renderer->UpdateLight (i);
+								r->UpdateLight (i);
 							}
 						}
 					}, false },
@@ -312,7 +314,7 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Edit Shadows ", [&] (void) {
-				font.Print (active_shadow + 1, " / ", renderer->shadows.size ());
+				font.Print (active_shadow + 1, " / ", r->shadows.size ());
 			},
 			{
 				{ "Add Shadow", NULL, [&] (int what) {
@@ -324,8 +326,8 @@ Interface::Interface (Renderer *parent)
 				{ "Select Shadow ", NULL , [&] (int what) {
 						active_shadow += what;
 						if (active_shadow < 0)
-							 active_shadow += renderer->shadows.size ();
-						if (active_shadow >= renderer->shadows.size ())
+							 active_shadow += r->shadows.size ();
+						if (active_shadow >= r->shadows.size ())
 							 active_shadow = 0;
 					}, false },
 				{ "Edit Position", NULL, [&] (int what) {
@@ -343,24 +345,24 @@ Interface::Interface (Renderer *parent)
 						}
 					}, false },
 				{ "Angle ", [&] (void) {
-						font.Print (renderer->shadows[active_shadow].spot.angle
+						font.Print (r->shadows[active_shadow].spot.angle
 												* 180.0f / DRE_PI);
 					}, [&] (int what) {
-						renderer->shadows[active_shadow].spot.angle += what * timefactor;
-						renderer->shadows[active_shadow].spot.cosine =
-						cosf (renderer->shadows[active_shadow].spot.angle);
+						r->shadows[active_shadow].spot.angle += what * timefactor;
+						r->shadows[active_shadow].spot.cosine =
+						cosf (r->shadows[active_shadow].spot.angle);
 					}, true	},
 				{ "Remove", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (renderer->shadows.size () < 2)
+							if (r->shadows.size () < 2)
 								 return;
 							
-							renderer->shadows.erase (renderer->shadows.begin ()
+							r->shadows.erase (r->shadows.begin ()
 																			 + active_shadow);
-							if (active_shadow >= renderer->shadows.size ())
+							if (active_shadow >= r->shadows.size ())
 								 active_light = 0;
-							if (!renderer->shadows.size ())
+							if (!r->shadows.size ())
 							{
 								menu = MAIN_MENU;
 								submenu = 0;
@@ -368,14 +370,14 @@ Interface::Interface (Renderer *parent)
 						}
 					}, false },
 				{ "Shadow Alpha: ", [&] (void) {
-						font.Print (renderer->composition.GetShadowAlpha ());
+						font.Print (r->composition.GetShadowAlpha ());
 				}, [&] (int what) {
 						GLfloat alpha;
-						alpha = renderer->composition.GetShadowAlpha ();
+						alpha = r->composition.GetShadowAlpha ();
 						alpha += timefactor * what;
 						alpha = (alpha>=0?alpha:0);
 						alpha = (alpha<=1?alpha:1);
-						renderer->composition.SetShadowAlpha (alpha);
+						r->composition.SetShadowAlpha (alpha);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -388,26 +390,26 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Light Position ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
+				font.Print (active_light + 1, " / ", r->GetNumLights ());
 			},
 			{
 				{ "X ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).position.x);
+						font.Print (r->GetLight (active_light).position.x);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).position.x += what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->GetLight (active_light).position.x += what * timefactor;
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Y ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).position.y);
+						font.Print (r->GetLight (active_light).position.y);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).position.y += what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->GetLight (active_light).position.y += what * timefactor;
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Z ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).position.z);
+						font.Print (r->GetLight (active_light).position.z);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).position.z += what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->GetLight (active_light).position.z += what * timefactor;
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -420,26 +422,26 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Light Direction ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
+				font.Print (active_light + 1, " / ", r->GetNumLights ());
 			},
 			{
 				{ "X ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).direction.x);
+						font.Print (r->GetLight (active_light).direction.x);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).direction.x += what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->GetLight (active_light).direction.x += what * timefactor;
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Y ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).direction.y);
+						font.Print (r->GetLight (active_light).direction.y);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).direction.y += what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->GetLight (active_light).direction.y += what * timefactor;
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Z ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).direction.z);
+						font.Print (r->GetLight (active_light).direction.z);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).direction.z += what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->GetLight (active_light).direction.z += what * timefactor;
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -452,26 +454,26 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Light Diffuse Color ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
+				font.Print (active_light + 1, " / ", r->GetNumLights ());
 			},
 			{
 				{ "R ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).color.r);
+						font.Print (r->GetLight (active_light).color.r);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).color.r += what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->GetLight (active_light).color.r += what * timefactor;
+						r->UpdateLight (active_light);
 					}, true },
 				{ "G ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).color.g);
+						font.Print (r->GetLight (active_light).color.g);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).color.g += what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->GetLight (active_light).color.g += what * timefactor;
+						r->UpdateLight (active_light);
 					}, true },
 				{ "B ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).color.b);
+						font.Print (r->GetLight (active_light).color.b);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).color.b += what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->GetLight (active_light).color.b += what * timefactor;
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -484,29 +486,29 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Light Specular Color ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
+				font.Print (active_light + 1, " / ", r->GetNumLights ());
 			},
 			{
 				{ "R ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).specular.color.r);
+						font.Print (r->GetLight (active_light).specular.color.r);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).specular.color.r
+						r->GetLight (active_light).specular.color.r
 						+= what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->UpdateLight (active_light);
 					}, true },
 				{ "G ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).specular.color.g);
+						font.Print (r->GetLight (active_light).specular.color.g);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).specular.color.g
+						r->GetLight (active_light).specular.color.g
 						+= what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->UpdateLight (active_light);
 					}, true },
 				{ "B ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).specular.color.b);
+						font.Print (r->GetLight (active_light).specular.color.b);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).specular.color.b
+						r->GetLight (active_light).specular.color.b
 						+= what * timefactor;
-						renderer->UpdateLight (active_light);
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -519,36 +521,36 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Light Attenuation ", [&] (void) {
-				font.Print (active_light + 1, " / ", renderer->GetNumLights ());
+				font.Print (active_light + 1, " / ", r->GetNumLights ());
 			},
 			{
 				{ "Constant ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).attenuation.x);
+						font.Print (r->GetLight (active_light).attenuation.x);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).attenuation.x
+						r->GetLight (active_light).attenuation.x
 						+= what * timefactor * 0.1;
-						renderer->UpdateLight (active_light);
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Linear ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).attenuation.y);
+						font.Print (r->GetLight (active_light).attenuation.y);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).attenuation.y
+						r->GetLight (active_light).attenuation.y
 						+= what * timefactor * 0.1;
-						renderer->UpdateLight (active_light);
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Quadratic ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).attenuation.z * 100);
+						font.Print (r->GetLight (active_light).attenuation.z * 100);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).attenuation.z
+						r->GetLight (active_light).attenuation.z
 						+= what * timefactor * 0.001;
-						renderer->UpdateLight (active_light);
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Max Distance ", [&] (void) {
-						font.Print (renderer->GetLight (active_light).attenuation.w);
+						font.Print (r->GetLight (active_light).attenuation.w);
 					}, [&] (int what) {
-						renderer->GetLight (active_light).attenuation.w
+						r->GetLight (active_light).attenuation.w
 						+= what * timefactor * 0.1;
-						renderer->UpdateLight (active_light);
+						r->UpdateLight (active_light);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -561,28 +563,28 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Shadow Position ", [&] (void) {
-				font.Print (active_shadow + 1, " / ", renderer->shadows.size ());
+				font.Print (active_shadow + 1, " / ", r->shadows.size ());
 			},
 			{
 				{ "X ", [&] (void) {
-						font.Print (renderer->shadows[active_shadow].position.x);
+						font.Print (r->shadows[active_shadow].position.x);
 					}, [&] (int what) {
-						renderer->shadows[active_shadow].position.x += what * timefactor;
+						r->shadows[active_shadow].position.x += what * timefactor;
 					}, true },
 				{ "Y ", [&] (void) {
-						font.Print (renderer->shadows[active_shadow].position.y);
+						font.Print (r->shadows[active_shadow].position.y);
 					}, [&] (int what) {
-						renderer->shadows[active_shadow].position.y += what * timefactor;
+						r->shadows[active_shadow].position.y += what * timefactor;
 					}, true },
 				{ "Z ", [&] (void) {
-						font.Print (renderer->shadows[active_shadow].position.z);
+						font.Print (r->shadows[active_shadow].position.z);
 					}, [&] (int what) {
-						renderer->shadows[active_shadow].position.z += what * timefactor;
+						r->shadows[active_shadow].position.z += what * timefactor;
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (!renderer->shadows.size ())
+							if (!r->shadows.size ())
 							{
 								AddShadow ();
 							}
@@ -594,34 +596,34 @@ Interface::Interface (Renderer *parent)
 		},
 		{
 			"Shadow Direction ", [&] (void) {
-				font.Print (active_shadow + 1, " / ", renderer->shadows.size ());
+				font.Print (active_shadow + 1, " / ", r->shadows.size ());
 			},
 			{
 				{ "X ", [&] (void) {
-						font.Print (renderer->shadows[active_shadow].direction.x);
+						font.Print (r->shadows[active_shadow].direction.x);
 					}, [&] (int what) {
-						renderer->shadows[active_shadow].direction.x += what * timefactor;
-						renderer->shadows[active_shadow].direction =
-						glm::normalize (renderer->shadows[active_shadow].direction);
+						r->shadows[active_shadow].direction.x += what * timefactor;
+						r->shadows[active_shadow].direction =
+						glm::normalize (r->shadows[active_shadow].direction);
 					}, true },
 				{ "Y ", [&] (void) {
-						font.Print (renderer->shadows[active_shadow].direction.y);
+						font.Print (r->shadows[active_shadow].direction.y);
 					}, [&] (int what) {
-						renderer->shadows[active_shadow].direction.y += what * timefactor;
-						renderer->shadows[active_shadow].direction =
-						glm::normalize (renderer->shadows[active_shadow].direction);
+						r->shadows[active_shadow].direction.y += what * timefactor;
+						r->shadows[active_shadow].direction =
+						glm::normalize (r->shadows[active_shadow].direction);
 					}, true },
 				{ "Z ", [&] (void) {
-						font.Print (renderer->shadows[active_shadow].direction.z);
+						font.Print (r->shadows[active_shadow].direction.z);
 					}, [&] (int what) {
-						renderer->shadows[active_shadow].direction.z += what * timefactor;
-						renderer->shadows[active_shadow].direction =
-						glm::normalize (renderer->shadows[active_shadow].direction);
+						r->shadows[active_shadow].direction.z += what * timefactor;
+						r->shadows[active_shadow].direction =
+						glm::normalize (r->shadows[active_shadow].direction);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{
-							if (!renderer->shadows.size ())
+							if (!r->shadows.size ())
 							{
 								AddShadow ();
 							}
@@ -644,25 +646,25 @@ Interface::Interface (Renderer *parent)
 							"Exponential",
 							"Drago"
 						};
-						font.Print (tone_mapping_modes [renderer->finalpass.
+						font.Print (tone_mapping_modes [r->finalpass.
 																						GetTonemappingMode ()]);
 					}, [&] (int what) {
 						GLint mode;
-						mode = renderer->finalpass.GetTonemappingMode ();
+						mode = r->finalpass.GetTonemappingMode ();
 						mode += what;
 						if (mode < 0)
 							 mode += NUM_TONE_MAPPING_MODES;
 						if (mode >= NUM_TONE_MAPPING_MODES)
 							 mode = 0;
-						renderer->finalpass.SetTonemappingMode (mode);
+						r->finalpass.SetTonemappingMode (mode);
 					}, false },
 				{ "Image Key ", [&] (void) {
-						font.Print (renderer->finalpass.GetImageKey ());
+						font.Print (r->finalpass.GetImageKey ());
 					}, [&] (int what) {
 						float key;
-						key = renderer->finalpass.GetImageKey ();
+						key = r->finalpass.GetImageKey ();
 						key += what * timefactor;
-						renderer->finalpass.SetImageKey (key);
+						r->finalpass.SetImageKey (key);
 					}, true },
 				{ "Average Luminance", NULL,
 					[&] (int what) {
@@ -673,28 +675,28 @@ Interface::Interface (Renderer *parent)
 						}
 					}, false },
 				{ "White Threshold ", [&] (void) {
-						font.Print (renderer->finalpass.GetWhiteThreshold ());
+						font.Print (r->finalpass.GetWhiteThreshold ());
 					}, [&] (int what) {
 						float threshold;
-						threshold = renderer->finalpass.GetWhiteThreshold ();
+						threshold = r->finalpass.GetWhiteThreshold ();
 						threshold += what * timefactor;
-						renderer->finalpass.SetWhiteThreshold (threshold);
+						r->finalpass.SetWhiteThreshold (threshold);
 					}, true },
 				{ "Sigma: ", [&] (void) {
-						font.Print (renderer->finalpass.GetTonemappingSigma ());
+						font.Print (r->finalpass.GetTonemappingSigma ());
 					}, [&] (int what) {
 						float sigma;
-						sigma = renderer->finalpass.GetTonemappingSigma ();
+						sigma = r->finalpass.GetTonemappingSigma ();
 						sigma += what * timefactor;
-						renderer->finalpass.SetTonemappingSigma (sigma);
+						r->finalpass.SetTonemappingSigma (sigma);
 					}, true },
 				{ "n: ", [&] (void) {
-						font.Print (renderer->finalpass.GetTonemappingExponent ());
+						font.Print (r->finalpass.GetTonemappingExponent ());
 					}, [&] (int what) {
 						float n;
-						n = renderer->finalpass.GetTonemappingExponent ();
+						n = r->finalpass.GetTonemappingExponent ();
 						n += what * timefactor;
-						renderer->finalpass.SetTonemappingExponent (n);
+						r->finalpass.SetTonemappingExponent (n);
 					}, true },
 #define NUM_RGB_WORKING_SPACES 16
 				{ "RGB Working Space: ", [&] (void) {
@@ -716,17 +718,17 @@ Interface::Interface (Renderer *parent)
 							"sRGB",
 							"Wide Gamut RGB"
 						};
-						font.Print (rgb_working_spaces[renderer->finalpass.
+						font.Print (rgb_working_spaces[r->finalpass.
 																					 GetRGBWorkingSpace ()]);
 					}, [&] (int what) {
 						GLint rgb_working_space;
-						rgb_working_space = renderer->finalpass.GetRGBWorkingSpace ();
+						rgb_working_space = r->finalpass.GetRGBWorkingSpace ();
 						rgb_working_space += what;
 						if (rgb_working_space < 0)
 							 rgb_working_space += NUM_RGB_WORKING_SPACES;
 						if (rgb_working_space >= NUM_RGB_WORKING_SPACES)
 							 rgb_working_space = 0;
-						renderer->finalpass.SetRGBWorkingSpace (rgb_working_space);
+						r->finalpass.SetRGBWorkingSpace (rgb_working_space);
 					}, false },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -741,33 +743,33 @@ Interface::Interface (Renderer *parent)
 			"Glow", NULL,
 			{
 				{ "Blur size: ", [&] (void) {
-						font.Print (renderer->composition.GetGlow ().GetSize ());
+						font.Print (r->composition.GetGlow ().GetSize ());
 					}, [&] (int what) {
-						GLint size = renderer->composition.GetGlow ().GetSize ();
+						GLint size = r->composition.GetGlow ().GetSize ();
 						size += what * 4;
-						renderer->composition.GetGlow ().SetSize ((size>=0)?size:0);
+						r->composition.GetGlow ().SetSize ((size>=0)?size:0);
 					}, false },
 				{ "Luminance Threshold: ", [&] (void) {
-						font.Print (renderer->composition.GetLuminanceThreshold ());
+						font.Print (r->composition.GetLuminanceThreshold ());
 					}, [&] (int what) {
 						float threshold;
-						threshold = renderer->composition.GetLuminanceThreshold ();
+						threshold = r->composition.GetLuminanceThreshold ();
 						threshold += what * timefactor;
-						renderer->composition.SetLuminanceThreshold (threshold);
+						r->composition.SetLuminanceThreshold (threshold);
 					}, true },
 				{ "Limit: ", [&] (void) {
-						font.Print (renderer->composition.GetGlow ().GetLimit ());
+						font.Print (r->composition.GetGlow ().GetLimit ());
 					}, [&] (int what) {
-						GLfloat limit = renderer->composition.GetGlow ().GetLimit ();
+						GLfloat limit = r->composition.GetGlow ().GetLimit ();
 						limit += what * timefactor;
-						renderer->composition.GetGlow ().SetLimit (limit);
+						r->composition.GetGlow ().SetLimit (limit);
 					}, true },
 				{ "Exponent: ", [&] (void) {
-						font.Print (renderer->composition.GetGlow ().GetExponent ());
+						font.Print (r->composition.GetGlow ().GetExponent ());
 					}, [&] (int what) {
-						GLfloat exp = renderer->composition.GetGlow ().GetExponent ();
+						GLfloat exp = r->composition.GetGlow ().GetExponent ();
 						exp += what * timefactor;
-						renderer->composition.GetGlow ().SetExponent (exp);
+						r->composition.GetGlow ().SetExponent (exp);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -783,43 +785,43 @@ Interface::Interface (Renderer *parent)
 			{
 				{ "Constant: ", [&] (void) {
 						float c;
-						c = renderer->finalpass.GetAvgLumConst ();
+						c = r->finalpass.GetAvgLumConst ();
 						font.Print (c);
 					}, [&] (int what) {
 						float c;
-						c = renderer->finalpass.GetAvgLumConst ();
+						c = r->finalpass.GetAvgLumConst ();
 						c += what * timefactor;
-						renderer->finalpass.SetAvgLumConst (c);
+						r->finalpass.SetAvgLumConst (c);
 					}, true },
 				{ "Linear: ", [&] (void) {
 						float c;
-						c = renderer->finalpass.GetAvgLumLinear ();
+						c = r->finalpass.GetAvgLumLinear ();
 						font.Print (c);
 					}, [&] (int what) {
 						float c;
-						c = renderer->finalpass.GetAvgLumLinear ();
+						c = r->finalpass.GetAvgLumLinear ();
 						c += what * timefactor;
-						renderer->finalpass.SetAvgLumLinear (c);
+						r->finalpass.SetAvgLumLinear (c);
 					}, true },
 				{ "Delta: ", [&] (void) {
 						float c;
-						c = renderer->finalpass.GetAvgLumDelta ();
+						c = r->finalpass.GetAvgLumDelta ();
 						font.Print (c);
 					}, [&] (int what) {
 						float c;
-						c = renderer->finalpass.GetAvgLumDelta ();
+						c = r->finalpass.GetAvgLumDelta ();
 						c += what * timefactor;
-						renderer->finalpass.SetAvgLumDelta (c);
+						r->finalpass.SetAvgLumDelta (c);
 					}, true },
 				{ "Lod: ", [&] (void) {
 						float c;
-						c = renderer->finalpass.GetAvgLumLod ();
+						c = r->finalpass.GetAvgLumLod ();
 						font.Print (c);
 					}, [&] (int what) {
 						float c;
-						c = renderer->finalpass.GetAvgLumLod ();
+						c = r->finalpass.GetAvgLumLod ();
 						c += what * 0.1;
-						renderer->finalpass.SetAvgLumLod (c);
+						r->finalpass.SetAvgLumLod (c);
 					}, true },
 				{ "Back", NULL, [&](int what) {
 						if (!what)
@@ -834,23 +836,23 @@ Interface::Interface (Renderer *parent)
 			"Antialiasing", NULL,
 			{
 				{ "Samples: ", [&] (void) {
-						font.Print (renderer->GetAntialiasing ());
+						font.Print (r->GetAntialiasing ());
 					}, [&] (int what) {
 						if (!what)
 						{
-							GLuint samples = renderer->GetAntialiasing ();
+							GLuint samples = r->GetAntialiasing ();
 							samples += 4;
 							if (samples > 16) samples = 0;
-							renderer->SetAntialiasing (samples);
+							r->SetAntialiasing (samples);
 						}
 					}, true },
 				{ "Threshold: ", [&] (void) {
-						font.Print (renderer->finalpass.
+						font.Print (r->finalpass.
 												GetAntialiasingThreshold () * 100.0f, " %");
 					}, [&] (int what) {
-						GLfloat threshold = renderer->finalpass.GetAntialiasingThreshold ();
+						GLfloat threshold = r->finalpass.GetAntialiasingThreshold ();
 						threshold += what * timefactor * 0.01;
-						renderer->finalpass.SetAntialiasingThreshold (threshold);
+						r->finalpass.SetAntialiasingThreshold (threshold);
 					}, true },
 				{ "Back", NULL, [&](int what) {
 						if (!what)
@@ -864,38 +866,49 @@ Interface::Interface (Renderer *parent)
 		{
 			"Edit Material Parameters ", [&] (void) {
 				font.Print (active_parameter + 1, " / ",
-										renderer->GetNumParameters ());
+										r->GetNumParameters ());
 			},
 			{
 				{ "Select Material", NULL , [&] (int what) {
 						active_parameter += what;
 						if (active_parameter < 0)
-							 active_parameter += renderer->GetNumParameters ();
-						if (active_parameter >= renderer->GetNumParameters ())
+							 active_parameter += r->GetNumParameters ();
+						if (active_parameter >= r->GetNumParameters ())
 							 active_parameter = 0;
 					}, false },
+				{ "Reflection: ", [&] (void) {
+						font.Print (r->GetParameters(active_parameter).reflect
+												* 100.0f,	" %");
+					}, [&] (int what) {
+						float ref = r->GetParameters(active_parameter).reflect;
+						ref += what * timefactor * 0.01f;
+						if (ref < 0) ref = 0;
+						if (ref > 1) ref = 1;
+						r->GetParameters(active_parameter).reflect = ref;
+						r->UpdateParameters (active_parameter);
+					}, true },
 				{ "Model: ", [&] (void) {
 #define NUM_SPECULAR_MODELS 5
 						const char *models[NUM_SPECULAR_MODELS] = {
 							"None", "Gaussian", "Phong", "Beckmann", "Cook-Torrance"
 						};
-						font.Print (models[renderer->GetParameters
+						font.Print (models[r->GetParameters
 															 (active_parameter).model]);
 					}, [&] (int what) {
 						int model;
-						model = renderer->GetParameters (active_parameter).model;
+						model = r->GetParameters (active_parameter).model;
 						model += what;
 						if (model >= NUM_SPECULAR_MODELS)
 							 model = 0;
 						if (model < 0)
 							 model = NUM_SPECULAR_MODELS - 1;
-						renderer->GetParameters (active_parameter).model = model;
-						renderer->UpdateParameters (active_parameter);
+						r->GetParameters (active_parameter).model = model;
+						r->UpdateParameters (active_parameter);
 					}, false },
 				{ "", [&] (void) {
 						float val;
-						val = renderer->GetParameters (active_parameter).param1;
-						switch (renderer->GetParameters (active_parameter).model)
+						val = r->GetParameters (active_parameter).param1;
+						switch (r->GetParameters (active_parameter).model)
 						{
 						case 0:
 							font.Print ("Ignored: ", val);
@@ -914,21 +927,21 @@ Interface::Interface (Renderer *parent)
 							float defaults[NUM_SPECULAR_MODELS] = {
 								0.25, 0.25, 2.0, 0.25, 0.25
 							};
-							renderer->GetParameters (active_parameter).param1
-							= defaults [renderer->GetParameters (active_parameter).model];
-							renderer->UpdateParameters (active_parameter);
+							r->GetParameters (active_parameter).param1
+							= defaults [r->GetParameters (active_parameter).model];
+							r->UpdateParameters (active_parameter);
 						} else {
 							float val;
-							val = renderer->GetParameters (active_parameter).param1;
+							val = r->GetParameters (active_parameter).param1;
 							val += what * timefactor;
-							renderer->GetParameters (active_parameter).param1 = val;
-							renderer->UpdateParameters (active_parameter);
+							r->GetParameters (active_parameter).param1 = val;
+							r->UpdateParameters (active_parameter);
 						}
 					}, true },
 				{ "", [&] (void) {
 						float val;
-						val = renderer->GetParameters (active_parameter).param2;
-						switch (renderer->GetParameters (active_parameter).model)
+						val = r->GetParameters (active_parameter).param2;
+						switch (r->GetParameters (active_parameter).model)
 						{
 						case 0:
 						case 2:
@@ -947,15 +960,15 @@ Interface::Interface (Renderer *parent)
 							float defaults[NUM_SPECULAR_MODELS] = {
 								1.0, 1.0, 1.0, 1.0, 1.0
 							};
-							renderer->GetParameters (active_parameter).param2
-							= defaults [renderer->GetParameters (active_parameter).model];
-							renderer->UpdateParameters (active_parameter);
+							r->GetParameters (active_parameter).param2
+							= defaults [r->GetParameters (active_parameter).model];
+							r->UpdateParameters (active_parameter);
 						} else {
 							float val;
-							val = renderer->GetParameters (active_parameter).param2;
+							val = r->GetParameters (active_parameter).param2;
 							val += what * timefactor;
-							renderer->GetParameters (active_parameter).param2 = val;
-							renderer->UpdateParameters (active_parameter);
+							r->GetParameters (active_parameter).param2 = val;
+							r->UpdateParameters (active_parameter);
 						}
 					}, true },
 				{ "Back", NULL, [&] (int what) {
@@ -971,11 +984,11 @@ Interface::Interface (Renderer *parent)
 			"Edit Sky Parameters", NULL,
 			{
 				{ "Turbidity ", [&] (void) {
-						font.Print (renderer->composition.GetTurbidity ());
+						font.Print (r->composition.GetTurbidity ());
 					}, [&] (int what) {
-						float T = renderer->composition.GetTurbidity ();
+						float T = r->composition.GetTurbidity ();
 						T += what * timefactor;
-						renderer->composition.SetTurbidity (T);
+						r->composition.SetTurbidity (T);
 					}, true },
 				{ "Coefficients Y", NULL, [&] (int what) {
 						if (!what)
@@ -999,11 +1012,11 @@ Interface::Interface (Renderer *parent)
 						}
 					}, false },
 				{ "Latitude ", [&] (void) {
-						font.Print (renderer->composition.GetLatitude ());
+						font.Print (r->composition.GetLatitude ());
 					}, [&] (int what) {
-						float L = renderer->composition.GetLatitude ();
+						float L = r->composition.GetLatitude ();
 						L += what * timefactor;
-						renderer->composition.SetLatitude (L);
+						r->composition.SetLatitude (L);
 					}, true },
 				{ "Month ", [&] (void) {
 						const char *months[] = {
@@ -1012,39 +1025,39 @@ Interface::Interface (Renderer *parent)
 							"December"
 						};
 						int month;
-						ToCalendarDate (renderer->composition.GetDate (), &month, NULL);
+						ToCalendarDate (r->composition.GetDate (), &month, NULL);
 						font.Print (months[month]);
 					}, [&] (int what) {
 							int month, day;
-							ToCalendarDate (renderer->composition.GetDate (), &month, &day);
+							ToCalendarDate (r->composition.GetDate (), &month, &day);
 							month += what;
 							if (month < 0) month += 12;
 							month %= 12;
-							renderer->composition.SetDate (ToOrdinalDate (month, day));
+							r->composition.SetDate (ToOrdinalDate (month, day));
 					}, false },
 				{ "Day ", [&] (void) {
 						int day;
-						ToCalendarDate (renderer->composition.GetDate (), NULL, &day);
+						ToCalendarDate (r->composition.GetDate (), NULL, &day);
 						font.Print (day);
 					}, [&] (int what) {
 						int date;
-						date = renderer->composition.GetDate ();
+						date = r->composition.GetDate ();
 						date += what;
 						if (date <= 0) date = 1;
 						if (date > 365) date = 365;
-						renderer->composition.SetDate (date);
+						r->composition.SetDate (date);
 					}, false },
 				{ "Time ", [&] (void) {
-						font.Print (renderer->composition.GetTimeOfDay ());
+						font.Print (r->composition.GetTimeOfDay ());
 					}, [&] (int what) {
 						float time;
-						time = renderer->composition.GetTimeOfDay ();
+						time = r->composition.GetTimeOfDay ();
 						time += what * timefactor;
 						if (time >= 24)
 							 time = 24;
 						if (time < 0)
 							 time = 0;
-						renderer->composition.SetTimeOfDay (time);
+						r->composition.SetTimeOfDay (time);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -1059,39 +1072,39 @@ Interface::Interface (Renderer *parent)
 			"Edit Sky Coeficients Y", NULL,
 			{
 				{ "Darkening/Brightening of the horizon ", [&] (void) {
-						font.Print (renderer->composition.GetPerezY (0));
+						font.Print (r->composition.GetPerezY (0));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezY (0);
-						v += what * timefactor;
-						renderer->composition.SetPerezY (0, v);
+						float v = r->composition.GetPerezY (0);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezY (0, v);
 					}, true },
 				{ "Luminance gradient near the horizon ", [&] (void) {
-						font.Print (renderer->composition.GetPerezY (1));
+						font.Print (r->composition.GetPerezY (1));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezY (1);
-						v += what * timefactor;
-						renderer->composition.SetPerezY (1, v);
+						float v = r->composition.GetPerezY (1);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezY (1, v);
 					}, true },
 				{ "Relative intensity of circumsolar region ", [&] (void) {
-						font.Print (renderer->composition.GetPerezY (2));
+						font.Print (r->composition.GetPerezY (2));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezY (2);
-						v += what * timefactor;
-						renderer->composition.SetPerezY (2, v);
+						float v = r->composition.GetPerezY (2);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezY (2, v);
 					}, true },
 				{ "Width of the circumsolar region ", [&] (void) {
-						font.Print (renderer->composition.GetPerezY (3));
+						font.Print (r->composition.GetPerezY (3));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezY (3);
-						v += what * timefactor;
-						renderer->composition.SetPerezY (3, v);
+						float v = r->composition.GetPerezY (3);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezY (3, v);
 					}, true },
 				{ "Relative backscatered light at the earth surface ", [&] (void) {
-						font.Print (renderer->composition.GetPerezY (4));
+						font.Print (r->composition.GetPerezY (4));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezY (4);
-						v += what * timefactor;
-						renderer->composition.SetPerezY (4, v);
+						float v = r->composition.GetPerezY (4);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezY (4, v);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -1106,39 +1119,39 @@ Interface::Interface (Renderer *parent)
 			"Edit Sky Coeficients x", NULL,
 			{
 				{ "A ", [&] (void) {
-						font.Print (renderer->composition.GetPerezx (0));
+						font.Print (r->composition.GetPerezx (0));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezx (0);
-						v += what * timefactor;
-						renderer->composition.SetPerezx (0, v);
+						float v = r->composition.GetPerezx (0);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezx (0, v);
 					}, true },
 				{ "B ", [&] (void) {
-						font.Print (renderer->composition.GetPerezx (1));
+						font.Print (r->composition.GetPerezx (1));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezx (1);
-						v += what * timefactor;
-						renderer->composition.SetPerezx (1, v);
+						float v = r->composition.GetPerezx (1);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezx (1, v);
 					}, true },
 				{ "C ", [&] (void) {
-						font.Print (renderer->composition.GetPerezx (2));
+						font.Print (r->composition.GetPerezx (2));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezx (2);
-						v += what * timefactor;
-						renderer->composition.SetPerezx (2, v);
+						float v = r->composition.GetPerezx (2);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezx (2, v);
 					}, true },
 				{ "D ", [&] (void) {
-						font.Print (renderer->composition.GetPerezx (3));
+						font.Print (r->composition.GetPerezx (3));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezx (3);
-						v += what * timefactor;
-						renderer->composition.SetPerezx (3, v);
+						float v = r->composition.GetPerezx (3);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezx (3, v);
 					}, true },
 				{ "E ", [&] (void) {
-						font.Print (renderer->composition.GetPerezx (4));
+						font.Print (r->composition.GetPerezx (4));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezx (4);
-						v += what * timefactor;
-						renderer->composition.SetPerezx (4, v);
+						float v = r->composition.GetPerezx (4);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezx (4, v);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -1153,39 +1166,39 @@ Interface::Interface (Renderer *parent)
 			"Edit Sky Coeficients y", NULL,
 			{
 				{ "A ", [&] (void) {
-						font.Print (renderer->composition.GetPerezy (0));
+						font.Print (r->composition.GetPerezy (0));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezy (0);
-						v += what * timefactor;
-						renderer->composition.SetPerezy (0, v);
+						float v = r->composition.GetPerezy (0);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezy (0, v);
 					}, true },
 				{ "B ", [&] (void) {
-						font.Print (renderer->composition.GetPerezy (1));
+						font.Print (r->composition.GetPerezy (1));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezy (1);
-						v += what * timefactor;
-						renderer->composition.SetPerezy (1, v);
+						float v = r->composition.GetPerezy (1);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezy (1, v);
 					}, true },
 				{ "C ", [&] (void) {
-						font.Print (renderer->composition.GetPerezy (2));
+						font.Print (r->composition.GetPerezy (2));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezy (2);
-						v += what * timefactor;
-						renderer->composition.SetPerezy (2, v);
+						float v = r->composition.GetPerezy (2);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezy (2, v);
 					}, true },
 				{ "D ", [&] (void) {
-						font.Print (renderer->composition.GetPerezy (3));
+						font.Print (r->composition.GetPerezy (3));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezy (3);
-						v += what * timefactor;
-						renderer->composition.SetPerezy (3, v);
+						float v = r->composition.GetPerezy (3);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezy (3, v);
 					}, true },
 				{ "E ", [&] (void) {
-						font.Print (renderer->composition.GetPerezy (4));
+						font.Print (r->composition.GetPerezy (4));
 					}, [&] (int what) {
-						float v = renderer->composition.GetPerezy (4);
-						v += what * timefactor;
-						renderer->composition.SetPerezy (4, v);
+						float v = r->composition.GetPerezy (4);
+						v += what * timefactor * 0.1f;
+						r->composition.SetPerezy (4, v);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -1219,7 +1232,7 @@ void Interface::AddLight (void)
 	light.specular.color = glm::vec3 (1, 1, 1);
 	light.attenuation = glm::vec4 (0.0f, 0.0f, 0.007f, 50.0f);
 	light.CalculateFrustum ();
-	renderer->AddLight (light);
+	r->AddLight (light);
 }
 
 void Interface::AddShadow (void)
@@ -1229,7 +1242,7 @@ void Interface::AddShadow (void)
 	shadow.direction = glm::vec4 (0, -1, 0, 1);
 	shadow.spot.angle = DRE_PI/4.0f;
 	shadow.spot.cosine = cosf (shadow.spot.angle);
-	renderer->shadows.push_back (shadow);
+	r->shadows.push_back (shadow);
 }
 
 bool Interface::Init (void)
@@ -1394,7 +1407,7 @@ void Interface::Frame (float tf)
 			font.Print ("\nEvicted memory: ", mem >> 10, " MB");
 		}
 #ifdef DEBUG
-		font.Print ("\nGBuffer memory: ", renderer->memory >> 20, " MB");
+		font.Print ("\nGBuffer memory: ", r->memory >> 20, " MB");
 #endif
 	}
 	else
@@ -1402,38 +1415,38 @@ void Interface::Frame (float tf)
 		font.SetColor (glm::vec3 (1, 1, 1));
 		font.Print ("FPS: ", fps);
 		font.Print ("\nOcclusion culled: ", Model::culled);
-		font.Print ("\nFrustum culled: ", renderer->culling.culled);
+		font.Print ("\nFrustum culled: ", r->culling.culled);
 	}
 	if (glfwGetKey ('A'))
 	{
-		renderer->camera.RotateY (timefactor);
+		r->camera.RotateY (timefactor);
 	}
 	if (glfwGetKey ('D'))
 	{
-		renderer->camera.RotateY (-timefactor);
+		r->camera.RotateY (-timefactor);
 	}
 	if (glfwGetKey ('W'))
 	{
-		renderer->camera.MoveForward (timefactor * 10.0f);
+		r->camera.MoveForward (timefactor * 10.0f);
 	}
 	if (glfwGetKey ('S'))
 	{
-		renderer->camera.MoveForward (-timefactor * 10.0f);
+		r->camera.MoveForward (-timefactor * 10.0f);
 	}
 	if (glfwGetKey ('Q'))
 	{
-		renderer->camera.MoveUp (-4.0f * timefactor);
+		r->camera.MoveUp (-4.0f * timefactor);
 	}
 	if (glfwGetKey ('E'))
 	{
-		renderer->camera.MoveUp (4.0f * timefactor);
+		r->camera.MoveUp (4.0f * timefactor);
 	}
 	if (glfwGetKey ('R'))
 	{
-		renderer->camera.RotateUp (timefactor);
+		r->camera.RotateUp (timefactor);
 	}
 	if (glfwGetKey ('F'))
 	{
-		renderer->camera.RotateUp (-timefactor);
+		r->camera.RotateUp (-timefactor);
 	}
 }

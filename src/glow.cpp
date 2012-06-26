@@ -18,8 +18,8 @@
 #include "renderer.h"
 #include <vector>
 
-Glow::Glow (Renderer *parent)
-	: renderer (parent), limit (1.0f), exponent (1.0f), size (0)
+Glow::Glow (void)
+	: limit (1.0f), exponent (1.0f), size (0)
 {
 }
 
@@ -106,20 +106,20 @@ bool Glow::Init (gl::Texture &screenmap, gl::Texture &gm,
 			 return false;
 		}
 	}
-	width = renderer->gbuffer.GetWidth () >> mipmap_level;
-	height = renderer->gbuffer.GetHeight () >> mipmap_level;
+	width = r->gbuffer.GetWidth () >> mipmap_level;
+	height = r->gbuffer.GetHeight () >> mipmap_level;
 	hblur.pipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
-																	 renderer->windowgrid.vprogram);
+																	 r->windowgrid.vprogram);
 	hblur.pipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, hblur.prog);
 	vblur.pipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
-																	 renderer->windowgrid.vprogram);
+																	 r->windowgrid.vprogram);
 	vblur.pipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, vblur.prog);
 	blendpipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
-																	renderer->windowgrid.vprogram);
+																	r->windowgrid.vprogram);
 	blendpipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, blendprog);
 
-	blendprog["invviewport"] = glm::vec2 (1.0f / renderer->gbuffer.GetWidth (),
-																				1.0f / renderer->gbuffer.GetHeight ());
+	blendprog["invviewport"] = glm::vec2 (1.0f / r->gbuffer.GetWidth (),
+																				1.0f / r->gbuffer.GetHeight ());
 
 	hblur.prog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
 	vblur.prog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
@@ -139,7 +139,7 @@ bool Glow::Init (gl::Texture &screenmap, gl::Texture &gm,
 	map2.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F, width, height,
 								0, GL_RGBA, GL_FLOAT, NULL);
 #ifdef DEBUG
-	renderer->memory += width * height * 4 * 2 * 2;
+	r->memory += width * height * 4 * 2 * 2;
 #endif
 
 	hblur.fb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
@@ -235,7 +235,7 @@ void Glow::Apply (void)
 
 	glowmap->Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	sampler.Bind (0);
-	renderer->windowgrid.Render ();
+	r->windowgrid.Render ();
 
 	vblur.fb.Bind (GL_FRAMEBUFFER);
 	vblur.pipeline.Bind ();
@@ -243,19 +243,19 @@ void Glow::Apply (void)
 	map.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	sampler2.Bind (0);
 
-	renderer->windowgrid.Render ();
+	r->windowgrid.Render ();
 
 	blendfb.Bind (GL_FRAMEBUFFER);
 	blendpipeline.Bind ();
-	gl::Viewport (0, 0, renderer->gbuffer.GetWidth (),
-								renderer->gbuffer.GetHeight ());
+	gl::Viewport (0, 0, r->gbuffer.GetWidth (),
+								r->gbuffer.GetHeight ());
 
 	gl::Enable (GL_BLEND);
 	gl::BlendFunc (GL_ONE, GL_ONE);
 	gl::BlendEquation (GL_FUNC_ADD);
 	map2.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 	sampler2.Bind (0);
-	renderer->windowgrid.Render ();
+	r->windowgrid.Render ();
 	gl::Disable (GL_BLEND);
 
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
