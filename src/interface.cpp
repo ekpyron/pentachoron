@@ -69,6 +69,8 @@ Interface::Interface (void)
 				{ "Lights", NULL, [&] (int what) {
 						if (!what)
 						{
+							if (r->GetNumLights () == 0)
+								 AddLight ();
 							menu = EDIT_LIGHTS;
 							submenu = 0;
 						}

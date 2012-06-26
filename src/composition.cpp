@@ -19,10 +19,7 @@
 
 Composition::Composition (void)
 	: glow (), luminance_threshold (0.75),
-		sky ( { 3.0, 50.0, 142, 10.0 } ),
-		info ( { glm::vec4 (0), glm::mat4 (0), glm::mat4 (0),
-					 glm::vec4 (0), glm::vec4 (0), { 0, 0.0f, 0.0f, 0.0f },
-				{}, 0.7, 0, 0, 2.0 } )
+		sky ( { 3.0, 50.0, 142, 10.0 } )
 {
 }
 
@@ -32,6 +29,9 @@ Composition::~Composition (void)
 
 bool Composition::Init (void)
 {
+	if (!info.Init ())
+		 return false;
+
 	std::string src;
 	if (!ReadFile (MakePath ("kernels", "composition.cl"), src))
 		 return false;
@@ -88,6 +88,10 @@ bool Composition::Init (void)
 	composition.SetArg (7, r->gbuffer.fragidxmem);
 	composition.SetArg (8, r->gbuffer.fraglistmem);
 
+	composition.SetArg (9, r->GetLightMem ());
+
+	composition.SetArg (10, info.GetMem ());
+
 	cl_uint num_parameters = r->GetNumParameters ();
 	composition.SetArg (11, sizeof (cl_uint), &num_parameters);
 	composition.SetArg (12, r->GetParameterMem ());
@@ -97,6 +101,11 @@ bool Composition::Init (void)
 	GeneratePerezCoefficients ();
 
 	return true;
+}
+
+void Composition::SetLightMem (cl::Memory &m)
+{
+	composition.SetArg (9, m);
 }
 
 void Composition::GeneratePerezCoefficients (void)
@@ -170,12 +179,12 @@ float Composition::GetLuminanceThreshold (void)
 
 void Composition::SetScreenLimit (float limit)
 {
-	info.screenlimit = limit;
+	info.SetScreenLimit (limit);
 }
 
 GLfloat Composition::GetScreenLimit (void)
 {
-	return info.screenlimit;
+	return info.GetScreenLimit ();
 }
 
 void Composition::SetShadowAlpha (float alpha)
@@ -184,12 +193,12 @@ void Composition::SetShadowAlpha (float alpha)
 		 alpha = 0;
 	if (alpha > 1)
 		 alpha = 1;
-	info.shadow_alpha = alpha;
+	info.SetShadowAlpha (alpha);
 }
 
 float Composition::GetShadowAlpha (void)
 {
-	return info.shadow_alpha;
+	return info.GetShadowAlpha ();
 }
 
 const gl::Texture &Composition::GetScreen (void)
@@ -201,14 +210,14 @@ const gl::Texture &Composition::GetScreen (void)
 
 void Composition::SetMode (GLuint m)
 {
-	info.mode = m;
-	if (info.mode >= NUM_COMPOSITIONMODES)
-		 info.mode = NUM_COMPOSITIONMODES - 1;
+	if (m >= NUM_COMPOSITIONMODES)
+		 m = NUM_COMPOSITIONMODES - 1;
+	info.SetMode (m);
 }
 
 GLuint Composition::GetMode (void)
 {
-	return info.mode;
+	return info.GetMode ();
 }
 
 float Composition::GetTurbidity (void)
@@ -280,10 +289,10 @@ glm::vec3 Composition::GetSunDirection (float &theta, float &cos_theta)
 		float phi = -atan2 (opp, adj);
 		theta = DRE_PI / 2.0 - solarAltitude;
 
-		float sin_theta = sin (info.sky.sun.theta);
-		cos_theta = cos (info.sky.sun.theta);
+		float sin_theta = sin (info.GetSunTheta ());
+		cos_theta = cos (info.GetSunTheta ());
 		return glm::vec3 (sin_theta * sin (phi),
-											info.sky.sun.cos_theta,
+											cos_theta,
 											sin_theta * cos (phi));
 
 }
@@ -299,42 +308,38 @@ void Composition::Frame (float timefactor)
 																	r->gbuffer.fragidxmem,
 																	r->shadowmap.GetMem () };
 
-	info.num_lights = r->GetNumLights ();
+	info.SetNumLights (r->GetNumLights ());
 
-	info.projinfo = r->camera.GetProjInfo ();
-	info.vmatinv = glm::transpose
-		 (glm::inverse (r->camera.GetViewMatrix ()));
-	info.shadowmat = glm::transpose
-		 (r->shadowmap.GetMat ());
-	info.eye = glm::vec4 (r->camera.GetEye (), 0.0);
-	info.center = glm::vec4 (r->camera.GetCenter (), 0.0);
-	info.glow.threshold = luminance_threshold;
-	info.glow.size = glow.GetSize ();
-	info.glow.glowlimit = glow.GetLimit ();
-	info.glow.exponent = glow.GetExponent ();
+	info.SetProjInfo (r->camera.GetProjInfo ());
+	info.SetInverseViewMatrix
+		 (glm::transpose (glm::inverse (r->camera.GetViewMatrix ())));
+	info.SetShadowMatrix (glm::transpose (r->shadowmap.GetMat ()));
+	info.SetEye (glm::vec4 (r->camera.GetEye (), 0.0));
+	info.SetCenter (glm::vec4 (r->camera.GetCenter (), 0.0));
+	info.SetGlowThreshold (luminance_threshold);
+	info.SetGlowSize (glow.GetSize ());
+	info.SetGlowLimit (glow.GetLimit ());
+	info.SetGlowExponent (glow.GetExponent ());
 
 	{
-		info.sky.sun.direction = glm::vec4
-			 (GetSunDirection (info.sky.sun.theta, info.sky.sun.cos_theta), 0);
+		float theta, cos_theta;
+		info.SetSunDirection 
+			 (glm::vec4 (GetSunDirection (theta, cos_theta), 0));
+		info.SetSunTheta (theta);
 		float T = sky.turbidity;
-		info.sky.turbidity = T;
 
-		for (auto i = 0; i < 5; i++)
-		{
-			info.sky.perezY[i] = sky.perezY[i];
-			info.sky.perezx[i] = sky.perezx[i];
-			info.sky.perezy[i] = sky.perezy[i];
-		}
+		info.SetSkyPerezY (sky.perezY);
+		info.SetSkyPerezx (sky.perezx);
+		info.SetSkyPerezy (sky.perezy);
 
 		{
-			float chi = (4.0 / 9.0 - T / 120.0) * (M_PI - 2.0 * info.sky.sun.theta);
-			info.sky.zenithYxy.x = (4.0453 * T - 4.9710) * tan (chi)
+			glm::vec4 zenithYxy;
+			float chi = (4.0 / 9.0 - T / 120.0) * (M_PI - 2.0 * info.GetSunTheta ());
+			zenithYxy.x = (4.0453 * T - 4.9710) * tan (chi)
 				 - 0.2155 * T + 2.4192;
-		}
-		{
 			glm::vec4 th;
 			th.w = 1;
-			th.z = info.sky.sun.theta;
+			th.z = info.GetSunTheta ();
 			th.y = th.z * th.z;
 			th.x = th.y * th.z;
 
@@ -345,19 +350,17 @@ void Composition::Frame (float timefactor)
 											 0.00208, -0.03202, 0.06052,
 											 0, 0.00394, 0.25886);
 
-			info.sky.zenithYxy.y = glm::dot (T3, matx * th);
+			zenithYxy.y = glm::dot (T3, matx * th);
 
 			glm::mat4x3 maty (0.00275, -0.04214, 0.15346,
 												-0.00610, 0.08970, -0.26756,
 												0.00316, -0.04153, 0.06669,
 												0, 0.00515, 0.26688);
 
-			info.sky.zenithYxy.z = glm::dot (T3, maty * th);
+			zenithYxy.z = glm::dot (T3, maty * th);
+			info.SetSkyZenithYxy (zenithYxy);
 		}
 	}
-
-	composition.SetArg (9, r->GetLightMem ());
-	composition.SetArg (10, sizeof (Info), &info);
 
 	const size_t work_dim[] = { r->gbuffer.GetWidth (),
 															r->gbuffer.GetHeight () };
@@ -373,4 +376,386 @@ void Composition::Frame (float timefactor)
 		glowmap.GenerateMipmap (GL_TEXTURE_2D);
 		glow.Apply ();
 	}
+}
+
+Composition::Info::Info (void)
+	: data ( { glm::vec4 (0), glm::mat4 (0), glm::mat4 (0),
+				 glm::vec4 (0), glm::vec4 (0), { 0, 0.0f, 0.0f, 0.0f },
+			{ glm::vec4 (0), 0.0f, 0.0f }, { 3.0f }, 0.7, 0, 0, 2.0 } )
+{
+}
+
+Composition::Info::~Info (void)
+{
+}
+
+bool Composition::Info::Init (void)
+{
+	mem = r->clctx.CreateBuffer (CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
+															 sizeof (data), &data);
+	return true;
+}
+
+void Composition::Info::SetProjInfo (const glm::vec4 &i)
+{
+	if (data.projinfo != i)
+	{
+		data.projinfo = i;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.projinfo)
+																 - intptr_t (&data), sizeof (data.projinfo),
+																 &data.projinfo, 0, NULL, NULL);
+	}
+}
+
+const glm::vec4 &Composition::Info::GetProjInfo (void)
+{
+	return data.projinfo;
+}
+
+void Composition::Info::SetInverseViewMatrix (const glm::mat4 &m)
+{
+	if (data.vmatinv != m)
+	{
+		data.vmatinv = m;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.vmatinv)
+																 - intptr_t (&data), sizeof (data.vmatinv),
+																 &data.vmatinv, 0, NULL, NULL);
+	}
+}
+
+const glm::mat4 &Composition::Info::GetInverseViewMatrix (void)
+{
+	return data.vmatinv;
+}
+
+void Composition::Info::SetShadowMatrix (const glm::mat4 &m)
+{
+	if (data.shadowmat != m)
+	{
+		data.shadowmat = m;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.shadowmat)
+																 - intptr_t (&data), sizeof (data.shadowmat),
+																 &data.shadowmat, 0, NULL, NULL);
+	}
+}
+
+const glm::mat4 &Composition::Info::GetShadowMatrix (void)
+{
+	return data.shadowmat;
+}
+
+void Composition::Info::SetEye (const glm::vec4 &e)
+{
+	if (data.eye != e)
+	{
+		data.eye = e;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.eye)
+																 - intptr_t (&data), sizeof (data.eye),
+																 &data.eye, 0, NULL, NULL);
+	}
+}
+
+const glm::vec4 &Composition::Info::GetEye (void)
+{
+	return data.eye;
+}
+
+void Composition::Info::SetCenter (const glm::vec4 &c)
+{
+	if (data.center != c)
+	{
+		data.center = c;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.center)
+																 - intptr_t (&data), sizeof (data.center),
+																 &data.center, 0, NULL, NULL);
+	}
+}
+
+const glm::vec4 &Composition::Info::GetCenter (void)
+{
+	return data.center;
+}
+
+void Composition::Info::SetGlowSize (GLuint s)
+{
+	if (data.glow.size != s)
+	{
+		data.glow.size = s;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.glow.size)
+																 - intptr_t (&data), sizeof (data.glow.size),
+																 &data.glow.size, 0, NULL, NULL);
+	}
+}
+
+GLuint Composition::Info::GetGlowSize (void)
+{
+	return data.glow.size;
+}
+
+void Composition::Info::SetGlowExponent (GLfloat e)
+{
+	if (data.glow.exponent != e)
+	{
+		data.glow.exponent = e;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.glow.exponent)
+																 - intptr_t (&data),
+																 sizeof (data.glow.exponent),
+																 &data.glow.exponent, 0, NULL, NULL);
+	}
+}
+
+GLfloat Composition::Info::GetGlowExponent (void)
+{
+	return data.glow.exponent;
+}
+
+void Composition::Info::SetGlowThreshold (GLfloat t)
+{
+	if (data.glow.threshold != t)
+	{
+		data.glow.threshold = t;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.glow.threshold)
+																 - intptr_t (&data),
+																 sizeof (data.glow.threshold),
+																 &data.glow.threshold, 0, NULL, NULL);
+	}
+}
+
+GLfloat Composition::Info::GetGlowThreshold (void)
+{
+	return data.glow.threshold;
+}
+
+void Composition::Info::SetGlowLimit (GLfloat l)
+{
+	if (data.glow.glowlimit != l)
+	{
+		data.glow.glowlimit = l;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.glow.glowlimit)
+																 - intptr_t (&data),
+																 sizeof (data.glow.glowlimit),
+																 &data.glow.glowlimit, 0, NULL, NULL);
+
+	}
+}
+
+GLfloat Composition::Info::GetGlowLimit (void)
+{
+	return data.glow.glowlimit;
+}
+
+void Composition::Info::SetSunDirection (const glm::vec4 &d)
+{
+	if (data.sun.direction != d)
+	{
+		data.sun.direction = d;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sun.direction)
+																 - intptr_t (&data),
+																 sizeof (data.sun.direction),
+																 &data.sun.direction, 0, NULL, NULL);
+
+	}
+}
+
+const glm::vec4 &Composition::Info::GetSunDirection (void)
+{
+	return data.sun.direction;
+}
+
+void Composition::Info::SetSunTheta (GLfloat theta)
+{
+	if (data.sun.theta != theta)
+	{
+		data.sun.theta = theta;
+		data.sun.cos_theta = cosf (theta);
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sun.theta)
+																 - intptr_t (&data), sizeof (data.sun.theta)
+																 + sizeof (data.sun.cos_theta),
+																 &data.sun.theta, 0, NULL, NULL);
+	}
+}
+
+GLfloat Composition::Info::GetSunTheta (void)
+{
+	return data.sun.theta;
+}
+
+GLfloat Composition::Info::GetCosSunTheta (void)
+{
+	return data.sun.cos_theta;
+}
+
+void Composition::Info::SetSkyTurbidity (GLfloat T)
+{
+	if (data.sky.turbidity != T)
+	{
+		data.sky.turbidity = T;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sky.turbidity)
+																 - intptr_t (&data),
+																 sizeof (data.sky.turbidity),
+																 &data.sky.turbidity, 0, NULL, NULL);
+
+	}
+}
+
+GLfloat Composition::Info::GetSkyTurbidity (void)
+{
+	return data.sky.turbidity;
+}
+
+void Composition::Info::SetSkyPerezY (const GLfloat *p)
+{
+	for (auto i = 0; i < 5; i++)
+	{
+		if (data.sky.perezY[i] != p[i])
+		{
+			data.sky.perezY[i] = p[i];
+			r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sky.perezY[i])
+																	 - intptr_t (&data),
+																	 sizeof (data.sky.perezY[i]),
+																	 &data.sky.perezY[i], 0, NULL, NULL);
+
+		}
+	}
+}
+
+const GLfloat *Composition::Info::GetSkyPerezY (void)
+{
+	return &data.sky.perezY[0];
+}
+
+void Composition::Info::SetSkyPerezx (const GLfloat *p)
+{
+	for (auto i = 0; i < 5; i++)
+	{
+		if (data.sky.perezx[i] != p[i])
+		{
+			data.sky.perezx[i] = p[i];
+			r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sky.perezx[i])
+																	 - intptr_t (&data),
+																	 sizeof (data.sky.perezx[i]),
+																	 &data.sky.perezx[i], 0, NULL, NULL);
+
+		}
+	}
+}
+
+const GLfloat *Composition::Info::GetSkyPerezx (void)
+{
+	return &data.sky.perezx[0];
+}
+
+void Composition::Info::SetSkyPerezy (const GLfloat *p)
+{
+	for (auto i = 0; i < 5; i++)
+	{
+		if (data.sky.perezy[i] != p[i])
+		{
+			data.sky.perezy[i] = p[i];
+			r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sky.perezy[i])
+																	 - intptr_t (&data),
+																	 sizeof (data.sky.perezy[i]),
+																	 &data.sky.perezy[i], 0, NULL, NULL);
+
+		}
+	}
+}
+
+const GLfloat *Composition::Info::GetSkyPerezy (void)
+{
+	return &data.sky.perezy[0];
+}
+
+void Composition::Info::SetSkyZenithYxy (const glm::vec4 &Yxy)
+{
+	if (data.sky.zenithYxy != Yxy)
+	{
+		data.sky.zenithYxy = Yxy;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sky.zenithYxy)
+																 - intptr_t (&data),
+																 sizeof (data.sky.zenithYxy),
+																 &data.sky.zenithYxy, 0, NULL, NULL);
+
+	}
+}
+
+const glm::vec4 &Composition::Info::GetSkyZenithYxy (void)
+{
+	return data.sky.zenithYxy;
+}
+
+void Composition::Info::SetShadowAlpha (GLfloat a)
+{
+	if (data.shadow_alpha != a)
+	{
+		data.shadow_alpha = a;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.shadow_alpha)
+																 - intptr_t (&data),
+																 sizeof (data.shadow_alpha),
+																 &data.shadow_alpha, 0, NULL, NULL);
+
+	}
+}
+
+GLfloat Composition::Info::GetShadowAlpha (void)
+{
+	return data.shadow_alpha;
+}
+
+void Composition::Info::SetMode (GLuint m)
+{
+	if (data.mode != m)
+	{
+		data.mode = m;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.mode)
+																 - intptr_t (&data),
+																 sizeof (data.mode),
+																 &data.mode, 0, NULL, NULL);
+
+	}
+}
+
+GLuint Composition::Info::GetMode (void)
+{
+	return data.mode;
+}
+
+void Composition::Info::SetNumLights (GLuint n)
+{
+	if (data.num_lights != n)
+	{
+		data.num_lights = n;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.num_lights)
+																 - intptr_t (&data),
+																 sizeof (data.num_lights),
+																 &data.num_lights, 0, NULL, NULL);
+	}
+}
+
+GLuint Composition::Info::GetNumLights (void)
+{
+	return data.num_lights;
+}
+
+void Composition::Info::SetScreenLimit (GLfloat l)
+{
+	if (data.screenlimit != l)
+	{
+		data.screenlimit = l;
+		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.screenlimit)
+																 - intptr_t (&data),
+																 sizeof (data.screenlimit),
+																 &data.screenlimit, 0, NULL, NULL);
+
+	}
+}
+
+GLfloat Composition::Info::GetScreenLimit (void)
+{
+	return data.screenlimit;
+}
+
+const cl::Memory &Composition::Info::GetMem (void)
+{
+	return mem;
 }

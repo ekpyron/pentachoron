@@ -293,6 +293,7 @@ void Renderer::AddLight (const Light &light)
 	lightmem = clctx.CreateBuffer (CL_MEM_READ_ONLY,
 																 sizeof (Light) * lights.size (),
 																 NULL);
+	composition.SetLightMem (lightmem);
 	queue.EnqueueWriteBuffer (lightmem, CL_TRUE, 0,
 														sizeof (Light) * lights.size (),
 														&lights[0], 0, NULL, NULL);
