@@ -62,24 +62,24 @@ bool Composition::Init (void)
 	{
 		gl::Shader obj (GL_FRAGMENT_SHADER);
 		std::string source;
-		if (!ReadFile (MakePath ("shaders", "lightcull.txt"), source))
+		if (!ReadFile (MakePath ("shaders", "minmaxdepth.txt"), source))
 			 return false;
 		obj.Source (source);
 		if (!obj.Compile ())
 		{
 			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "lightcull.txt")
+									 << MakePath ("shaders", "minmaxdepth.txt")
 									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
 			 return false;
 		}
 		
-		lightprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		lightprog.Attach (obj);
-		if (!lightprog.Link ())
+		minmaxdepthprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
+		minmaxdepthprog.Attach (obj);
+		if (!minmaxdepthprog.Link ())
 		{
 			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "lightcull.txt")
-									 << ": " << std::endl << lightprog.GetInfoLog ()
+									 << MakePath ("shaders", "minmaxdepth.txt")
+									 << ": " << std::endl << minmaxdepthprog.GetInfoLog ()
 									 << std::endl;
 			 return false;
 		}
@@ -88,7 +88,7 @@ bool Composition::Init (void)
 	fprogram["invviewport"]
 		 = glm::vec2 (1.0f / float (renderer->gbuffer.GetWidth ()),
 									1.0f / float (renderer->gbuffer.GetHeight ()));
-	lightprog["invviewport"]
+	minmaxdepthprog["invviewport"]
 		 = glm::vec2 (1.0f / float (renderer->gbuffer.GetWidth ()),
 									1.0f / float (renderer->gbuffer.GetHeight ()));
 
@@ -97,10 +97,10 @@ bool Composition::Init (void)
 	pipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT,
 														 fprogram);
 
-	lightpipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
-																	renderer->windowgrid.vprogram);
-	lightpipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT,
-																	lightprog);
+	minmaxdepthpipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
+																				renderer->windowgrid.vprogram);
+	minmaxdepthpipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT,
+																				minmaxdepthprog);
 
 	screen.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
 									renderer->gbuffer.GetWidth (),
@@ -139,27 +139,28 @@ bool Composition::Init (void)
 										renderer->gbuffer.GetHeight (), 0, GL_RED_INTEGER,
 										GL_UNSIGNED_INT, NULL);
 	numlighttex.Image2D (GL_TEXTURE_2D, 0, GL_R16UI,
-											 (renderer->gbuffer.GetWidth () + 15) >> 4,
-											 (renderer->gbuffer.GetHeight () + 15) >> 4,
+											 (renderer->gbuffer.GetWidth () + 31) >> 5,
+											 (renderer->gbuffer.GetHeight () + 31) >> 5,
 											 0, GL_RED_INTEGER,
 											 GL_UNSIGNED_SHORT, NULL);
 
 	mindepthtex.Image2D (GL_TEXTURE_2D, 0, GL_R32UI,
-											 (renderer->gbuffer.GetWidth () + 15) >> 4,
-											 (renderer->gbuffer.GetHeight () + 15) >> 4,
+											 (renderer->gbuffer.GetWidth () + 31) >> 5,
+											 (renderer->gbuffer.GetHeight () + 31) >> 5,
 											 0, GL_RED_INTEGER,
 											 GL_UNSIGNED_INT, NULL);
 
 	maxdepthtex.Image2D (GL_TEXTURE_2D, 0, GL_R32UI,
-											 (renderer->gbuffer.GetWidth () + 15) >> 4,
-											 (renderer->gbuffer.GetHeight () + 15) >> 4,
+											 (renderer->gbuffer.GetWidth () + 31) >> 5,
+											 (renderer->gbuffer.GetHeight () + 31) >> 5,
 											 0, GL_RED_INTEGER,
 											 GL_UNSIGNED_INT, NULL);
 
-	dummy.Storage (GL_R8, renderer->gbuffer.GetWidth (),
-								 renderer->gbuffer.GetHeight ());
-	lightfb.Renderbuffer (GL_COLOR_ATTACHMENT0, dummy);
-	lightfb.DrawBuffers ({ });
+	minmaxdepthfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+													 mindepthtex, 0);
+	minmaxdepthfb.Texture2D (GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+													 maxdepthtex, 0);
+	minmaxdepthfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 });
 
 	clearfb.Texture2D (GL_COLOR_ATTACHMENT0,
 										 GL_TEXTURE_2D,
@@ -435,16 +436,10 @@ void Composition::Frame (float timefactor)
 	gl::ClearBufferuiv (GL_COLOR, 1, (const GLuint[]) { (GLuint) -1, 0, 0, 0 });
 	gl::ClearBufferuiv (GL_COLOR, 2, (const GLuint[]) { 0, 0, 0, 0 });
 
-	lightfb.Bind (GL_FRAMEBUFFER);
-
-	lightpipeline.Bind ();
-	gl::Viewport (0, 0, renderer->gbuffer.GetWidth (),
-								renderer->gbuffer.GetHeight ());
-
-	lighttex.BindImage (0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);
-	numlighttex.BindImage (1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R16UI);
-	mindepthtex.BindImage (2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-	maxdepthtex.BindImage (3, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	minmaxdepthfb.Bind (GL_FRAMEBUFFER);
+	gl::Viewport (0, 0, renderer->gbuffer.GetWidth () >> 5,
+								renderer->gbuffer.GetHeight () >> 5);
+	minmaxdepthpipeline.Bind ();
 
 	renderer->windowgrid.sampler.Bind (0);
 	renderer->gbuffer.depthtexture.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
@@ -455,7 +450,21 @@ void Composition::Frame (float timefactor)
 	renderer->windowgrid.sampler.Bind (2);
 	renderer->gbuffer.fraglisttex.Bind (GL_TEXTURE2, GL_TEXTURE_BUFFER);
 
-	renderer->windowgrid.Render ();
+	gl::BlendFunc (GL_SRC_COLOR, GL_DST_COLOR);
+	gl::BlendEquationi (0, GL_MIN);
+	gl::BlendEquationi (1, GL_MAX);
+	gl::Enable (GL_BLEND);
+
+	for (auto y = 0; y < 32; y++)
+	{
+		for (auto x = 0; x < 32; x++)
+		{
+			minmaxdepthprog["offset"] = glm::uvec2 (x, y);
+			renderer->windowgrid.Render ();
+		}
+	}
+
+	gl::Disable (GL_BLEND);
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
 	pipeline.Bind ();
@@ -464,7 +473,7 @@ void Composition::Frame (float timefactor)
 
 	renderer->windowgrid.sampler.Bind (0);
 	renderer->gbuffer.colorbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-	
+
 	renderer->windowgrid.sampler.Bind (1);
 	renderer->gbuffer.depthtexture.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 

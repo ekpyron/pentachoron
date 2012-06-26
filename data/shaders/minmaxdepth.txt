@@ -18,36 +18,32 @@
 
 uniform vec2 invviewport;
 
-layout(binding = 0, size1x32) writeonly uniform uimage2D lighttex;
-layout(binding = 1, size1x32) uniform uimage2D numlighttex;
-layout(binding = 2, size1x32) uniform uimage2D mindepthtex;
-layout(binding = 3, size1x32) uniform uimage2D maxdepthtex;
-
 layout(binding = 0) uniform sampler2D depthbuffer;
 layout(binding = 1) uniform isampler2D fragidx;
 layout(binding = 2) uniform usamplerBuffer fraglist;
 
+uniform uvec2 offset;
+
+layout(location = 0) out float mindepth;
+layout(location = 1) out float maxdepth;
+
 void main (void)
 {
-	uint offset;
 	vec2 coord;
-	float depth;
-
-	ivec2 p;
-
-	offset = uint (gl_FragCoord.x) & 15U;
-	offset += (uint (gl_FragCoord.y) & 15U) << 4U;
-
-	p.x = int (gl_FragCoord.x) >> 4;
-	p.y = int (gl_FragCoord.y) >> 4;
-
-	coord = invviewport * gl_FragCoord.xy;
+	float mind, maxd, depth;
+	coord = invviewport * (gl_FragCoord.xy * 32 + offset);
 	depth = texture (depthbuffer, coord).r;
+	mind = depth;
+	maxd = depth;
+	int idx = texture (fragidx, coord).r;
+	while (idx != -1)
+	{
+		depth = uintBitsToFloat (texelFetch (fraglist, idx * 5 + 3).r);
+		mind = min (mind, depth);
+		maxd = max (maxd, depth);
+		idx = int (texelFetch (fraglist, idx * 5 + 4).r);
+	}
 
-	uint udepth;
-	udepth = uint (depth * 4294967295.0);
-
-	imageAtomicMin (mindepthtex, p, udepth);
-	imageAtomicMax (maxdepthtex, p, udepth);
-
+	mindepth = mind;
+	maxdepth = maxd;
 }
