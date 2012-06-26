@@ -58,6 +58,8 @@ bool Renderer::Init (void)
 	if (!shadowmap.Init ())
 		 return false;
 
+	interface.AddShadow ();
+
 	float max = -100;
 
 	srand (time (NULL));
@@ -302,16 +304,16 @@ void Renderer::Frame (void)
 	gbuffer.Render (geometry);
 
 	{
-		float theta, cos_theta;
+/*		float theta, cos_theta;
 		shadows[0].direction = -glm::vec4 (composition.GetSunDirection (theta,
 																																		cos_theta),
 																			 0.0f);
 		shadows[0].position = -shadows[0].direction * 25;
 		
-
-		if (cos_theta < 0.05)
+*/
+/*		if (cos_theta < 0.05)
 			 shadowmap.Clear ();
-		else
+		else*/
 			 shadowmap.Render (0, geometry, shadows[0]);
 	}
 

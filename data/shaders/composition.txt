@@ -47,9 +47,11 @@ uniform struct {
 } glow;
 
 uniform float screenlimit;
+uniform float shadow_alpha;
 
 uniform vec4 projinfo;
 uniform mat4 vmatinv;
+uniform mat4 shadowmat;
 
 vec3 getpos (vec3 pin)
 {
@@ -68,12 +70,41 @@ vec3 getpos (vec3 pin)
 	return pos.xyz / pos.w;
 }
 
+float compute_shadow (vec3 pos)
+{
+	vec4 lspos;
+
+	lspos = shadowmat * vec4 (pos, 1);
+	lspos.xyz /= lspos.w;
+
+	if (lspos.w < 0 || lspos.x < 0 || lspos.y < 0
+	    || lspos.x > 1 || lspos.y > 1)
+	{
+		return 1.0f;
+	}
+
+	vec2 moments = texture (shadowmap, lspos.xy).xy;
+
+
+	if (lspos.z <= moments.x)
+	{
+	   return 1.0f;
+	}
+
+	float variance = moments.y - (moments.x * moments.x);
+	variance = max (variance, 0.00001f);
+	float d = lspos.z - moments.x;
+	float p = variance / (variance + d * d);
+	return smoothstep (0.1f, 1.0f, p);
+}
+
 vec4 compute_pixel (struct PixelData data)
 {
 	uint num_lights;
 	vec3 pos;
 	vec3 normal;
 	vec3 diffuse = vec3 (0, 0, 0);
+	vec4 pixel;
 
 	pos = getpos (vec3 (invviewport * gl_FragCoord.xy, data.depth));
 	normal = data.normal.xyz * 2 - 1;
@@ -149,7 +180,12 @@ vec4 compute_pixel (struct PixelData data)
 		diffuse += NdotL * attenuation * light.color.xyz;
 	}
 
-	return vec4 (data.color.xyz * diffuse, data.color.w);
+	pixel = vec4 (data.color.xyz * diffuse, data.color.w); 
+
+	float shadow = mix (1.0, compute_shadow (pos), shadow_alpha);
+	pixel *= shadow;
+
+	return pixel;
 }
 
 void main (void)

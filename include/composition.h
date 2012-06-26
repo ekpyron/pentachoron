@@ -138,13 +138,14 @@ private:
 	 /** Shadow alpha.
 		* This value specifies the degree of transparency of the shadows.
 		*/
-	 GLfloat shadow_alpha;
+	 gl::SmartUniform<GLfloat> shadow_alpha;
 	 /** Luminance threshold.
 		* Pixels with a luminance greater than this threshold will be
 		* written to the glow map.
 		*/
 	 gl::SmartUniform<GLfloat> luminance_threshold;
 	 gl::SmartUniform<GLfloat> screenlimit;
+	 gl::SmartUniform<glm::mat4> shadowmat;
 
 	 SkyParams sky;
 

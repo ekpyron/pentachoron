@@ -111,6 +111,10 @@ bool Composition::Init (void)
 		 (fprogram["glow.threshold"], 0.75);
 	screenlimit = gl::SmartUniform<GLfloat>
 		 (fprogram["screenlimit"], 2.0);
+	shadow_alpha = gl::SmartUniform<GLfloat>
+		 (fprogram["shadow_alpha"], 0.7);
+	shadowmat = gl::SmartUniform<glm::mat4>
+		 (fprogram["shadowmat"], glm::mat4 (1));
 
 	fprogram["invviewport"]
 		 = glm::vec2 (1.0f / float (r->gbuffer.GetWidth ()),
@@ -310,12 +314,12 @@ void Composition::SetShadowAlpha (float alpha)
 		 alpha = 0;
 	if (alpha > 1)
 		 alpha = 1;
-//	info.SetShadowAlpha (alpha);
+	shadow_alpha.Set (alpha);
 }
 
 float Composition::GetShadowAlpha (void)
 {
-//	return info.GetShadowAlpha ();
+	return shadow_alpha.Get ();
 }
 
 const gl::Texture &Composition::GetScreen (void)
@@ -470,6 +474,8 @@ void Composition::Frame (float timefactor)
 			info.SetSkyZenithYxy (zenithYxy);
 		}
 		}*/
+
+	shadowmat.Set (r->shadowmap.GetMat ());
 
 	clearfb.Bind (GL_FRAMEBUFFER);
 	gl::ClearBufferfv (GL_COLOR, 0, (const GLfloat[]) { 1.0f, 0, 0, 0 });
