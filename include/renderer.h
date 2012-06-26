@@ -56,7 +56,6 @@ public:
 	 GLuint GetNumParameters (void);
 	 Parameter &GetParameters (GLuint params);
 	 void UpdateParameters (GLuint params);
-	 const cl::Memory &GetParameterMem (void);
 
 #ifdef DEBUG
 	 unsigned long memory;
@@ -73,8 +72,6 @@ public:
 	 Camera camera;
 
 	 std::vector<Shadow> shadows;
-	 cl::CommandQueue queue;
-	 cl::Context clctx;
 
 private:
 	 GLuint antialiasing;
@@ -82,7 +79,6 @@ private:
 	 gl::Program opacityprogram;
 
 	 std::vector<Parameter> parameters;
-	 cl::Memory parametermem;
 
 	 std::vector<Light> lights;
 	 gl::Buffer lightbuffer;

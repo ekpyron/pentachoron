@@ -11,7 +11,7 @@ AC_ARG_WITH([glm],
 	[CPPFLAGS="-I$withval ${CPPFLAGS}"])
 AC_CHECK_HEADERS(glm/glm.hpp, [], AC_MSG_FAILURE([glm headers missing]))
 
-PKG_CHECK_MODULES([DEPS], [oglp libpng freetype2 oclp oglimg assimp libglfw yaml-cpp])
+PKG_CHECK_MODULES([DEPS], [oglp libpng freetype2 oglimg assimp libglfw yaml-cpp])
 
 DX_INIT_DOXYGEN($PACKAGE_NAME, doxygen.cfg)
 

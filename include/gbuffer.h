@@ -29,13 +29,9 @@ public:
 	 void Render (Geometry &geometry);
 
 	 gl::Texture colorbuffer;
-	 cl::Memory colormem;
 	 gl::Texture normalbuffer;
-	 cl::Memory normalmem;
 	 gl::Texture specularbuffer;
-	 cl::Memory specularmem;
 	 gl::Texture depthbuffer;
-	 cl::Memory depthmem;
 
 	 gl::Texture msdepthtexture;
 #ifdef DEBUG
@@ -49,9 +45,7 @@ public:
 	 void SetProjMatrix (const glm::mat4 &projmat);
 	 gl::Texture fraglisttex;
 	 gl::Buffer fraglist;
-	 cl::Memory fraglistmem;
 	 gl::Texture fragidx;
-	 cl::Memory fragidxmem;
 
 private:
 	 GLuint width, height;

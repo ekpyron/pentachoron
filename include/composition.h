@@ -197,9 +197,7 @@ private:
 			void SetScreenLimit (GLfloat f);
 			GLfloat GetScreenLimit (void);
 
-			const cl::Memory &GetMem (void);
 	 private:
-			cl::Memory mem;
 			typedef struct InfoData {
 				 glm::vec4 projinfo;
 				 glm::mat4 vmatinv;
@@ -230,7 +228,7 @@ private:
 				 } sky;
 				 GLfloat shadow_alpha;
 				 GLuint mode;
-				 cl_uint num_lights;
+				 GLuint num_lights;
 				 GLfloat screenlimit;
 			} InfoData;
 			InfoData data;

@@ -144,10 +144,6 @@ bool ShadowMap::Init (void)
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
-	shadowmem = r->clctx.CreateFromGLTexture2D (CL_MEM_READ_ONLY,
-																							GL_TEXTURE_2D, 0,
-																							shadowmap);
-
 	tmpstore.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
 										0, GL_RG, GL_FLOAT, NULL);
 
@@ -173,11 +169,6 @@ bool ShadowMap::Init (void)
 	projmat = gl::SmartUniform<glm::mat4> (program["projmat"], glm::mat4(1));
 
 	return true;
-}
-
-cl::Memory &ShadowMap::GetMem (void)
-{
-	return shadowmem;
 }
 
 gl::Texture &ShadowMap::GetMap (void)

@@ -35,8 +35,6 @@
 #define __gl_h__
 #include <GL/glfw.h>
 
-#include <oclp/oclp.h>
-
 /** Convert OpenGL error code to a string.
  * Converts an OpenGL error code to a string.
  * \param err OpenGL error code

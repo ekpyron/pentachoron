@@ -35,29 +35,9 @@ bool Renderer::Init (void)
 	gl::CullFace (GL_BACK);
 	gl::Enable (GL_CULL_FACE);
 
-#ifdef DEBUG
-	{
-		size_t len;
-		clctx.GetDeviceInfo (CL_DEVICE_EXTENSIONS, 0, NULL, &len);
-		std::vector<char> ext;
-		ext.resize (len);
-		clctx.GetDeviceInfo (CL_DEVICE_EXTENSIONS, len, &ext[0], NULL);
-		(*logstream) << "OpenCL Extensions: " << &ext[0] << std::endl;
-
-		cl_uint s;
-		clctx.GetDeviceInfo (CL_DEVICE_MAX_READ_IMAGE_ARGS, sizeof (cl_uint),
-												 &s, NULL);
-
-		(*logstream) << "Maximum number of read image args in OpenCL: "
-								 << s << std::endl;
-	}
-#endif
-
 	(*logstream) << "Initialize Interface..." << std::endl;
 
 	gl::Hint (GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
-
-	queue = clctx.CreateCommandQueue (0);
 
 	if (!interface.Init ())
 		 return false;
@@ -186,12 +166,6 @@ bool Renderer::Init (void)
 			}
 			parameters.push_back (parameter);
 		}
-		parametermem = clctx.CreateBuffer
-		 (CL_MEM_READ_ONLY,	sizeof (Parameter) * parameters.size (), NULL);
-		queue.EnqueueWriteBuffer
-			 (parametermem, CL_TRUE, 0,
-				sizeof (Parameter) * parameters.size (),
-				&parameters[0], 0, NULL, NULL);
 	}
 
 	(*logstream) << "Initialize Composition..." << std::endl;
@@ -242,22 +216,11 @@ Parameter &Renderer::GetParameters (GLuint param)
 
 void Renderer::UpdateParameters (GLuint param)
 {
-	queue.EnqueueWriteBuffer (parametermem, CL_TRUE,
-														intptr_t (&parameters[param])
-														- intptr_t (&parameters[0]),
-														sizeof (parameters[param]),
-														&parameters[param],
-														0, NULL, NULL);
 }
 
 GLuint Renderer::GetNumParameters (void)
 {
 	return parameters.size ();
-}
-
-const cl::Memory &Renderer::GetParameterMem (void)
-{
-	return parametermem;
 }
 
 Light &Renderer::GetLight (GLuint light)

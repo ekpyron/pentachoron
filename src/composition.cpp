@@ -588,8 +588,6 @@ Composition::Info::~Info (void)
 
 bool Composition::Info::Init (void)
 {
-	mem = r->clctx.CreateBuffer (CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
-															 sizeof (data), &data);
 	return true;
 }
 
@@ -598,9 +596,6 @@ void Composition::Info::SetProjInfo (const glm::vec4 &i)
 	if (data.projinfo != i)
 	{
 		data.projinfo = i;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.projinfo)
-																 - intptr_t (&data), sizeof (data.projinfo),
-																 &data.projinfo, 0, NULL, NULL);
 	}
 }
 
@@ -614,9 +609,6 @@ void Composition::Info::SetInverseViewMatrix (const glm::mat4 &m)
 	if (data.vmatinv != m)
 	{
 		data.vmatinv = m;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.vmatinv)
-																 - intptr_t (&data), sizeof (data.vmatinv),
-																 &data.vmatinv, 0, NULL, NULL);
 	}
 }
 
@@ -630,9 +622,6 @@ void Composition::Info::SetShadowMatrix (const glm::mat4 &m)
 	if (data.shadowmat != m)
 	{
 		data.shadowmat = m;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.shadowmat)
-																 - intptr_t (&data), sizeof (data.shadowmat),
-																 &data.shadowmat, 0, NULL, NULL);
 	}
 }
 
@@ -646,9 +635,6 @@ void Composition::Info::SetEye (const glm::vec4 &e)
 	if (data.eye != e)
 	{
 		data.eye = e;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.eye)
-																 - intptr_t (&data), sizeof (data.eye),
-																 &data.eye, 0, NULL, NULL);
 	}
 }
 
@@ -662,9 +648,6 @@ void Composition::Info::SetCenter (const glm::vec4 &c)
 	if (data.center != c)
 	{
 		data.center = c;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.center)
-																 - intptr_t (&data), sizeof (data.center),
-																 &data.center, 0, NULL, NULL);
 	}
 }
 
@@ -678,9 +661,6 @@ void Composition::Info::SetGlowSize (GLuint s)
 	if (data.glow.size != s)
 	{
 		data.glow.size = s;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.glow.size)
-																 - intptr_t (&data), sizeof (data.glow.size),
-																 &data.glow.size, 0, NULL, NULL);
 	}
 }
 
@@ -694,10 +674,6 @@ void Composition::Info::SetGlowExponent (GLfloat e)
 	if (data.glow.exponent != e)
 	{
 		data.glow.exponent = e;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.glow.exponent)
-																 - intptr_t (&data),
-																 sizeof (data.glow.exponent),
-																 &data.glow.exponent, 0, NULL, NULL);
 	}
 }
 
@@ -711,10 +687,6 @@ void Composition::Info::SetGlowThreshold (GLfloat t)
 	if (data.glow.threshold != t)
 	{
 		data.glow.threshold = t;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.glow.threshold)
-																 - intptr_t (&data),
-																 sizeof (data.glow.threshold),
-																 &data.glow.threshold, 0, NULL, NULL);
 	}
 }
 
@@ -728,11 +700,6 @@ void Composition::Info::SetGlowLimit (GLfloat l)
 	if (data.glow.glowlimit != l)
 	{
 		data.glow.glowlimit = l;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.glow.glowlimit)
-																 - intptr_t (&data),
-																 sizeof (data.glow.glowlimit),
-																 &data.glow.glowlimit, 0, NULL, NULL);
-
 	}
 }
 
@@ -746,11 +713,6 @@ void Composition::Info::SetSunDirection (const glm::vec4 &d)
 	if (data.sun.direction != d)
 	{
 		data.sun.direction = d;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sun.direction)
-																 - intptr_t (&data),
-																 sizeof (data.sun.direction),
-																 &data.sun.direction, 0, NULL, NULL);
-
 	}
 }
 
@@ -765,10 +727,6 @@ void Composition::Info::SetSunTheta (GLfloat theta)
 	{
 		data.sun.theta = theta;
 		data.sun.cos_theta = cosf (theta);
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sun.theta)
-																 - intptr_t (&data), sizeof (data.sun.theta)
-																 + sizeof (data.sun.cos_theta),
-																 &data.sun.theta, 0, NULL, NULL);
 	}
 }
 
@@ -787,11 +745,6 @@ void Composition::Info::SetSkyTurbidity (GLfloat T)
 	if (data.sky.turbidity != T)
 	{
 		data.sky.turbidity = T;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sky.turbidity)
-																 - intptr_t (&data),
-																 sizeof (data.sky.turbidity),
-																 &data.sky.turbidity, 0, NULL, NULL);
-
 	}
 }
 
@@ -807,11 +760,6 @@ void Composition::Info::SetSkyPerezY (const GLfloat *p)
 		if (data.sky.perezY[i] != p[i])
 		{
 			data.sky.perezY[i] = p[i];
-			r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sky.perezY[i])
-																	 - intptr_t (&data),
-																	 sizeof (data.sky.perezY[i]),
-																	 &data.sky.perezY[i], 0, NULL, NULL);
-
 		}
 	}
 }
@@ -828,11 +776,6 @@ void Composition::Info::SetSkyPerezx (const GLfloat *p)
 		if (data.sky.perezx[i] != p[i])
 		{
 			data.sky.perezx[i] = p[i];
-			r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sky.perezx[i])
-																	 - intptr_t (&data),
-																	 sizeof (data.sky.perezx[i]),
-																	 &data.sky.perezx[i], 0, NULL, NULL);
-
 		}
 	}
 }
@@ -849,11 +792,6 @@ void Composition::Info::SetSkyPerezy (const GLfloat *p)
 		if (data.sky.perezy[i] != p[i])
 		{
 			data.sky.perezy[i] = p[i];
-			r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sky.perezy[i])
-																	 - intptr_t (&data),
-																	 sizeof (data.sky.perezy[i]),
-																	 &data.sky.perezy[i], 0, NULL, NULL);
-
 		}
 	}
 }
@@ -868,11 +806,6 @@ void Composition::Info::SetSkyZenithYxy (const glm::vec4 &Yxy)
 	if (data.sky.zenithYxy != Yxy)
 	{
 		data.sky.zenithYxy = Yxy;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.sky.zenithYxy)
-																 - intptr_t (&data),
-																 sizeof (data.sky.zenithYxy),
-																 &data.sky.zenithYxy, 0, NULL, NULL);
-
 	}
 }
 
@@ -886,11 +819,6 @@ void Composition::Info::SetShadowAlpha (GLfloat a)
 	if (data.shadow_alpha != a)
 	{
 		data.shadow_alpha = a;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.shadow_alpha)
-																 - intptr_t (&data),
-																 sizeof (data.shadow_alpha),
-																 &data.shadow_alpha, 0, NULL, NULL);
-
 	}
 }
 
@@ -904,11 +832,6 @@ void Composition::Info::SetMode (GLuint m)
 	if (data.mode != m)
 	{
 		data.mode = m;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.mode)
-																 - intptr_t (&data),
-																 sizeof (data.mode),
-																 &data.mode, 0, NULL, NULL);
-
 	}
 }
 
@@ -922,10 +845,6 @@ void Composition::Info::SetNumLights (GLuint n)
 	if (data.num_lights != n)
 	{
 		data.num_lights = n;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.num_lights)
-																 - intptr_t (&data),
-																 sizeof (data.num_lights),
-																 &data.num_lights, 0, NULL, NULL);
 	}
 }
 
@@ -939,20 +858,10 @@ void Composition::Info::SetScreenLimit (GLfloat l)
 	if (data.screenlimit != l)
 	{
 		data.screenlimit = l;
-		r->queue.EnqueueWriteBuffer (mem, CL_TRUE, intptr_t (&data.screenlimit)
-																 - intptr_t (&data),
-																 sizeof (data.screenlimit),
-																 &data.screenlimit, 0, NULL, NULL);
-
 	}
 }
 
 GLfloat Composition::Info::GetScreenLimit (void)
 {
 	return data.screenlimit;
-}
-
-const cl::Memory &Composition::Info::GetMem (void)
-{
-	return mem;
 }
