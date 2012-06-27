@@ -121,6 +121,20 @@ bool Composition::Init (void)
 		 (fprogram["sun.theta"], 0.0f);
 	sun.cos_theta = gl::SmartUniform<GLfloat>
 		 (fprogram["sun.cos_theta"], 1.0f);
+	sun.direction = gl::SmartUniform<glm::vec3>
+		 (fprogram["sun.direction"], glm::vec3 ());
+
+	sky.perezY = gl::SmartUniform<std::array<GLfloat, 5>>
+		 (fprogram["sky.perezY"], std::array<GLfloat, 5> ());
+	sky.perezx = gl::SmartUniform<std::array<GLfloat, 5>>
+		 (fprogram["sky.perezx"], std::array<GLfloat, 5> ());
+	sky.perezy = gl::SmartUniform<std::array<GLfloat, 5>>
+		 (fprogram["sky.perezy"], std::array<GLfloat, 5> ());
+	sky.zenithYxy = gl::SmartUniform<glm::vec3>
+		 (fprogram["sky.zenithYxy"], glm::vec3 ());
+
+	SetupSunPosition ();
+	GeneratePerezCoefficients ();
 
 	fprogram["invviewport"]
 		 = glm::vec2 (1.0f / float (r->gbuffer.GetWidth ()),
@@ -238,55 +252,68 @@ bool Composition::Init (void)
 void Composition::GeneratePerezCoefficients (void)
 {
 	float T = sky.turbidity;
-	sky.perezY[0] = 0.17872 * T - 1.46303;
-	sky.perezY[1] = -0.35540 * T + 0.42749;
-	sky.perezY[2] = -0.02266 * T + 5.32505;
-	sky.perezY[3] = 0.12064 * T - 2.57705;
-	sky.perezY[4] = -0.06696 * T + 0.37027;
+	std::array<GLfloat, 5> perezY, perezx, perezy;
+	perezY[0] = 0.17872 * T - 1.46303;
+	perezY[1] = -0.35540 * T + 0.42749;
+	perezY[2] = -0.02266 * T + 5.32505;
+	perezY[3] = 0.12064 * T - 2.57705;
+	perezY[4] = -0.06696 * T + 0.37027;
+	sky.perezY.Set (perezY);
 	
-	sky.perezx[0] = -0.01925 * T - 0.25922;
-	sky.perezx[1] = -0.06651 * T + 0.00081;
-	sky.perezx[2] = -0.00041 * T + 0.21247;
-	sky.perezx[3] = -0.06409 * T - 0.89887;
-	sky.perezx[4] = -0.00325 * T + 0.04517;
+	perezx[0] = -0.01925 * T - 0.25922;
+	perezx[1] = -0.06651 * T + 0.00081;
+	perezx[2] = -0.00041 * T + 0.21247;
+	perezx[3] = -0.06409 * T - 0.89887;
+	perezx[4] = -0.00325 * T + 0.04517;
+	sky.perezx.Set (perezx);
 
-	sky.perezy[0] = -0.01669 * T - 0.26078;
-	sky.perezy[1] = -0.09495 * T + 0.00921;
-	sky.perezy[2] = -0.00792 * T + 0.21023;
-	sky.perezy[3] = -0.04405 * T - 1.65369;
-	sky.perezy[4] = -0.01092 * T + 0.05291;
+	perezy[0] = -0.01669 * T - 0.26078;
+	perezy[1] = -0.09495 * T + 0.00921;
+	perezy[2] = -0.00792 * T + 0.21023;
+	perezy[3] = -0.04405 * T - 1.65369;
+	perezy[4] = -0.01092 * T + 0.05291;
+	sky.perezy.Set (perezy);
 }
 
 float Composition::GetPerezY (int idx)
 {
-	return sky.perezY[idx];
+	return sky.perezY.Get ()[idx];
 }
 
 void Composition::SetPerezY (int idx, float val)
 {
-	sky.perezY[idx] = val;
+	std::array<GLfloat, 5> perezY;
+	perezY = sky.perezY.Get ();
+	perezY[idx] = val;
+	sky.perezY.Set (perezY);
 }
 
 
 float Composition::GetPerezx (int idx)
 {
-	return sky.perezx[idx];
+	return sky.perezx.Get ()[idx];
 }
 
 void Composition::SetPerezx (int idx, float val)
 {
-	sky.perezx[idx] = val;
+	std::array<GLfloat, 5> perezx;
+	perezx = sky.perezx.Get ();
+	perezx[idx] = val;
+	sky.perezx.Set (perezx);
 }
 
 
 float Composition::GetPerezy (int idx)
 {
-	return sky.perezy[idx];
+	return sky.perezy.Get ()[idx];
 }
 
 void Composition::SetPerezy (int idx, float val)
 {
-	sky.perezy[idx] = val;
+	std::array<GLfloat, 5> perezy;
+	perezy = sky.perezy.Get ();
+	perezy[idx] = val;
+	sky.perezy.Set (perezy);
 }
 
 Glow &Composition::GetGlow (void)
@@ -366,6 +393,7 @@ float Composition::GetLatitude (void)
 void Composition::SetLatitude (float l)
 {
 	sky.latitude = l;
+	SetupSunPosition ();
 }
 
 int Composition::GetDate (void)
@@ -376,6 +404,7 @@ int Composition::GetDate (void)
 void Composition::SetDate (int d)
 {
 	sky.date = d;
+	SetupSunPosition ();
 }
 
 float Composition::GetTimeOfDay (void)
@@ -386,20 +415,10 @@ float Composition::GetTimeOfDay (void)
 void Composition::SetTimeOfDay (float t)
 {
 	sky.time = t;
+	SetupSunPosition ();
 }
 
-void Composition::SetupSky (void)
-{
-}
-
-/*
-glm::vec3 Composition::GetSunDirection (void)
-{
-	float theta, cos_theta;
-	return GetSunDirection (theta, cos_theta);
-}
-
-glm::vec3 Composition::GetSunDirection (float &theta, float &cos_theta)
+void Composition::SetupSunPosition (void)
 {
 		float latitude = sky.latitude * DRE_PI / 180.0;
 
@@ -419,71 +438,62 @@ glm::vec3 Composition::GetSunDirection (float &theta, float &cos_theta)
 									* cos (DRE_PI * solarTime / 12));
 
 		float phi = -atan2 (opp, adj);
-		theta = DRE_PI / 2.0 - solarAltitude;
+		float theta = DRE_PI / 2.0 - solarAltitude;
 
-		float sin_theta = sin (sun.theta.Get ());
-		cos_theta = cos (sun.cos_theta.Get ());
-		return glm::vec3 (sin_theta * sin (phi),
-											cos_theta,
-											sin_theta * cos (phi));
-											}*/
+		float sin_theta = sin (theta);
+		float cos_theta = cos (theta);
+
+		sun.theta.Set (theta);
+		sun.cos_theta.Set (cos_theta);
+
+		sun.direction.Set (glm::vec3 (sin_theta * sin (phi),
+																	cos_theta,
+																	sin_theta * cos (phi)));
+		SetupSkyZenithYxy ();
+}
+
+void Composition::SetupSkyZenithYxy (void)
+{
+	glm::vec3 zenithYxy;
+	float T = sky.turbidity;
+	float chi = (4.0 / 9.0 - T / 120.0) * (M_PI - 2.0 * sun.theta.Get ());
+	zenithYxy.x = (4.0453 * T - 4.9710) * tan (chi)
+		 - 0.2155 * T + 2.4192;
+	glm::vec4 th;
+	th.w = 1;
+	th.z = sun.theta.Get ();
+	th.y = th.z * th.z;
+	th.x = th.y * th.z;
+	
+	glm::vec3 T3 (T * T, T, 1);
+	
+	glm::mat4x3 matx (0.00165, -0.02902, 0.11693,
+										-0.00374, 0.06377, -0.21196,
+										0.00208, -0.03202, 0.06052,
+										0, 0.00394, 0.25886);
+
+	zenithYxy.y = glm::dot (T3, matx * th);
+	
+	glm::mat4x3 maty (0.00275, -0.04214, 0.15346,
+										-0.00610, 0.08970, -0.26756,
+										0.00316, -0.04153, 0.06669,
+										0, 0.00515, 0.26688);
+	
+	zenithYxy.z = glm::dot (T3, maty * th);
+
+	sky.zenithYxy.Set (zenithYxy);
+}
 
 void Composition::Frame (float timefactor)
 {
-/*	info.num_lights = r->GetNumLights ();
-
-	info.projinfo = r->camera.GetProjInfo ();
-	info.vmatinv = glm::transpose
-		 (glm::inverse (r->camera.GetViewMatrix ()));
-	info.shadowmat = glm::transpose
-		 (r->shadowmap.GetMat ());
+/*
 	info.eye = glm::vec4 (r->camera.GetEye (), 0.0);
 	info.center = glm::vec4 (r->camera.GetCenter (), 0.0);
 	info.glow.threshold = luminance_threshold;
 	info.glow.size = glow.GetSize ();
 	info.glow.glowlimit = glow.GetLimit ();
 	info.glow.exponent = glow.GetExponent ();
-
-	{
-		float theta, cos_theta;
-		info.SetSunDirection 
-			 (glm::vec4 (GetSunDirection (theta, cos_theta), 0));
-		info.SetSunTheta (theta);
-		float T = sky.turbidity;
-
-		info.SetSkyPerezY (sky.perezY);
-		info.SetSkyPerezx (sky.perezx);
-		info.SetSkyPerezy (sky.perezy);
-
-		{
-			glm::vec4 zenithYxy;
-			float chi = (4.0 / 9.0 - T / 120.0) * (M_PI - 2.0 * info.GetSunTheta ());
-			zenithYxy.x = (4.0453 * T - 4.9710) * tan (chi)
-				 - 0.2155 * T + 2.4192;
-			glm::vec4 th;
-			th.w = 1;
-			th.z = info.GetSunTheta ();
-			th.y = th.z * th.z;
-			th.x = th.y * th.z;
-
-			glm::vec3 T3 (T * T, T, 1);
-
-			glm::mat4x3 matx (0.00165, -0.02902, 0.11693,
-											 -0.00374, 0.06377, -0.21196,
-											 0.00208, -0.03202, 0.06052,
-											 0, 0.00394, 0.25886);
-
-			zenithYxy.y = glm::dot (T3, matx * th);
-
-			glm::mat4x3 maty (0.00275, -0.04214, 0.15346,
-												-0.00610, 0.08970, -0.26756,
-												0.00316, -0.04153, 0.06669,
-												0, 0.00515, 0.26688);
-
-			zenithYxy.z = glm::dot (T3, maty * th);
-			info.SetSkyZenithYxy (zenithYxy);
-		}
-		}*/
+*/
 
 	shadowmat.Set (r->shadowmap.GetMat ());
 	eye.Set (r->camera.GetEye ());

@@ -83,17 +83,6 @@ public:
 		*/
 	 const gl::Texture &GetScreen (void);
 
-	 typedef struct SkyParams
-	 {
-			float turbidity;
-			float latitude;
-			int date;
-			float time;
-			float perezY[5];
-			float perezx[5];
-			float perezy[5];
-	 } SkyParams;
-
 	 void GeneratePerezCoefficients (void);
 	 float GetPerezY (int idx);
 	 void SetPerezY (int idx, float val);
@@ -110,7 +99,8 @@ public:
 	 float GetTimeOfDay (void);
 	 void SetTimeOfDay (float t);
 
-	 void SetupSky (void);
+	 void SetupSkyZenithYxy (void);
+	 void SetupSunPosition (void);
 
 	 /** Get glow.
 		* Returns a reference to the internal glow effect class.
@@ -150,9 +140,19 @@ private:
 	 struct {
 			gl::SmartUniform<GLfloat> theta;
 			gl::SmartUniform<GLfloat> cos_theta;
+			gl::SmartUniform<glm::vec3> direction;
 	 } sun;
-
-	 SkyParams sky;
+	 struct {
+			float turbidity;
+			float latitude;
+			int date;
+			float time;
+			
+			gl::SmartUniform<std::array<GLfloat, 5>> perezY;
+			gl::SmartUniform<std::array<GLfloat, 5>> perezx;
+			gl::SmartUniform<std::array<GLfloat, 5>> perezy;
+			gl::SmartUniform<glm::vec3> zenithYxy;
+	 } sky;
 
 	 gl::Framebuffer framebuffer;
 	 gl::ProgramPipeline pipeline;

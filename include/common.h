@@ -28,6 +28,7 @@
 #include <oglp/oglp.h>
 #include <iostream>
 #include <ctime>
+#include <array>
 
 /** Defined to avoid conflicts.
  * Defined to avoid the inclusion of an conflicting gl.h

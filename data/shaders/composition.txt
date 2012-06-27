@@ -70,7 +70,14 @@ uniform struct {
 uniform struct {
 	float theta;
 	float cos_theta;
+	vec3 direction;
 } sun;
+uniform struct {
+	float perezY[5];
+	float perezx[5];
+	float perezy[5];
+	vec3 zenithYxy;
+} sky;
 
 uniform float screenlimit;
 uniform float shadow_alpha;
@@ -225,16 +232,66 @@ float specular_cooktorrance (in struct Parameter param,
 	return k * f * g / NdotV;
 }
 
+float perez (in float cos_theta, in float gamma, in float cos_gamma,
+      	     in float c[5])
+{
+	return (1 + c[0] * exp (c[1] / cos_theta))
+	       * (1 + c[2] * exp (c[3] * gamma)
+	       	  + c[4] * cos_gamma * cos_gamma);
+}
+
+vec3 Yxy2RGB (in vec3 Yxy)
+{
+	vec3 XYZ;
+
+	XYZ.x = Yxy.x * Yxy.y / Yxy.z;
+	XYZ.y = Yxy.x;
+	XYZ.z = Yxy.x * (1 - Yxy.y - Yxy.z) / Yxy.z;
+	return mat3 (3.2404790f, -0.969256f, 0.0055648f,
+	       	     -1.537150f, 1.875992f, -0.204043f,
+		     -0.498535f, 0.041556f, 1.057311f) * XYZ;
+}
+
 vec4 compute_sky (in struct PixelData data)
 {
-	vec3 pos;
-	pos = normalize (getpos (vec3 (invviewport * gl_FragCoord.xy,
+	vec3 dir, sundir;
+	dir = normalize (getpos (vec3 (invviewport * gl_FragCoord.xy,
 	      			 data.depth)));
+	sundir = sun.direction;
 
 	float theta_s = sun.theta;
 	float cos_theta_s = sun.cos_theta;
 
-	return vec4 (pos, 1);
+	float cos_theta = abs (dir.y);
+	float theta = acos (cos_theta);
+
+	float cos_gamma = dot (sundir, dir);
+	float gamma = acos (cos_gamma);
+
+	vec3 Yxy;
+
+	Yxy.x = 0.04f * sky.zenithYxy.x
+	        * perez (cos_theta, gamma, cos_gamma,
+		  	 sky.perezY)
+		/ perez (1, theta_s, cos_theta_s,
+		  	 sky.perezY);
+	Yxy.y = sky.zenithYxy.y
+	        * perez (cos_theta, gamma, cos_gamma,
+		  	 sky.perezx)
+		/ perez (1, theta_s, cos_theta_s,
+		  	 sky.perezx);
+	Yxy.z = sky.zenithYxy.z
+	        * perez (cos_theta, gamma, cos_gamma,
+		  	 sky.perezy)
+		/ perez (1, theta_s, cos_theta_s,
+		  	 sky.perezy);
+
+	if (cos_gamma > 0.999f)
+	{
+	   Yxy.x *= 1 + (cos_gamma - 0.999f) * 10000.0f;
+	}
+
+	return vec4 (Yxy2RGB (Yxy), 1);
 }
 
 vec4 compute_pixel (in struct PixelData data)
