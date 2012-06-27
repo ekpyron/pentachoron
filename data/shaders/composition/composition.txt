@@ -189,7 +189,7 @@ void main (void)
 	for (uint i = 0; i < num; i++)
 	{
 		vec4 tmp;
-		idx = int (indices[i]);
+		idx = int (indices[num - i - 1]);
 		data.color = unpackUnorm4x8 (texelFetch (fraglist,
 			     		    		 idx * 5 + 0).r);
 		data.specular = unpackUnorm4x8 (texelFetch (fraglist,
@@ -200,7 +200,7 @@ void main (void)
 			     		    		  idx * 5 + 3).r);
 		bool ignored;
 		tmp = compute_pixel (data, ignored);
-		pixel = mix (pixel, tmp, tmp.w);
+		pixel = mix (tmp, pixel, tmp.w);
 	}
 
 	pixel = clamp (pixel, 0, screenlimit);
