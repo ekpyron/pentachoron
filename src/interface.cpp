@@ -75,6 +75,17 @@ Interface::Interface (void)
 							submenu = 0;
 						}
 					}, false },
+				{ "Tile-based light culling: ", [&] (void) {
+						if (r->composition.GetTileBased ())
+							 font.Print ("yes");
+						else
+							 font.Print ("no");
+					}, [&] (int what) {
+						if (!what)
+						{
+							r->composition.SetTileBased (!r->composition.GetTileBased ());
+						}
+					}, false },
 				{ "Shadows", NULL, [&] (int what) {
 						if (!what)
 						{

@@ -31,10 +31,28 @@ bool Composition::Init (void)
 {
 	{
 		gl::Shader obj (GL_FRAGMENT_SHADER);
+		std::vector<std::string> sources;
 		std::string source;
+		std::stringstream stream;
 		if (!ReadFile (MakePath ("shaders", "composition.txt"), source))
 			 return false;
-		obj.Source (source);
+		stream << "#define MAX_DEPTH_LAYERS "
+					 << config["max_depth_layers"].as<GLuint> (4) << std::endl;
+		stream << "#define SIZEOF_PARAMETER "
+					 << sizeof (Parameter) / sizeof (glm::vec4)
+					 << std::endl;
+		stream << "#define SIZEOF_LIGHT "
+					 << sizeof (Light) / sizeof (glm::vec4)
+					 << std::endl;
+		stream << "#define NUM_TILES_X "
+					 << (r->gbuffer.GetWidth () >> 5)
+					 << std::endl;
+		stream << "#define NUM_TILES_Y "
+					 << (r->gbuffer.GetHeight () >> 5)
+					 << std::endl;
+		sources.push_back (stream.str ());
+		sources.push_back (source);
+		obj.Source (sources);
 		if (!obj.Compile ())
 		{
 			(*logstream) << "Could not compile "
@@ -57,10 +75,23 @@ bool Composition::Init (void)
 
 	{
 		gl::Shader obj (GL_FRAGMENT_SHADER);
+		std::vector<std::string> sources;
 		std::string source;
+		std::stringstream stream;
 		if (!ReadFile (MakePath ("shaders", "lightculling.txt"), source))
 			 return false;
-		obj.Source (source);
+		stream << "#define SIZEOF_LIGHT "
+					 << sizeof (Light) / sizeof (glm::vec4)
+					 << std::endl;
+		stream << "#define NUM_TILES_X "
+					 << (r->gbuffer.GetWidth () >> 5)
+					 << std::endl;
+		stream << "#define NUM_TILES_Y "
+					 << (r->gbuffer.GetHeight () >> 5)
+					 << std::endl;
+		sources.push_back (stream.str ());
+		sources.push_back (source);
+		obj.Source (sources);
 		if (!obj.Compile ())
 		{
 			(*logstream) << "Could not compile "
@@ -107,6 +138,8 @@ bool Composition::Init (void)
 		}
 	}
 
+	tile_based = gl::SmartUniform<bool>
+		 (fprogram["tile_based"], true);
 	luminance_threshold = gl::SmartUniform<GLfloat>
 		 (fprogram["glow.threshold"], 0.75);
 	screenlimit = gl::SmartUniform<GLfloat>
@@ -247,6 +280,16 @@ bool Composition::Init (void)
 	GeneratePerezCoefficients ();
 
 	return true;
+}
+
+void Composition::SetTileBased (bool tb)
+{
+	tile_based.Set (tb);
+}
+
+bool Composition::GetTileBased (void)
+{
+	return tile_based.Get ();
 }
 
 void Composition::GeneratePerezCoefficients (void)
@@ -497,66 +540,69 @@ void Composition::Frame (float timefactor)
 	shadowmat.Set (r->shadowmap.GetMat ());
 	eye.Set (r->camera.GetEye ());
 
-	clearfb.Bind (GL_FRAMEBUFFER);
-	gl::ClearBufferfv (GL_COLOR, 0, (const GLfloat[]) { 1.0f, 0, 0, 0 });
-	gl::ClearBufferfv (GL_COLOR, 1, (const GLfloat[]) { 0.0f, 0, 0, 0 });
-
-	minmaxdepthfb.Bind (GL_FRAMEBUFFER);
-	gl::Viewport (0, 0, r->gbuffer.GetWidth () >> 5,
-								r->gbuffer.GetHeight () >> 5);
-	minmaxdepthpipeline.Bind ();
-
-	r->windowgrid.sampler.Bind (0);
-	r->gbuffer.depthbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-
-	r->windowgrid.sampler.Bind (1);
-	r->gbuffer.fragidx.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
-
-	r->windowgrid.sampler.Bind (2);
-	r->gbuffer.fraglisttex.Bind (GL_TEXTURE2, GL_TEXTURE_BUFFER);
-
-	gl::BlendFunc (GL_SRC_COLOR, GL_DST_COLOR);
-	gl::BlendEquationi (0, GL_MIN);
-	gl::BlendEquationi (1, GL_MAX);
-	gl::Enable (GL_BLEND);
-
-	for (auto y = 0; y < 32; y++)
+	if (GetTileBased ())
 	{
-		for (auto x = 0; x < 32; x++)
+		clearfb.Bind (GL_FRAMEBUFFER);
+		gl::ClearBufferfv (GL_COLOR, 0, (const GLfloat[]) { 1.0f, 0, 0, 0 });
+		gl::ClearBufferfv (GL_COLOR, 1, (const GLfloat[]) { 0.0f, 0, 0, 0 });
+		
+		minmaxdepthfb.Bind (GL_FRAMEBUFFER);
+		gl::Viewport (0, 0, r->gbuffer.GetWidth () >> 5,
+									r->gbuffer.GetHeight () >> 5);
+		minmaxdepthpipeline.Bind ();
+
+		r->windowgrid.sampler.Bind (0);
+		r->gbuffer.depthbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+
+		r->windowgrid.sampler.Bind (1);
+		r->gbuffer.fragidx.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
+
+		r->windowgrid.sampler.Bind (2);
+		r->gbuffer.fraglisttex.Bind (GL_TEXTURE2, GL_TEXTURE_BUFFER);
+
+		gl::BlendFunc (GL_SRC_COLOR, GL_DST_COLOR);
+		gl::BlendEquationi (0, GL_MIN);
+		gl::BlendEquationi (1, GL_MAX);
+		gl::Enable (GL_BLEND);
+
+		for (auto y = 0; y < 32; y++)
 		{
-			minmaxdepthprog["offset"] = glm::uvec2 (x, y);
-			r->windowgrid.Render ();
+			for (auto x = 0; x < 32; x++)
+			{
+				minmaxdepthprog["offset"] = glm::uvec2 (x, y);
+				r->windowgrid.Render ();
+			}
 		}
+
+		gl::Disable (GL_BLEND);
+
+		lightcullfb.Bind (GL_FRAMEBUFFER);
+		gl::Viewport (0, 0, r->gbuffer.GetWidth (),
+									r->gbuffer.GetHeight ());
+		
+		GLuint *ptr = (GLuint*) numlights.MapRange
+			 (0, sizeof (GLuint) * (r->gbuffer.GetWidth () >> 5)
+				* (r->gbuffer.GetHeight () >> 5),
+				GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT
+				| GL_MAP_UNSYNCHRONIZED_BIT);
+		for (auto i = 0; i < (r->gbuffer.GetWidth () >> 5)
+						* (r->gbuffer.GetHeight () >> 5); i++)
+		{
+			ptr[i] = 0;
+		}
+		numlights.Unmap ();
+		lightcullpipeline.Bind ();
+
+		lightcullprog["vmatinv"] = glm::inverse (r->camera.GetViewMatrix ());
+		lightcullprog["projinfo"] = r->camera.GetProjInfo ();
+
+		numlights.BindBase (GL_ATOMIC_COUNTER_BUFFER, 0);
+		mindepthtex.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		maxdepthtex.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
+		lightbuffertex.Bind (GL_TEXTURE2, GL_TEXTURE_BUFFER);
+		lighttex.BindImage (0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R16UI);
+		r->windowgrid.Render ();
 	}
-
-	gl::Disable (GL_BLEND);
-
-	lightcullfb.Bind (GL_FRAMEBUFFER);
-	gl::Viewport (0, 0, r->gbuffer.GetWidth (),
-								r->gbuffer.GetHeight ());
-
-	GLuint *ptr = (GLuint*) numlights.MapRange
-		 (0, sizeof (GLuint) * (r->gbuffer.GetWidth () >> 5)
-			* (r->gbuffer.GetHeight () >> 5),
-			GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT
-			| GL_MAP_UNSYNCHRONIZED_BIT);
-	for (auto i = 0; i < (r->gbuffer.GetWidth () >> 5)
-					* (r->gbuffer.GetHeight () >> 5); i++)
-	{
-		 ptr[i] = 0;
-	}
-	numlights.Unmap ();
-	lightcullpipeline.Bind ();
-
-	lightcullprog["vmatinv"] = glm::inverse (r->camera.GetViewMatrix ());
-	lightcullprog["projinfo"] = r->camera.GetProjInfo ();
-
-	numlights.BindBase (GL_ATOMIC_COUNTER_BUFFER, 0);
-	mindepthtex.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-	maxdepthtex.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
-	lightbuffertex.Bind (GL_TEXTURE2, GL_TEXTURE_BUFFER);
-	lighttex.BindImage (0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R16UI);
-	r->windowgrid.Render ();
 
 
 	framebuffer.Bind (GL_FRAMEBUFFER);

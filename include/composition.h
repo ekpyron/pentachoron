@@ -102,6 +102,9 @@ public:
 	 void SetupSkyZenithYxy (void);
 	 void SetupSunPosition (void);
 
+	 bool GetTileBased (void);
+	 void SetTileBased (bool tb);
+
 	 /** Get glow.
 		* Returns a reference to the internal glow effect class.
 		* \returns a referene to the Glow class
@@ -138,6 +141,7 @@ private:
 		* Pixels with a luminance greater than this threshold will be
 		* written to the glow map.
 		*/
+	 gl::SmartUniform<bool> tile_based;
 	 gl::SmartUniform<GLfloat> luminance_threshold;
 	 gl::SmartUniform<GLfloat> screenlimit;
 	 gl::SmartUniform<glm::mat4> shadowmat;

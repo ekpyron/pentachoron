@@ -16,6 +16,15 @@
  */
 #version 420 core
 
+/*
+ * external definitions: 
+ * MAX_DEPTH_LAYERS
+ * SIZEOF_LIGHT
+ * SIZEOF_PARAMETER
+ * NUM_TILES_X
+ * NUM_TILES_Y
+ */
+
 layout(location = 0) out vec4 screen;
 layout(location = 1) out vec4 glowmap;
 
@@ -30,12 +39,12 @@ layout(binding = 7) uniform samplerBuffer lightbuffertex;
 layout(binding = 8) uniform usampler2D lighttex;
 layout(binding = 9) uniform samplerBuffer parametertex;
 
-layout (binding = 0) uniform atomic_uint counter[768];
+layout (binding = 0) uniform atomic_uint counter[NUM_TILES_X * NUM_TILES_Y];
 
 const float PI = 3.14159265358979323846f;
 const vec3 luminance_factor = vec3 (0.2126, 0.7152, 0.0722);
 
-#define DEPTHLAYERS 8
+uniform bool tile_based;
 
 uniform vec2 invviewport;
 
@@ -45,8 +54,6 @@ struct PixelData {
        vec4 normal;
        float depth;
 };
-
-#define SIZEOF_PARAMETER 1
 
 struct Parameter {
 	unsigned int model;
@@ -104,12 +111,20 @@ void read_light (out struct Light light, in uint id)
 {
 	int offset;
 
-	ivec2 p;
-	p.x = int (gl_FragCoord.x) & (~0x1F);
-	p.y = int (gl_FragCoord.y) & (~0x1F);
-	p.x += int (id) & 0x1F;
-	p.y += int (id) >> 5;
-	offset = int (texelFetch (lighttex, p, 0).r) * 13;
+	if (tile_based)
+	{
+		ivec2 p;
+		p.x = int (gl_FragCoord.x) & (~0x1F);
+		p.y = int (gl_FragCoord.y) & (~0x1F);
+		p.x += int (id) & 0x1F;
+		p.y += int (id) >> 5;
+		offset = int (texelFetch (lighttex, p, 0).r)
+		       	 * SIZEOF_LIGHT;
+	}
+	else
+	{
+		offset = int (id) * SIZEOF_LIGHT;
+	}
 
 	light.pos = texelFetch (lightbuffertex, offset);
 	light.color = texelFetch (lightbuffertex, offset + 1);
@@ -307,9 +322,16 @@ vec3 compute_sky (in vec3 dir)
 
 uint GetNumLights (void)
 {
-	ivec2 c = ivec2 (int (gl_FragCoord.x) >> 5,
-	      	  	 int (gl_FragCoord.y) >> 5);
-	return atomicCounter (counter[32 * c.y + c.x]);
+	if (tile_based)
+	{
+		ivec2 c = ivec2 (int (gl_FragCoord.x) >> 5,
+	      	  	  	 int (gl_FragCoord.y) >> 5);
+		return atomicCounter (counter[NUM_TILES_X * c.y + c.x]);
+	}
+	else
+	{
+		return textureSize (lightbuffertex) / SIZEOF_LIGHT;
+	}
 }
 
 vec4 compute_pixel (in struct PixelData data)
@@ -467,13 +489,13 @@ void main (void)
 
 	int idx = texture (fragidx, coord).r;
 	uint num = 0;
-	uint indices[DEPTHLAYERS];
+	uint indices[MAX_DEPTH_LAYERS];
 
 	while (idx != -1)
 	{
 		float d = uintBitsToFloat (texelFetch (fraglist,
 		      	  		  	       idx * 5 + 3).r);
-		if (num < DEPTHLAYERS)
+		if (num < MAX_DEPTH_LAYERS)
 		{
 		   num++;
 		}

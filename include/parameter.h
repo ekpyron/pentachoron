@@ -37,5 +37,8 @@ typedef struct _Parameter
 	 float reflect;
 } Parameter;
 
+static_assert (sizeof (Parameter) % sizeof (glm::vec4) == 0,
+							 "Parameter is not aligned correctly.");
+
 
 #endif /* !defined PARAMETER_H */

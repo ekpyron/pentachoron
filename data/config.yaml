@@ -7,3 +7,4 @@ gbuffer:           { width: 1024, height: 768 }
 shadowmap:         { width: 1024, height: 1024 }
 glow:              { mipmaplevel: 2 }
 random_lights:     true
+max_depth_layers:  4
