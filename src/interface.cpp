@@ -267,6 +267,12 @@ Interface::Interface (void)
 						if (!what)
 						{
 							r->RemoveLight (active_light);
+							if (r->GetNumLights () == 0)
+							{
+								active_light = 0;
+								menu = MAIN_MENU;
+								submenu = 0;
+							}
 							if (active_light >= r->GetNumLights ())
 								 active_light = 0;
 						}

@@ -494,7 +494,6 @@ void Composition::Frame (float timefactor)
 	info.glow.glowlimit = glow.GetLimit ();
 	info.glow.exponent = glow.GetExponent ();
 */
-
 	shadowmat.Set (r->shadowmap.GetMat ());
 	eye.Set (r->camera.GetEye ());
 

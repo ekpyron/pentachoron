@@ -60,46 +60,55 @@ bool Renderer::Init (void)
 
 	interface.AddShadow ();
 
-/*	float max = -100;
-
-	srand (time (NULL));
-	for (int y = -7; y <= 7; y++)
+	if (config["random_lights"].as<bool> (false))
 	{
-		for (int x = -7; x <= 7; x++)
+		float max = -100;
+
+		srand (time (NULL));
+		for (int y = -7; y <= 7; y++)
 		{
-			Light light;
-			light.position = glm::vec4 (x * 3, 3, y * 3, 0);
-			light.position.x += ((float (rand ()) / float (RAND_MAX)) - 0.5f) * 2.0f;
-			if (light.position.x > max)
-				 max = light.position.x;
-			light.position.y += ((float (rand ()) / float (RAND_MAX)) - 0.5f) * 1.0f;
-			light.position.z += ((float (rand ()) / float (RAND_MAX)) - 0.5f) * 2.0f;
-			light.direction = glm::vec4 (0, -1, 0, 0);
-			const glm::vec4 colors[] = {
-				glm::vec4 (0, 0, 1, 1),
-				glm::vec4 (0, 1, 0, 1),
-				glm::vec4 (1, 0, 0, 1),
-				glm::vec4 (0, 1, 1, 1),
-				glm::vec4 (1, 1, 0, 1),
-				glm::vec4 (1, 0, 1, 1),
-			};
+			for (int x = -7; x <= 7; x++)
+			{
+				Light light;
+				light.position = glm::vec4 (x * 3, 3, y * 3, 0);
+				light.position.x += ((float (rand ()) / float (RAND_MAX))
+														 - 0.5f) * 2.0f;
+				if (light.position.x > max)
+					 max = light.position.x;
+				light.position.y += ((float (rand ()) / float (RAND_MAX))
+														 - 0.5f) * 1.0f;
+				light.position.z += ((float (rand ()) / float (RAND_MAX))
+														 - 0.5f) * 2.0f;
+				light.direction = glm::vec4 (0, -1, 0, 0);
+				const glm::vec4 colors[] = {
+					glm::vec4 (0, 0, 1, 1),
+					glm::vec4 (0, 1, 0, 1),
+					glm::vec4 (1, 0, 0, 1),
+					glm::vec4 (0, 1, 1, 1),
+					glm::vec4 (1, 1, 0, 1),
+					glm::vec4 (1, 0, 1, 1),
+				};
 			
-			light.color = colors[rand () % 6];
-			light.spot.angle = DRE_PI / 6.0f;
-			light.spot.cosine = cosf (light.spot.angle);
-			light.spot.exponent = 30.0f;
-			light.spot.tangent = tanf (light.spot.angle * 1.2);
-			light.spot.penumbra_angle = light.spot.angle * 0.8;
-			light.spot.penumbra_cosine = cosf (light.spot.penumbra_angle);
-			light.specular.color = glm::vec3 (light.color);
-			light.attenuation = glm::vec4 (0.0f, 0.0f, 0.07f, 50.0f);
-			light.CalculateFrustum ();
-			lights.push_back (light);
+				light.color = colors[rand () % 6];
+				light.spot.angle = DRE_PI / 6.0f;
+				light.spot.cosine = cosf (light.spot.angle);
+				light.spot.exponent = 30.0f;
+				light.spot.tangent = tanf (light.spot.angle * 1.2);
+				light.spot.penumbra_angle = light.spot.angle * 0.8;
+				light.spot.penumbra_cosine = cosf (light.spot.penumbra_angle);
+				light.specular.color = glm::vec3 (light.color);
+				light.attenuation = glm::vec4 (0.0f, 0.0f, 0.07f, 50.0f);
+				light.CalculateFrustum ();
+				lights.push_back (light);
+			}
 		}
+		lightbuffer.Data (sizeof (Light) * lights.size (),
+											&lights[0], GL_STATIC_DRAW);
 	}
-	lightbuffer.Data (sizeof (Light) * lights.size (),
-	&lights[0], GL_STATIC_DRAW);*/
-	interface.AddLight ();
+	else
+	{
+		lightbuffer.Data (sizeof (glm::vec4),	NULL, GL_STATIC_DRAW);
+	}
 
 	interface.AddShadow ();
 
@@ -250,8 +259,14 @@ GLuint Renderer::GetNumLights (void)
 
 void Renderer::RemoveLight (GLuint light)
 {
-	if (lights.size () < 2)
+	if (lights.size () == 0)
 		 return;
+	if (lights.size () == 1)
+	{
+		lights.erase (lights.begin () + light);
+		lightbuffer.Data (sizeof (glm::vec4),	NULL, GL_STATIC_DRAW);
+		return;
+	}
 	lights.erase (lights.begin () + light);
 	lightbuffer.Data (sizeof (Light) * lights.size (),
 										&lights[0], GL_STATIC_DRAW);
@@ -315,17 +330,15 @@ void Renderer::Frame (void)
 	gbuffer.Render (geometry);
 
 	{
-/*		float theta, cos_theta;
-		shadows[0].direction = -glm::vec4 (composition.GetSunDirection (theta,
-																																		cos_theta),
+		Shadow sunshadow;
+		sunshadow.direction = -glm::vec4 (composition.sun.direction.Get (),
 																			 0.0f);
-		shadows[0].position = -shadows[0].direction * 25;
+		sunshadow.position = -sunshadow.direction * 25;
 		
-*/
-/*		if (cos_theta < 0.05)
+		if (composition.sun.cos_theta.Get () < 0.05)
 			 shadowmap.Clear ();
-		else*/
-			 shadowmap.Render (0, geometry, shadows[0]);
+		else
+			 shadowmap.Render (0, geometry, sunshadow);
 	}
 
 	composition.Frame (timefactor);

@@ -110,6 +110,11 @@ public:
 
 	 gl::Texture dummy;
 
+	 struct {
+			gl::SmartUniform<GLfloat> theta;
+			gl::SmartUniform<GLfloat> cos_theta;
+			gl::SmartUniform<glm::vec3> direction;
+	 } sun;
 
 private:
 	 /** Screen texture.
@@ -137,11 +142,6 @@ private:
 	 gl::SmartUniform<GLfloat> screenlimit;
 	 gl::SmartUniform<glm::mat4> shadowmat;
 	 gl::SmartUniform<glm::vec3> eye;
-	 struct {
-			gl::SmartUniform<GLfloat> theta;
-			gl::SmartUniform<GLfloat> cos_theta;
-			gl::SmartUniform<glm::vec3> direction;
-	 } sun;
 	 struct {
 			float turbidity;
 			float latitude;
