@@ -33,7 +33,7 @@ uniform float shadow_alpha;
 
 uniform vec3 eye;
 
-vec4 compute_pixel (in struct PixelData data)
+vec4 compute_pixel (in struct PixelData data, out bool issky)
 {
 	uint num_lights;
 	vec3 pos;
@@ -48,8 +48,10 @@ vec4 compute_pixel (in struct PixelData data)
 		vec3 dir;
 		dir = normalize (getskypos (vec3 (invviewport * gl_FragCoord.xy,
 	      			    	    data.depth)));
+		issky = true;
 		return vec4 (compute_sky (dir), 1.0f);
 	}
+	issky = false;	
 
 	struct Parameter param;
 	ReadParameter (param, int (data.specular.w * 255.0f)
@@ -176,11 +178,13 @@ void main (void)
 		idx = int (texelFetch (fraglist, idx * 5 + 4).r);
 	}
 
+	bool issky;
+
 	data.color = texture (colorbuffer, coord);
 	data.specular = texture (specularbuffer, coord);
 	data.normal = texture (normalbuffer, coord);
 	data.depth = texture (depthbuffer, coord).r;
-	pixel = compute_pixel (data);
+	pixel = compute_pixel (data, issky);
 
 	for (uint i = 0; i < num; i++)
 	{
@@ -194,14 +198,15 @@ void main (void)
 			     		    		  idx * 5 + 2).r);
 		data.depth = uintBitsToFloat (texelFetch (fraglist,
 			     		    		  idx * 5 + 3).r);
-		tmp = compute_pixel (data);
+		bool ignored;
+		tmp = compute_pixel (data, ignored);
 		pixel = mix (pixel, tmp, tmp.w);
 	}
 
 	pixel = clamp (pixel, 0, screenlimit);
 	screen = pixel;
 
-	if (dot (pixel.xyz, luminance_factor) > glow.threshold)
+	if (!issky && dot (pixel.xyz, luminance_factor) > glow.threshold)
 	{
 		glowmap = pixel;
 	}
