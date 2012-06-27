@@ -34,8 +34,7 @@ bool Composition::Init (void)
 		std::vector<std::string> sources;
 		std::string source;
 		std::stringstream stream;
-		if (!ReadFile (MakePath ("shaders", "composition.txt"), source))
-			 return false;
+		stream << "#version 420 core" << std::endl;
 		stream << "#define MAX_DEPTH_LAYERS "
 					 << config["max_depth_layers"].as<GLuint> (4) << std::endl;
 		stream << "#define SIZEOF_PARAMETER "
@@ -51,13 +50,23 @@ bool Composition::Init (void)
 					 << (r->gbuffer.GetHeight () >> 5)
 					 << std::endl;
 		sources.push_back (stream.str ());
-		sources.push_back (source);
+		const char *sourcefiles[] = {
+			"header.txt", "light.txt", "parameter.txt", "specular.txt",
+			"getpos.txt", "sky.txt", "shadow.txt", "composition.txt"
+		};
+
+		for (auto i = 0; i < sizeof (sourcefiles) / sizeof (sourcefiles[0]); i++)
+		{
+			if (!ReadFile (MakePath ("shaders", "composition",
+															 sourcefiles[i]), source))
+				 return false;
+			sources.push_back (source);
+		}
 		obj.Source (sources);
 		if (!obj.Compile ())
 		{
-			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "composition.txt")
-									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
+			(*logstream) << "Could not compile the composition shader: "
+									 << std::endl << obj.GetInfoLog () << std::endl;
 			 return false;
 		}
 		
@@ -65,10 +74,8 @@ bool Composition::Init (void)
 		fprogram.Attach (obj);
 		if (!fprogram.Link ())
 		{
-			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "composition.txt")
-									 << ": " << std::endl << fprogram.GetInfoLog ()
-									 << std::endl;
+			(*logstream) << "Could not link the composition shader: "
+									 << std::endl << fprogram.GetInfoLog () << std::endl;
 			 return false;
 		}
 	}

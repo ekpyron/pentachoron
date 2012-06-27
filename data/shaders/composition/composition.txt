@@ -1,0 +1,212 @@
+/*  
+ * This file is part of DRE.
+ *
+ * DRE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DRE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+const vec3 luminance_factor = vec3 (0.2126, 0.7152, 0.0722);
+
+struct PixelData {
+       vec4 color;
+       vec4 specular;
+       vec4 normal;
+       float depth;
+};
+
+uniform struct {
+	float threshold;
+} glow;
+
+uniform float screenlimit;
+uniform float shadow_alpha;
+
+uniform vec3 eye;
+
+vec4 compute_pixel (in struct PixelData data)
+{
+	uint num_lights;
+	vec3 pos;
+	vec3 normal;
+	vec3 diffuse = vec3 (0, 0, 0);
+	vec3 specular = vec3 (0, 0, 0);
+	vec4 pixel;
+	vec3 viewdir;
+
+	if (data.depth == 1.0f)
+	{
+		vec3 dir;
+		dir = normalize (getskypos (vec3 (invviewport * gl_FragCoord.xy,
+	      			    	    data.depth)));
+		return vec4 (compute_sky (dir), 1.0f);
+	}
+
+	struct Parameter param;
+	ReadParameter (param, int (data.specular.w * 255.0f)
+		       * SIZEOF_PARAMETER);
+
+	pos = getpos (vec3 (invviewport * gl_FragCoord.xy, data.depth));
+	normal = normalize (data.normal.xyz * 2 - 1);
+
+	viewdir = normalize (eye - pos);
+
+	{
+		vec3 skynormal = compute_sky (normal);
+		diffuse = dot (skynormal, luminance_factor)
+			  * vec3 (1, 1, 1);
+		vec3 lightdir = normalize (sun.direction);
+
+		float s = ComputeSpecular (param, normal, viewdir, lightdir);
+
+		specular = s * skynormal;
+	}
+
+	num_lights = GetNumLights ();
+
+	for (uint i = 0; i < num_lights; i++)
+	{
+		struct Light light;
+		ReadLight (light, i);
+
+		vec3 lightdir = light.pos.xyz - pos.xyz;
+
+		float dist = length (lightdir);
+
+		if (dist > light.attenuation.w)
+		   continue;
+		
+		lightdir /= dist;
+
+		float attenuation;
+		attenuation = 1.0 / (light.attenuation.x
+			      	     + dist * light.attenuation.y
+				     + dist * dist * light.attenuation.z);
+
+		float angle = dot (normalize (light.dir.xyz),
+		      	      	   -lightdir);
+
+		if (angle < light.spot.x)
+		   continue;
+
+		if (angle < light.spot2.y)
+		{
+			attenuation *= (angle - light.spot.x)
+				       / (light.spot2.y - light.spot.x);
+		}
+
+		attenuation *= pow (angle, light.spot.y);
+
+		float NdotL;
+		NdotL = max (dot (normal, lightdir), 0.0);
+
+		diffuse += NdotL * attenuation * light.color.xyz;
+
+		float s = ComputeSpecular (param, normal, viewdir, lightdir);
+		specular += attenuation * s * light.specular.xyz;
+	}
+
+	specular *= data.specular.xyz;
+
+	pixel = vec4 (data.color.xyz * diffuse, data.color.w); 
+	pixel.xyz += specular * data.specular.xyz;
+
+	if (param.reflect > 0)
+	{
+		float f;
+		f = dot (-viewdir, normal);
+		if (f < 0) f = -f;
+		f = mix (pow (1 - f, 5), 1, param.reflect);
+		f = clamp (f, 0.1f, 0.9f);
+		vec3 refl = compute_sky (reflect (-viewdir, normal));
+		pixel.xyz =  mix (pixel.xyz, refl, f);
+	}
+
+	float shadow = mix (1.0, compute_shadow (pos), shadow_alpha);
+	pixel *= shadow;
+
+	return pixel;
+}
+
+void main (void)
+{
+	struct PixelData data;
+	vec4 pixel;
+	vec2 coord = invviewport * gl_FragCoord.xy;
+
+	int idx = texture (fragidx, coord).r;
+	uint num = 0;
+	uint indices[MAX_DEPTH_LAYERS];
+
+	while (idx != -1)
+	{
+		float d = uintBitsToFloat (texelFetch (fraglist,
+		      	  		  	       idx * 5 + 3).r);
+		if (num < MAX_DEPTH_LAYERS)
+		{
+		   num++;
+		}
+		else if (uintBitsToFloat (texelFetch
+		     		(fraglist, int (indices[num - 1] * 5 + 3)).r)
+				<= d)
+		{
+			idx = int (texelFetch (fraglist, 5 * idx + 4).r);
+			continue;
+		}
+
+		uint i = num - 1;
+		while (i > 0)
+		{
+			if (d >= uintBitsToFloat (texelFetch
+		      	     	 (fraglist, int (indices[i - 1] * 5 + 3)).r))
+				 break;
+			indices[i] = indices[i - 1];
+			i--;
+		}
+		indices[i] = idx;
+		idx = int (texelFetch (fraglist, idx * 5 + 4).r);
+	}
+
+	data.color = texture (colorbuffer, coord);
+	data.specular = texture (specularbuffer, coord);
+	data.normal = texture (normalbuffer, coord);
+	data.depth = texture (depthbuffer, coord).r;
+	pixel = compute_pixel (data);
+
+	for (uint i = 0; i < num; i++)
+	{
+		vec4 tmp;
+		idx = int (indices[i]);
+		data.color = unpackUnorm4x8 (texelFetch (fraglist,
+			     		    		 idx * 5 + 0).r);
+		data.specular = unpackUnorm4x8 (texelFetch (fraglist,
+			     		    		    idx * 5 + 1).r);
+		data.normal = unpackUnorm4x8 (texelFetch (fraglist,
+			     		    		  idx * 5 + 2).r);
+		data.depth = uintBitsToFloat (texelFetch (fraglist,
+			     		    		  idx * 5 + 3).r);
+		tmp = compute_pixel (data);
+		pixel = mix (pixel, tmp, tmp.w);
+	}
+
+	pixel = clamp (pixel, 0, screenlimit);
+	screen = pixel;
+
+	if (dot (pixel.xyz, luminance_factor) > glow.threshold)
+	{
+		glowmap = pixel;
+	}
+	else
+	{
+		glowmap = vec4 (0, 0, 0, 0);
+	}
+}

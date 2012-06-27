@@ -1,0 +1,105 @@
+/*  
+ * This file is part of DRE.
+ *
+ * DRE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DRE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+float specular_gaussian (in struct Parameter param,
+      			 in vec3 normal, in vec3 halfvec)
+{
+	float e;
+	e = acos (dot (normal, halfvec));
+	e = clamp (e, 0.0f, 1.0f) / param.param1;
+	return param.param2 * exp (-e * e);
+}
+
+float specular_phong (in struct Parameter param,
+      		      in vec3 viewdir, in vec3 lightdir,
+		      in vec3 normal)
+{
+	float k;
+	k = dot (viewdir, reflect (-lightdir, normal));
+	k = clamp (k, 0.0f, 1.0f);
+	k = pow (k, param.param1);
+	return k;
+}
+
+float specular_beckmann (in struct Parameter param,
+      		        in vec3 normal, in vec3 halfvec)
+{
+	float e, m;
+	e = acos (dot (normal, halfvec));
+	e = cos (clamp (e, 0.0f, 1.0f));
+	e = e * e;
+	m = param.param1;
+	m = m * m;
+
+	return exp (-(1 - e) / (e * m)) / (PI * m * e * e);
+}
+
+float specular_cooktorrance (in struct Parameter param,
+      			     in vec3 viewdir, in vec3 lightdir,
+      			     in vec3 normal, in vec3 halfvec)
+{
+	float fresnel = param.param2;
+	float k;
+
+	k = specular_beckmann (param, normal, halfvec);
+
+	float NdotH, VdotH, NdotV, NdotL;
+
+	NdotH = dot (normal, halfvec);
+	VdotH = dot (viewdir, halfvec);
+	NdotV = dot (normal, viewdir);
+	NdotL = dot (normal, lightdir);
+
+	float f;
+	f = fresnel + pow (1 - NdotV, 5) * (1 - fresnel);
+	float g, g1, g2;
+	g1 = (2 * NdotH * NdotV) / VdotH;
+	g2 = (2 * NdotH * NdotL) / VdotH;
+	g = min (1.0f, min (g1, g2));
+
+	return k * f * g / NdotV;
+}
+
+float ComputeSpecular (in struct Parameter param,
+      	               in vec3 normal, in vec3 viewdir, in vec3 lightdir)
+{		
+	float s;
+
+	vec3 halfvec = normalize (viewdir + lightdir);
+
+	switch (param.model)
+	{
+		case 1:
+		     s = specular_gaussian (param, normal, halfvec);
+		break;
+		case 2:
+		     s = specular_phong (param, viewdir, lightdir,
+		       	 		 normal);
+		break;
+		case 3:
+		     s = specular_beckmann (param, normal, halfvec);
+		break;
+		case 4:
+		     s = specular_cooktorrance (param, viewdir,
+		       	 		        lightdir, normal,
+						halfvec);
+		break;
+		default:
+		break;
+	}
+	return s;
+}

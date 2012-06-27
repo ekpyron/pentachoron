@@ -1,0 +1,54 @@
+/*  
+ * This file is part of DRE.
+ *
+ * DRE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DRE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+uniform vec4 projinfo;
+uniform mat4 vmatinv;
+
+vec3 getpos (in vec3 pin)
+{
+	vec4 pos;
+	pos.xyz = pin * 2 - 1;
+	pos.w = 1;
+
+	vec4 p;
+	p.x = pos.x * projinfo.x;
+	p.y = pos.y * projinfo.y;
+	p.z = -pos.w;
+	p.w = (pos.z * (projinfo.z - projinfo.w)
+	      + pos.w * (projinfo.z + projinfo.w))
+	      / (2 * projinfo.z * projinfo.w);
+	pos = vmatinv * p;
+	return pos.xyz / pos.w;
+}
+
+
+vec3 getskypos (in vec3 pin)
+{
+	vec4 pos;
+	pos.xyz = pin * 2 - 1;
+	pos.w = 1;
+
+	vec4 p;
+	p.x = pos.x * projinfo.x;
+	p.y = pos.y * projinfo.y;
+	p.z = -pos.w;
+	p.w = (pos.z * (projinfo.z - projinfo.w)
+	      + pos.w * (projinfo.z + projinfo.w))
+	      / (2 * projinfo.z * projinfo.w);
+	pos = mat4 (mat3 (vmatinv)) * p;
+	return pos.xyz / pos.w;
+}

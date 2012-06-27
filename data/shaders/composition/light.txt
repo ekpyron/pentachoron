@@ -1,0 +1,70 @@
+/*  
+ * This file is part of DRE.
+ *
+ * DRE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DRE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+struct Light {
+       vec4 pos;
+       vec4 color;
+       vec4 dir;
+       vec4 spot, spot2;
+       vec4 specular;
+       vec4 attenuation;
+};
+
+uniform bool tile_based;
+
+uint GetNumLights (void)
+{
+	if (tile_based)
+	{
+		ivec2 c = ivec2 (int (gl_FragCoord.x) >> 5,
+	      	  	  	 int (gl_FragCoord.y) >> 5);
+		return atomicCounter (counter[NUM_TILES_X * c.y + c.x]);
+	}
+	else
+	{
+		return textureSize (lightbuffertex) / SIZEOF_LIGHT;
+	}
+}
+
+void ReadLight (out struct Light light, in uint id)
+{
+	int offset;
+
+	if (tile_based)
+	{
+		ivec2 p;
+		p.x = int (gl_FragCoord.x) & (~0x1F);
+		p.y = int (gl_FragCoord.y) & (~0x1F);
+		p.x += int (id) & 0x1F;
+		p.y += int (id) >> 5;
+		offset = int (texelFetch (lighttex, p, 0).r)
+		       	 * SIZEOF_LIGHT;
+	}
+	else
+	{
+		offset = int (id) * SIZEOF_LIGHT;
+	}
+
+	light.pos = texelFetch (lightbuffertex, offset);
+	light.color = texelFetch (lightbuffertex, offset + 1);
+	light.dir = texelFetch (lightbuffertex, offset + 2);
+	light.spot = texelFetch (lightbuffertex, offset + 3);
+	light.spot2 = texelFetch (lightbuffertex, offset + 4);
+	light.specular = texelFetch (lightbuffertex, offset + 5);
+	light.attenuation = texelFetch (lightbuffertex,
+			    	        offset + 12);
+}

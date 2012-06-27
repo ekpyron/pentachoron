@@ -1,0 +1,93 @@
+/*  
+ * This file is part of DRE.
+ *
+ * DRE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DRE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+uniform struct {
+	float theta;
+	float cos_theta;
+	vec3 direction;
+} sun;
+
+uniform struct {
+	float perezY[5];
+	float perezx[5];
+	float perezy[5];
+	vec3 zenithYxy;
+} sky;
+
+vec3 getskypos (in vec3 pin);
+
+float perez (in float cos_theta, in float gamma, in float cos_gamma,
+      	     in float c[5])
+{
+	return (1 + c[0] * exp (c[1] / cos_theta))
+	       * (1 + c[2] * exp (c[3] * gamma)
+	       	  + c[4] * cos_gamma * cos_gamma);
+}
+
+vec3 Yxy2RGB (in vec3 Yxy)
+{
+	vec3 XYZ;
+
+	XYZ.x = Yxy.x * Yxy.y / Yxy.z;
+	XYZ.y = Yxy.x;
+	XYZ.z = Yxy.x * (1 - Yxy.y - Yxy.z) / Yxy.z;
+	return mat3 (3.2404790f, -0.969256f, 0.0055648f,
+	       	     -1.537150f, 1.875992f, -0.204043f,
+		     -0.498535f, 0.041556f, 1.057311f) * XYZ;
+}
+
+vec3 compute_sky (in vec3 dir)
+{
+	vec3 sundir;
+
+	sundir = sun.direction;
+
+	float theta_s = sun.theta;
+	float cos_theta_s = sun.cos_theta;
+
+	float cos_theta = dir.y;
+	float theta = acos (cos_theta);
+	cos_theta = abs (cos_theta);
+
+	float cos_gamma = dot (sundir, dir);
+	float gamma = acos (cos_gamma);
+
+	vec3 Yxy;
+
+	Yxy.x = 0.04f * sky.zenithYxy.x
+	        * perez (cos_theta, gamma, cos_gamma,
+		  	 sky.perezY)
+		/ perez (1, theta_s, cos_theta_s,
+		  	 sky.perezY);
+	Yxy.y = sky.zenithYxy.y
+	        * perez (cos_theta, gamma, cos_gamma,
+		  	 sky.perezx)
+		/ perez (1, theta_s, cos_theta_s,
+		  	 sky.perezx);
+	Yxy.z = sky.zenithYxy.z
+	        * perez (cos_theta, gamma, cos_gamma,
+		  	 sky.perezy)
+		/ perez (1, theta_s, cos_theta_s,
+		  	 sky.perezy);
+
+	if (cos_gamma > 0.999f)
+	{
+	   Yxy.x *= 1 + (cos_gamma - 0.999f) * 10000.0f;
+	}
+
+	return Yxy2RGB (Yxy);
+}
