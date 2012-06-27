@@ -33,6 +33,7 @@ layout(binding = 9) uniform samplerBuffer parametertex;
 layout (binding = 0) uniform atomic_uint counter[768];
 
 const float PI = 3.14159265358979323846f;
+const vec3 luminance_factor = vec3 (0.2126, 0.7152, 0.0722);
 
 #define DEPTHLAYERS 8
 
@@ -220,7 +221,6 @@ float specular_cooktorrance (in struct Parameter param,
       			     in vec3 viewdir, in vec3 lightdir,
       			     in vec3 normal, in vec3 halfvec)
 {
-	// TODO: this doesn't really work anymore
 	float fresnel = param.param2;
 	float k;
 
@@ -263,18 +263,18 @@ vec3 Yxy2RGB (in vec3 Yxy)
 		     -0.498535f, 0.041556f, 1.057311f) * XYZ;
 }
 
-vec4 compute_sky (in struct PixelData data)
+vec3 compute_sky (in vec3 dir)
 {
-	vec3 dir, sundir;
-	dir = normalize (getskypos (vec3 (invviewport * gl_FragCoord.xy,
-	      			    data.depth)));
+	vec3 sundir;
+
 	sundir = sun.direction;
 
 	float theta_s = sun.theta;
 	float cos_theta_s = sun.cos_theta;
 
-	float cos_theta = abs (dir.y);
+	float cos_theta = dir.y;
 	float theta = acos (cos_theta);
+	cos_theta = abs (cos_theta);
 
 	float cos_gamma = dot (sundir, dir);
 	float gamma = acos (cos_gamma);
@@ -302,7 +302,7 @@ vec4 compute_sky (in struct PixelData data)
 	   Yxy.x *= 1 + (cos_gamma - 0.999f) * 10000.0f;
 	}
 
-	return vec4 (Yxy2RGB (Yxy), 1);
+	return Yxy2RGB (Yxy);
 }
 
 uint GetNumLights (void)
@@ -324,13 +324,52 @@ vec4 compute_pixel (in struct PixelData data)
 
 	if (data.depth == 1.0f)
 	{
-		return compute_sky (data);
+		vec3 dir;
+		dir = normalize (getskypos (vec3 (invviewport * gl_FragCoord.xy,
+	      			    	    data.depth)));
+		return vec4 (compute_sky (dir), 1.0f);
 	}
 
+	struct Parameter param;
+	read_parameter (param, int (data.specular.w * 255.0f)
+		       * SIZEOF_PARAMETER);
+
 	pos = getpos (vec3 (invviewport * gl_FragCoord.xy, data.depth));
-	normal = data.normal.xyz * 2 - 1;
+	normal = normalize (data.normal.xyz * 2 - 1);
 
 	viewdir = normalize (eye - pos);
+
+	{
+		vec3 skynormal = compute_sky (normal);
+		diffuse = dot (skynormal, luminance_factor)
+			  * vec3 (1, 1, 1);
+		vec3 lightdir = normalize (sun.direction);
+		vec3 halfvec = normalize (viewdir + lightdir);
+
+		float s = 0.0f;
+		switch (param.model)
+		{
+			case 1:
+			     s = specular_gaussian (param, normal, halfvec);
+			break;
+			case 2:
+			     s = specular_phong (param, viewdir, lightdir,
+			       	 		 normal);
+			break;
+			case 3:
+			     s = specular_beckmann (param, normal, halfvec);
+			break;
+			case 4:
+			     s = specular_cooktorrance (param, viewdir,
+			       	 		        lightdir, normal,
+							halfvec);
+			break;
+			default:
+			break;
+		}
+
+		specular = s * skynormal;
+	}
 
 	num_lights = GetNumLights ();
 
@@ -372,10 +411,6 @@ vec4 compute_pixel (in struct PixelData data)
 
 		diffuse += NdotL * attenuation * light.color.xyz;
 
-		struct Parameter param;
-		read_parameter (param, int (data.specular.w * 255.0f)
-			       * SIZEOF_PARAMETER);
-
 		vec3 halfvec = normalize (viewdir + lightdir);
 
 		float s = 0.0f;
@@ -399,13 +434,24 @@ vec4 compute_pixel (in struct PixelData data)
 			default:
 			break;
 		}
-		specular += s * light.specular.xyz;
+		specular += attenuation * s * light.specular.xyz;
 	}
 
 	specular *= data.specular.xyz;
 
 	pixel = vec4 (data.color.xyz * diffuse, data.color.w); 
-	pixel.xyz += specular;
+	pixel.xyz += specular * data.specular.xyz;
+
+	if (param.reflect > 0)
+	{
+		float f;
+		f = dot (-viewdir, normal);
+		if (f < 0) f = -f;
+		f = mix (pow (1 - f, 5), 1, param.reflect);
+		f = clamp (f, 0.1f, 0.9f);
+		vec3 refl = compute_sky (reflect (-viewdir, normal));
+		pixel.xyz =  mix (pixel.xyz, refl, f);
+	}
 
 	float shadow = mix (1.0, compute_shadow (pos), shadow_alpha);
 	pixel *= shadow;
@@ -477,7 +523,7 @@ void main (void)
 	pixel = clamp (pixel, 0, screenlimit);
 	screen = pixel;
 
-	if (dot (pixel.xyz, vec3 (0.2126, 0.7152, 0.0722)) > glow.threshold)
+	if (dot (pixel.xyz, luminance_factor) > glow.threshold)
 	{
 		glowmap = pixel;
 	}
