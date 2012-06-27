@@ -60,7 +60,7 @@ bool Renderer::Init (void)
 
 	interface.AddShadow ();
 
-	float max = -100;
+/*	float max = -100;
 
 	srand (time (NULL));
 	for (int y = -7; y <= 7; y++)
@@ -98,7 +98,8 @@ bool Renderer::Init (void)
 		}
 	}
 	lightbuffer.Data (sizeof (Light) * lights.size (),
-										&lights[0], GL_STATIC_DRAW);
+	&lights[0], GL_STATIC_DRAW);*/
+	interface.AddLight ();
 
 	interface.AddShadow ();
 

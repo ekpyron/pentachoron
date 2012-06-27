@@ -72,6 +72,7 @@ uniform struct {
 	float cos_theta;
 	vec3 direction;
 } sun;
+
 uniform struct {
 	float perezY[5];
 	float perezx[5];
@@ -98,8 +99,17 @@ void read_parameter (out struct Parameter param, in int offset)
 	param.reflect = tmp.w;
 }
 
-void read_light (out struct Light light, in int offset)
+void read_light (out struct Light light, in uint id)
 {
+	int offset;
+
+	ivec2 p;
+	p.x = int (gl_FragCoord.x) & (~0x1F);
+	p.y = int (gl_FragCoord.y) & (~0x1F);
+	p.x += int (id) & 0x1F;
+	p.y += int (id) >> 5;
+	offset = int (texelFetch (lighttex, p, 0).r) * 13;
+
 	light.pos = texelFetch (lightbuffertex, offset);
 	light.color = texelFetch (lightbuffertex, offset + 1);
 	light.dir = texelFetch (lightbuffertex, offset + 2);
@@ -210,6 +220,7 @@ float specular_cooktorrance (in struct Parameter param,
       			     in vec3 viewdir, in vec3 lightdir,
       			     in vec3 normal, in vec3 halfvec)
 {
+	// TODO: this doesn't really work anymore
 	float fresnel = param.param2;
 	float k;
 
@@ -217,7 +228,7 @@ float specular_cooktorrance (in struct Parameter param,
 
 	float NdotH, VdotH, NdotV, NdotL;
 
-	NdotH = dot (halfvec, normal);
+	NdotH = dot (normal, halfvec);
 	VdotH = dot (viewdir, halfvec);
 	NdotV = dot (normal, viewdir);
 	NdotL = dot (normal, lightdir);
@@ -255,8 +266,8 @@ vec3 Yxy2RGB (in vec3 Yxy)
 vec4 compute_sky (in struct PixelData data)
 {
 	vec3 dir, sundir;
-	dir = normalize (getpos (vec3 (invviewport * gl_FragCoord.xy,
-	      			 data.depth)));
+	dir = normalize (getskypos (vec3 (invviewport * gl_FragCoord.xy,
+	      			    data.depth)));
 	sundir = sun.direction;
 
 	float theta_s = sun.theta;
@@ -294,6 +305,13 @@ vec4 compute_sky (in struct PixelData data)
 	return vec4 (Yxy2RGB (Yxy), 1);
 }
 
+uint GetNumLights (void)
+{
+	ivec2 c = ivec2 (int (gl_FragCoord.x) >> 5,
+	      	  	 int (gl_FragCoord.y) >> 5);
+	return atomicCounter (counter[32 * c.y + c.x]);
+}
+
 vec4 compute_pixel (in struct PixelData data)
 {
 	uint num_lights;
@@ -314,27 +332,12 @@ vec4 compute_pixel (in struct PixelData data)
 
 	viewdir = normalize (eye - pos);
 
-	uint tile;
-	ivec2 c;
-	c.x = int (gl_FragCoord.x) >> 5;
-	c.y = int (gl_FragCoord.y) >> 5;
-	tile = 32 * c.y + c.x;
-
-	num_lights = atomicCounter (counter[tile]);
+	num_lights = GetNumLights ();
 
 	for (uint i = 0; i < num_lights; i++)
 	{
-		int offset;
-
-		ivec2 p;
-		p.x = (c.x << 5);
-		p.y = (c.y << 5);
-		p.x += int (i) & 0x1F;
-		p.y += int (i) >> 5;
-		offset = int (texelFetch (lighttex, p, 0).r) * 13;
-
 		struct Light light;
-		read_light (light, offset);
+		read_light (light, i);
 
 		vec3 lightdir = light.pos.xyz - pos.xyz;
 
