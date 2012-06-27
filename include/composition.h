@@ -109,8 +109,8 @@ public:
 	 void SetDate (int m);
 	 float GetTimeOfDay (void);
 	 void SetTimeOfDay (float t);
-	 glm::vec3 GetSunDirection (float &theta, float &cos_theta);
-	 glm::vec3 GetSunDirection (void);
+
+	 void SetupSky (void);
 
 	 /** Get glow.
 		* Returns a reference to the internal glow effect class.
@@ -146,6 +146,11 @@ private:
 	 gl::SmartUniform<GLfloat> luminance_threshold;
 	 gl::SmartUniform<GLfloat> screenlimit;
 	 gl::SmartUniform<glm::mat4> shadowmat;
+	 gl::SmartUniform<glm::vec3> eye;
+	 struct {
+			gl::SmartUniform<GLfloat> theta;
+			gl::SmartUniform<GLfloat> cos_theta;
+	 } sun;
 
 	 SkyParams sky;
 

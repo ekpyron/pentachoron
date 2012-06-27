@@ -115,6 +115,12 @@ bool Composition::Init (void)
 		 (fprogram["shadow_alpha"], 0.7);
 	shadowmat = gl::SmartUniform<glm::mat4>
 		 (fprogram["shadowmat"], glm::mat4 (1));
+	eye = gl::SmartUniform<glm::vec3>
+		 (fprogram["eye"], glm::vec3 (0));
+	sun.theta = gl::SmartUniform<GLfloat>
+		 (fprogram["sun.theta"], 0.0f);
+	sun.cos_theta = gl::SmartUniform<GLfloat>
+		 (fprogram["sun.cos_theta"], 1.0f);
 
 	fprogram["invviewport"]
 		 = glm::vec2 (1.0f / float (r->gbuffer.GetWidth ()),
@@ -382,6 +388,11 @@ void Composition::SetTimeOfDay (float t)
 	sky.time = t;
 }
 
+void Composition::SetupSky (void)
+{
+}
+
+/*
 glm::vec3 Composition::GetSunDirection (void)
 {
 	float theta, cos_theta;
@@ -410,13 +421,12 @@ glm::vec3 Composition::GetSunDirection (float &theta, float &cos_theta)
 		float phi = -atan2 (opp, adj);
 		theta = DRE_PI / 2.0 - solarAltitude;
 
-//		float sin_theta = sin (info.GetSunTheta ());
-//		cos_theta = cos (info.GetSunTheta ());
-//		return glm::vec3 (sin_theta * sin (phi),
-//											cos_theta,
-//											sin_theta * cos (phi));
-
-}
+		float sin_theta = sin (sun.theta.Get ());
+		cos_theta = cos (sun.cos_theta.Get ());
+		return glm::vec3 (sin_theta * sin (phi),
+											cos_theta,
+											sin_theta * cos (phi));
+											}*/
 
 void Composition::Frame (float timefactor)
 {
@@ -476,6 +486,7 @@ void Composition::Frame (float timefactor)
 		}*/
 
 	shadowmat.Set (r->shadowmap.GetMat ());
+	eye.Set (r->camera.GetEye ());
 
 	clearfb.Bind (GL_FRAMEBUFFER);
 	gl::ClearBufferfv (GL_COLOR, 0, (const GLfloat[]) { 1.0f, 0, 0, 0 });
@@ -574,6 +585,9 @@ void Composition::Frame (float timefactor)
 
 	r->windowgrid.sampler.Bind (8);
 	lighttex.Bind (GL_TEXTURE8, GL_TEXTURE_2D);
+
+	r->windowgrid.sampler.Bind (9);
+	r->GetParameterTexture ().Bind (GL_TEXTURE9, GL_TEXTURE_BUFFER);
 
 	r->windowgrid.Render ();
 

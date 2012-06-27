@@ -169,6 +169,9 @@ bool Renderer::Init (void)
 			parameters.push_back (parameter);
 		}
 	}
+	parameterbuffer.Data (sizeof (Parameter) * parameters.size (),
+												&parameters[0], GL_STATIC_DRAW);
+	parametertexture.Buffer (GL_RGBA32F, parameterbuffer);
 
 	(*logstream) << "Initialize Composition..." << std::endl;
 	if (!composition.Init ())
@@ -218,6 +221,13 @@ Parameter &Renderer::GetParameters (GLuint param)
 
 void Renderer::UpdateParameters (GLuint param)
 {
+	parameterbuffer.SubData (sizeof (Parameter) * param,
+													 sizeof (Parameter), &parameters[param]);
+}
+
+gl::Texture &Renderer::GetParameterTexture (void)
+{
+	return parametertexture;
 }
 
 GLuint Renderer::GetNumParameters (void)

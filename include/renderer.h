@@ -56,6 +56,7 @@ public:
 	 GLuint GetNumParameters (void);
 	 Parameter &GetParameters (GLuint params);
 	 void UpdateParameters (GLuint params);
+	 gl::Texture &GetParameterTexture (void);
 
 #ifdef DEBUG
 	 unsigned long memory;
@@ -79,6 +80,8 @@ private:
 	 gl::Program opacityprogram;
 
 	 std::vector<Parameter> parameters;
+	 gl::Buffer parameterbuffer;
+	 gl::Texture parametertexture;
 
 	 std::vector<Light> lights;
 	 gl::Buffer lightbuffer;
