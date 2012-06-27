@@ -206,8 +206,9 @@ bool FinalPass::Init (void)
 										 r->gbuffer.GetHeight (),
 										 0, GL_RED, GL_FLOAT, NULL);
 #ifdef DEBUG
-	r->memory += r->gbuffer.GetWidth ()
-		 * r->gbuffer.GetHeight () * 4;
+	for (size_t mem = r->gbuffer.GetWidth ()
+					* r->gbuffer.GetHeight () * 4; mem > 1; mem >>= 2)
+		 r->memory += mem;
 #endif
 
 	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -486,8 +487,7 @@ void FinalPass::Render (void)
 		break;
 	case 6:
 		r->windowgrid.sampler.Bind (0);
-//		r->shadowmap.GetMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-		r->composition.dummy.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
+		r->shadowmap.GetMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 2;
 		break;
 	default:

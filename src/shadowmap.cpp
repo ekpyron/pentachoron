@@ -141,16 +141,11 @@ bool ShadowMap::Init (void)
 
 	shadowmap.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
 										 0, GL_RG, GL_FLOAT, NULL);
-
-	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
-
 	tmpstore.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
 										0, GL_RG, GL_FLOAT, NULL);
-
 	depthbuffer.Image2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
 											 width, height, 0, GL_DEPTH_COMPONENT,
 											 GL_FLOAT, NULL);
-
 #ifdef DEBUG
 	r->memory += width * height * (2 * 4 + 2 * 4 + 4);
 #endif

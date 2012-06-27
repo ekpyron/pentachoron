@@ -124,17 +124,14 @@ bool GBuffer::Init (void)
 
 	depthbuffer.Image2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height,
 												0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-
 	colorbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
 											 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	normalbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
 												0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	specularbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
 													0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	
 #ifdef DEBUG
-	// not acurate anymore
-	r->memory += width * height * (4 * 4 + 4 + 4 + 4 + 4);
+	r->memory += width * height * 4 * 4;
 #endif
 
 	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,

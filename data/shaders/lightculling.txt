@@ -28,7 +28,7 @@ uniform vec2 invviewport;
 layout (binding = 0) uniform sampler2D mindepthtex;
 layout (binding = 1) uniform sampler2D maxdepthtex;
 layout (binding = 2) uniform samplerBuffer lightbuffertex;
-layout (location = 0) out vec4 dummy;
+layout (location = 0) out float dummy;
 
 layout (binding = 0) uniform atomic_uint counter[NUM_TILES_X * NUM_TILES_Y];
 
@@ -68,10 +68,7 @@ void main (void)
 		   + (int (gl_FragCoord.x)&0x1F);
 
 	if (lightidx >= num_lights)
-	{
-		dummy = vec4 (0, 0, 0, 0);
-		return;
-	}
+		discard;
 
 	offset = lightidx * SIZEOF_LIGHT + 6;
 
@@ -95,10 +92,7 @@ void main (void)
 	maxdepth = texelFetch (maxdepthtex, coord, 0).r;
 
 	if (mindepth == 1.0)
-	{
-		dummy = vec4 (1, 0, 0, 0);
-		return;
-	}
+	   discard;
 
 	vec3 boxmin, boxmax, bsphere;
 	float radius;
@@ -150,6 +144,4 @@ void main (void)
 	p.y += int (idx)>>5;
 
 	imageStore (lighttex, p, uvec4 (lightidx, 0, 0, 0));
-
-	dummy = vec4 (0,1,0,1);
 }

@@ -205,21 +205,19 @@ bool Composition::Init (void)
 									r->gbuffer.GetWidth (),
 									r->gbuffer.GetHeight (),
 									0, GL_RGBA, GL_FLOAT, NULL);
+#ifdef DEBUG
+	r->memory += r->gbuffer.GetWidth () * r->gbuffer.GetHeight () * 4 * 2;
+#endif
+
 	glowmap.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F,
 								r->gbuffer.GetWidth (),
 								r->gbuffer.GetHeight (),
 								0, GL_RGBA, GL_FLOAT, NULL);
-
 	glowmap.GenerateMipmap (GL_TEXTURE_2D);
-
 #ifdef DEBUG
-	r->memory += r->gbuffer.GetWidth ()
-		 * r->gbuffer.GetHeight () * (4 * 2 + 4 * 2 + 4);
-	r->memory += (r->gbuffer.GetWidth () >> 1) *
-		 (r->gbuffer.GetHeight () >> 1) * 4;
-	r->memory += (r->gbuffer.GetWidth () >> 1) *
-		 (r->gbuffer.GetHeight () >> 2) * 4;
-  /* ignore smaller mipmap levels... */
+	for (size_t mem = r->gbuffer.GetWidth () * r->gbuffer.GetHeight () * 4 * 2;
+			 mem > 1; mem >>= 2)
+		 r->memory += mem;
 #endif
 
 	if (!glow.Init (screen, glowmap,
@@ -237,31 +235,46 @@ bool Composition::Init (void)
 	lighttex.Image2D (GL_TEXTURE_2D, 0, GL_R16UI, r->gbuffer.GetWidth (),
 										r->gbuffer.GetHeight (), 0, GL_RED_INTEGER,
 										GL_UNSIGNED_INT, NULL);
+#ifdef DEBUG
+	r->memory += r->gbuffer.GetWidth () * r->gbuffer.GetHeight () * 2;
+#endif
 
 	numlights.Data (sizeof (GLuint)
 									* (r->gbuffer.GetWidth () >> 5)
 									* (r->gbuffer.GetHeight () >> 5),
 									NULL,	GL_DYNAMIC_DRAW);
 
-	dummy.Image2D (GL_TEXTURE_2D, 0, GL_RGBA32F, r->gbuffer.GetWidth (),
-								 r->gbuffer.GetHeight (), 0, GL_RGBA,
-								 GL_FLOAT, NULL);
+	dummy.Image2D (GL_TEXTURE_2D, 0, GL_R8, r->gbuffer.GetWidth (),
+								 r->gbuffer.GetHeight (), 0, GL_RED,
+								 GL_UNSIGNED_BYTE, NULL);
+#ifdef DEBUG
+	r->memory += r->gbuffer.GetWidth () * r->gbuffer.GetHeight ();
+#endif
+
 	lightcullfb.Texture2D (GL_COLOR_ATTACHMENT0,
 												 GL_TEXTURE_2D,
 												 dummy, 0);
-	lightcullfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
+	lightcullfb.DrawBuffers ({ });
 
 	mindepthtex.Image2D (GL_TEXTURE_2D, 0, GL_R32F,
 											 r->gbuffer.GetWidth () >> 5,
 											 r->gbuffer.GetHeight () >> 5,
 											 0, GL_RED,
 											 GL_FLOAT, NULL);
+#ifdef DEBUG
+	r->memory += (r->gbuffer.GetWidth () >> 5)
+		 * (r->gbuffer.GetHeight () >> 5) * 4;
+#endif
 
 	maxdepthtex.Image2D (GL_TEXTURE_2D, 0, GL_R32F,
 											 r->gbuffer.GetWidth ()  >> 5,
 											 r->gbuffer.GetHeight () >> 5,
 											 0, GL_RED,
 											 GL_FLOAT, NULL);
+#ifdef DEBUG
+	r->memory += (r->gbuffer.GetWidth () >> 5)
+		 * (r->gbuffer.GetHeight () >> 5) * 4;
+#endif
 
 	minmaxdepthfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 													 mindepthtex, 0);
@@ -506,7 +519,7 @@ void Composition::SetupSkyZenithYxy (void)
 {
 	glm::vec3 zenithYxy;
 	float T = sky.turbidity;
-	float chi = (4.0 / 9.0 - T / 120.0) * (M_PI - 2.0 * sun.theta.Get ());
+	float chi = (4.0 / 9.0 - T / 120.0) * (DRE_PI - 2.0 * sun.theta.Get ());
 	zenithYxy.x = (4.0453 * T - 4.9710) * tan (chi)
 		 - 0.2155 * T + 2.4192;
 	glm::vec4 th;
