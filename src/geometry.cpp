@@ -173,9 +173,9 @@ void Geometry::Node::Load (std::map<std::string, GLuint> &names,
 		}
 	}
 
-	translation.x = desc["translation"][0].as<GLfloat> (0.0f);
-	translation.y = desc["translation"][1].as<GLfloat> (0.0f);
-	translation.z = desc["translation"][2].as<GLfloat> (0.0f);
+	translation = desc["translation"].as<glm::vec3>
+		 (glm::vec3 (0.0f, 0.0f, 0.0f));
+
 	if (desc["rotations"])
 	{
 		for (YAML::const_iterator it = desc["rotations"].begin ();

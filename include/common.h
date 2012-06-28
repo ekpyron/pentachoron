@@ -24,12 +24,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <yaml-cpp/yaml.h>
 #include <config.h>
 #include <oglp/oglp.h>
 #include <iostream>
 #include <ctime>
 #include <array>
+#include "yaml.h"
 
 /** Defined to avoid conflicts.
  * Defined to avoid the inclusion of an conflicting gl.h
