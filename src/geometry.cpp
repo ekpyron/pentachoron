@@ -206,25 +206,31 @@ void Geometry::Node::Load (std::map<std::string, GLuint> &names,
 	v.y = desc["orientation"][2].as<GLfloat> (0.0f);
 	v.z = desc["orientation"][3].as<GLfloat> (0.0f);
 	angle *= DRE_PI / 180.0f;
-	orientation = glm::quat (angle, v);
+	if (angle > 0.0f)
+		 orientation = glm::quat (angle, v);
 	glm::normalize (orientation);
 }
 
 void Geometry::Node::Render (Geometry *geometry,
-														 glm::mat4 parentmvmat)
+														 glm::mat4 parentmvmat,
+														 glm::mat3 rotation)
 {
 	glm::mat4 mvmat = glm::translate (parentmvmat
 																		* glm::mat4_cast (orientation),
 																		translation);
+
+	rotation *= glm::mat3_cast (orientation);
+
 	for (Node &node : children)
 	{
-		node.Render (geometry, mvmat);
+		node.Render (geometry, mvmat, rotation);
 	}
 
 	for (GLuint &model : models)
 	{
-		geometry->Render (model, mvmat);
+		geometry->Render (model, mvmat, rotation);
 	}
+
 }
 
 void Geometry::SetProjMatrix (const glm::mat4 &projmat)
@@ -248,12 +254,14 @@ void Geometry::Render (GLuint p,
 	}
 
 	pass = p;
-	root.Render (this, viewmat);
+	root.Render (this, viewmat, glm::mat3 (1));
 }
 
-void Geometry::Render (GLuint model, glm::mat4 mvmat)
+void Geometry::Render (GLuint model, glm::mat4 &mvmat,
+											 glm::mat3 &rotation)
 {
 	(*program)["mvmat"] = mvmat;
+	(*program)["normalmat"] = rotation;
 	bboxprogram["mvmat"] = mvmat;
 	r->culling.SetModelViewMatrix (mvmat);
 	models[model].Render (pass, *program);

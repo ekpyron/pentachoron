@@ -44,7 +44,8 @@ public:
 	 };
 
 private:
-	 void Render (GLuint model, glm::mat4 mvmat);
+	 void Render (GLuint model, glm::mat4 &mvmat,
+								glm::mat3 &orientation);
 
 	 class Node {
 	 public:
@@ -53,7 +54,8 @@ private:
 			void Load (std::map<std::string, GLuint> &names,
 								 const YAML::Node &desc);
 			void Render (Geometry *geometry,
-									 glm::mat4 mvmat);
+									 glm::mat4 mvmat,
+									 glm::mat3 orientation);
 	 private:
 			std::vector<Node> children;
 			std::vector<GLuint> models;

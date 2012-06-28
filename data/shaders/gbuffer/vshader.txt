@@ -25,6 +25,7 @@ out vec2 uv;
 
 uniform mat4 projmat;
 uniform mat4 mvmat;
+uniform mat3 normalmat;
 
 out vec3 fTangent;
 out vec3 fBitangent;
@@ -33,7 +34,7 @@ out vec3 fNormal;
 void main (void)
 {
 	fTangent = tangent;
-	fNormal = normal;
+	fNormal = normalmat * normal;
 	fBitangent = cross (normal, tangent);
 	uv = texcoord;
 	gl_Position = projmat * mvmat * vec4 (vertex, 1.0);
