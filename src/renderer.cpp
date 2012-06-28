@@ -113,7 +113,7 @@ bool Renderer::Init (void)
 	interface.AddShadow ();
 
 	{
-		YAML::Node parameterlist;
+		std::vector<YAML::Node> parameterlist;
 		std::string filename (MakePath ("materials", "parameters.yaml"));
 		std::ifstream file (filename, std::ifstream::in);
 		if (!file.is_open ())
@@ -121,13 +121,8 @@ bool Renderer::Init (void)
 			(*logstream) << "Cannot open " << filename << std::endl;
 			return false;
 		}
-		parameterlist = YAML::Load (file);
 
-		if (!parameterlist.IsSequence ())
-		{
-			(*logstream) << "The parameter file " << filename
-									 << " has an invalid format." << std::endl;
-		}
+		parameterlist = YAML::LoadAll (file);
 
 		for (const YAML::Node &node : parameterlist)
 		{
