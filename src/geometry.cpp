@@ -100,23 +100,30 @@ bool Geometry::Init (void)
 	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_REPEAT);
 	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	YAML::Node scene;
+	std::ifstream file (MakePath ("scene.yaml"), std::ifstream::in);
 	std::map<std::string, GLuint> names;
+	if (!file.is_open ())
 	{
-		std::ifstream file (MakePath ("scene.yaml"), std::ifstream::in);
-		if (!file.is_open ())
-		{
-			(*logstream) << "Cannot open " << MakePath ("scene.yaml")
-									 << "." << std::endl;
-			return false;
-		}
-		scene = YAML::Load (file);
-		if (!scene.IsMap ())
-		{
-			(*logstream) << MakePath ("scene.yaml")
-									 << " has an invalid format." << std::endl;
-			return false;
-		}
+		(*logstream) << "Cannot open " << MakePath ("scene.yaml")
+								 << "." << std::endl;
+		return false;
+	}
+
+	std::vector<YAML::Node> streams;
+	streams = YAML::LoadAll (file);
+	if (streams.size () != 2)
+	{
+		(*logstream) << MakePath ("scene.yaml")
+								 << " has an invalid format." << std::endl;
+		return false;
+	}
+
+	YAML::Node scene = streams[0];
+	if (!scene.IsMap ())
+	{
+		(*logstream) << MakePath ("scene.yaml")
+								 << " has an invalid format." << std::endl;
+		return false;
 	}
 	{
 		YAML::Node modeldesc;
@@ -130,40 +137,10 @@ bool Geometry::Init (void)
 			if (!models.back ().Load (it->second.as<std::string> ()))
 				 return false;
 		}
-
-		root.Load (names, scene["root"]);
 	}
 
-/*		YAML::Node nodedesc;
-		nodedesc = scene["nodes"];
-		for (YAML::const_iterator it = nodedesc.begin ();
-				 it != nodedesc.end (); it++)
-		{
-			Node node;
-			// TODO: some more error handling.
-			if ((*it)["models"].IsSequence ())
-			{
-				for (YAML::const_iterator m = (*it)["models"].begin ();
-						 it != (*it)["models"].end (); it++)
-				{
-					node.models.push_back (names [(*it)["model"].as<std::string> ()]);
-				}
-			}
-			node.translation.x = (*it)["translation"][0].as<GLfloat> (0.0f);
-			node.translation.y = (*it)["translation"][1].as<GLfloat> (0.0f);
-			node.translation.z = (*it)["translation"][2].as<GLfloat> (0.0f);
-			glm::vec3 v;
-			GLfloat angle;
-			angle = (*it)["orientation"][0].as<GLfloat> (0.0f);
-			v.x = (*it)["orientation"][1].as<GLfloat> (0.0f);
-			v.y = (*it)["orientation"][2].as<GLfloat> (0.0f);
-			v.z = (*it)["orientation"][3].as<GLfloat> (0.0f);
-			angle *= DRE_PI / 180.0f;
-			node.orientation = glm::quat (angle, v);
-			glm::normalize (node.orientation);
-			nodes.push_back (node);
-		}
-		}*/
+	root.Load (names, streams[1]);
+
 	return true;
 }
 
