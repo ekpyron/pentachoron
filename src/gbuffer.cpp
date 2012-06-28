@@ -148,11 +148,12 @@ bool GBuffer::Init (void)
 
 	fragidx.Image2D (GL_TEXTURE_2D, 0, GL_R32I, width, height,
 									 0, GL_RED_INTEGER, GL_INT, NULL);
-	fraglist.Data (width * height * 4 * 4 * 4, NULL, GL_DYNAMIC_COPY);
+	// TODO: make this size configurable
+	fraglist.Data (width * height * 4 * 4 * 8 , NULL, GL_DYNAMIC_COPY);
 	fraglisttex.Buffer (GL_R32UI, fraglist);
 
 #ifdef DEBUG
-	r->memory += width * height * (4 * 4 * 4 + 4);
+	r->memory += width * height * (4 * 4 * 8 + 4);
 #endif
 
 	transparencyfb.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
