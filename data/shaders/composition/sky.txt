@@ -89,5 +89,5 @@ vec3 compute_sky (in vec3 dir)
 	   Yxy.x *= 1 + (cos_gamma - 0.999f) * 10000.0f;
 	}
 
-	return Yxy2RGB (Yxy);
+	return clamp (Yxy2RGB (Yxy), 0.0f, 2.0f);
 }

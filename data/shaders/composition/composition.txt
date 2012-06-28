@@ -128,7 +128,7 @@ vec4 compute_pixel (in struct PixelData data, out bool issky)
 		f = dot (-viewdir, normal);
 		if (f < 0) f = -f;
 		f = mix (pow (1 - f, 5), 1, param.reflect);
-		f = clamp (f, 0.1f, 0.9f);
+		f = clamp (f, 0.0f, 1.0f);
 		vec3 refl = compute_sky (reflect (-viewdir, normal));
 		pixel.xyz =  mix (pixel.xyz, refl, f);
 	}
