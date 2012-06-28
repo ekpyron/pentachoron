@@ -178,10 +178,10 @@ Geometry::Node::~Node (void)
 void Geometry::Node::Load (std::map<std::string, GLuint> &names,
 													 const YAML::Node &desc)
 {
-	if (desc["children"])
+	if (desc["nodes"])
 	{
-		for (YAML::const_iterator it = desc["children"].begin ();
-				 it != desc["children"].end (); it++)
+		for (YAML::const_iterator it = desc["nodes"].begin ();
+				 it != desc["nodes"].end (); it++)
 		{
 			children.emplace_back ();
 			children.back ().Load (names, *it);
@@ -199,25 +199,33 @@ void Geometry::Node::Load (std::map<std::string, GLuint> &names,
 	translation.x = desc["translation"][0].as<GLfloat> (0.0f);
 	translation.y = desc["translation"][1].as<GLfloat> (0.0f);
 	translation.z = desc["translation"][2].as<GLfloat> (0.0f);
-	glm::vec3 v;
-	GLfloat angle;
-	angle = desc["orientation"][0].as<GLfloat> (0.0f);
-	v.x = desc["orientation"][1].as<GLfloat> (0.0f);
-	v.y = desc["orientation"][2].as<GLfloat> (0.0f);
-	v.z = desc["orientation"][3].as<GLfloat> (0.0f);
-	angle *= DRE_PI / 180.0f;
-	if (angle > 0.0f)
-		 orientation = glm::quat (angle, v);
-	glm::normalize (orientation);
+	if (desc["rotations"])
+	{
+		for (YAML::const_iterator it = desc["rotations"].begin ();
+				 it != desc["rotations"].end (); it++)
+		{
+			glm::vec3 v;
+			GLfloat angle;
+			angle = (*it)[0].as<GLfloat> (0.0f);
+			v.x = (*it)[1].as<GLfloat> (0.0f);
+			v.y = (*it)[2].as<GLfloat> (0.0f);
+			v.z = (*it)[3].as<GLfloat> (0.0f);
+			if (angle != 0)
+			{
+				orientation = glm::rotate (orientation, angle, v);
+				orientation = glm::normalize (orientation);
+			}
+		}
+	}
 }
 
 void Geometry::Node::Render (Geometry *geometry,
 														 glm::mat4 parentmvmat,
 														 glm::mat3 rotation)
 {
-	glm::mat4 mvmat = glm::translate (parentmvmat
-																		* glm::mat4_cast (orientation),
-																		translation);
+	glm::mat4 mvmat = glm::translate (parentmvmat,
+																		translation)
+		 * glm::mat4 (glm::mat3_cast (orientation));
 
 	rotation *= glm::mat3_cast (orientation);
 
