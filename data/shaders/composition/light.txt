@@ -66,5 +66,5 @@ void ReadLight (out struct Light light, in uint id)
 	light.spot2 = texelFetch (lightbuffertex, offset + 4);
 	light.specular = texelFetch (lightbuffertex, offset + 5);
 	light.attenuation = texelFetch (lightbuffertex,
-			    	        offset + 12);
+			    	        offset + 6);
 }

@@ -70,7 +70,7 @@ void main (void)
 	if (lightidx >= num_lights)
 		discard;
 
-	offset = lightidx * SIZEOF_LIGHT + 6;
+	offset = lightidx * SIZEOF_LIGHT + 7;
 
 	vec4 planes[6];
 	planes[0] = texelFetch (lightbuffertex, offset);
