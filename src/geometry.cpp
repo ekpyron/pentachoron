@@ -16,6 +16,7 @@
  */
 #include "geometry.h"
 #include "renderer.h"
+#include <fstream>
 
 Geometry::Geometry (void)
 {
@@ -99,16 +100,131 @@ bool Geometry::Init (void)
 	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_REPEAT);
 	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	if (!grid.Load ("grid.yaml"))
+	YAML::Node scene;
+	std::map<std::string, GLuint> names;
+	{
+		std::ifstream file (MakePath ("scene.yaml"), std::ifstream::in);
+		if (!file.is_open ())
+		{
+			(*logstream) << "Cannot open " << MakePath ("scene.yaml")
+									 << "." << std::endl;
 			return false;
-	if (!kitty.Load ("kitty.yaml"))
-		 return false;
-	if (!headglass.Load ("headglass.yaml"))
-		 return false;
-	if (!box.Load ("box.yaml"))
-		 return false;
+		}
+		scene = YAML::Load (file);
+		if (!scene.IsMap ())
+		{
+			(*logstream) << MakePath ("scene.yaml")
+									 << " has an invalid format." << std::endl;
+			return false;
+		}
+	}
+	{
+		YAML::Node modeldesc;
+		modeldesc = scene["models"];
+		GLuint id = 0;
+		for (YAML::const_iterator it = modeldesc.begin ();
+				 it != modeldesc.end (); it++)
+		{
+			names[it->first.as<std::string> ()] = id++;
+			models.emplace_back ();
+			if (!models.back ().Load (it->second.as<std::string> ()))
+				 return false;
+		}
 
+		root.Load (names, scene["root"]);
+	}
+
+/*		YAML::Node nodedesc;
+		nodedesc = scene["nodes"];
+		for (YAML::const_iterator it = nodedesc.begin ();
+				 it != nodedesc.end (); it++)
+		{
+			Node node;
+			// TODO: some more error handling.
+			if ((*it)["models"].IsSequence ())
+			{
+				for (YAML::const_iterator m = (*it)["models"].begin ();
+						 it != (*it)["models"].end (); it++)
+				{
+					node.models.push_back (names [(*it)["model"].as<std::string> ()]);
+				}
+			}
+			node.translation.x = (*it)["translation"][0].as<GLfloat> (0.0f);
+			node.translation.y = (*it)["translation"][1].as<GLfloat> (0.0f);
+			node.translation.z = (*it)["translation"][2].as<GLfloat> (0.0f);
+			glm::vec3 v;
+			GLfloat angle;
+			angle = (*it)["orientation"][0].as<GLfloat> (0.0f);
+			v.x = (*it)["orientation"][1].as<GLfloat> (0.0f);
+			v.y = (*it)["orientation"][2].as<GLfloat> (0.0f);
+			v.z = (*it)["orientation"][3].as<GLfloat> (0.0f);
+			angle *= DRE_PI / 180.0f;
+			node.orientation = glm::quat (angle, v);
+			glm::normalize (node.orientation);
+			nodes.push_back (node);
+		}
+		}*/
 	return true;
+}
+
+Geometry::Node::Node (void)
+{
+}
+
+Geometry::Node::~Node (void)
+{
+}
+
+void Geometry::Node::Load (std::map<std::string, GLuint> &names,
+													 const YAML::Node &desc)
+{
+	if (desc["children"])
+	{
+		for (YAML::const_iterator it = desc["children"].begin ();
+				 it != desc["children"].end (); it++)
+		{
+			children.emplace_back ();
+			children.back ().Load (names, *it);
+		}
+	}
+	if (desc["models"])
+	{
+		for (YAML::const_iterator it = desc["models"].begin ();
+				 it != desc["models"].end (); it++)
+		{
+			models.push_back (names [it->as<std::string> ()]);
+		}
+	}
+
+	translation.x = desc["translation"][0].as<GLfloat> (0.0f);
+	translation.y = desc["translation"][1].as<GLfloat> (0.0f);
+	translation.z = desc["translation"][2].as<GLfloat> (0.0f);
+	glm::vec3 v;
+	GLfloat angle;
+	angle = desc["orientation"][0].as<GLfloat> (0.0f);
+	v.x = desc["orientation"][1].as<GLfloat> (0.0f);
+	v.y = desc["orientation"][2].as<GLfloat> (0.0f);
+	v.z = desc["orientation"][3].as<GLfloat> (0.0f);
+	angle *= DRE_PI / 180.0f;
+	orientation = glm::quat (angle, v);
+	glm::normalize (orientation);
+}
+
+void Geometry::Node::Render (Geometry *geometry,
+														 glm::mat4 parentmvmat)
+{
+	glm::mat4 mvmat = glm::translate (parentmvmat
+																		* glm::mat4_cast (orientation),
+																		translation);
+	for (Node &node : children)
+	{
+		node.Render (geometry, mvmat);
+	}
+
+	for (GLuint &model : models)
+	{
+		geometry->Render (model, mvmat);
+	}
 }
 
 void Geometry::SetProjMatrix (const glm::mat4 &projmat)
@@ -117,9 +233,10 @@ void Geometry::SetProjMatrix (const glm::mat4 &projmat)
 }
 
 void Geometry::Render (GLuint p,
-											 const gl::Program &program,
+											 const gl::Program &prog,
 											 const glm::mat4 &viewmat)
 {
+	program = &prog;
 	switch (p & Pass::Mask)
 	{
 	case Pass::GBuffer:
@@ -130,34 +247,15 @@ void Geometry::Render (GLuint p,
 		break;
 	}
 
-	GLuint pass = p;
+	pass = p;
+	root.Render (this, viewmat);
+}
 
-	int x = 0, z = 0;
-	for (int z = -3; z <= 3; z++)
-	{
-		for (int x = -3; x <= 3; x++)
-		{
-			glm::mat4 mvmat = glm::translate (viewmat,
-																				glm::vec3 (5 * x, -2.99, 8 * z));
-			program["mvmat"] = mvmat;
-			bboxprogram["mvmat"] = mvmat;
-			r->culling.SetModelViewMatrix (mvmat);
-			if ((x&1) + (z&1) == 0)
-			{
-				kitty.Render (pass, program);
-				headglass.Render (pass, program);
-			}
-			else
-			{
-				box.Render (pass, program);
-			}
-			pass++;
-		}
-	}
-
-	program["mvmat"] = viewmat;
-	bboxprogram["mvmat"] = viewmat;
-	r->culling.SetModelViewMatrix (viewmat);
-
-	grid.Render (pass, program);
+void Geometry::Render (GLuint model, glm::mat4 mvmat)
+{
+	(*program)["mvmat"] = mvmat;
+	bboxprogram["mvmat"] = mvmat;
+	r->culling.SetModelViewMatrix (mvmat);
+	models[model].Render (pass, *program);
+	pass++;
 }

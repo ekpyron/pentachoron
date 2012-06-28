@@ -1,0 +1,20 @@
+---
+models:
+    grid:      "grid.yaml"
+    kitty:     "kitty.yaml"
+    headglass: "headglass.yaml"
+    box:       "box.yaml"
+root:
+    children:
+        - children:
+          - models:      [ kitty, headglass ]
+            orientation: [ 30.0, 0.0, 1.0, 0.0 ]
+            translation: [ 0.0, 0.0, 0.0 ]
+          - models:      [ kitty, headglass ]
+            orientation: [ 0.0, 0.0, 1.0, 0.0 ]
+            translation: [ 5.0, 0.0, 0.0 ]
+          - models:      [ box ]
+            translation: [ 5.0, 0.0, 0.0 ]
+          translation: [ 0.0, -2.0, 0.0 ]
+        - models:      [ grid ]
+          translation: [ 0.0, 0.0, 0.0 ]

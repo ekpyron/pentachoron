@@ -44,13 +44,34 @@ public:
 	 };
 
 private:
-	 Model kitty;
-	 Model headglass;
-	 Model box;
-	 Model grid;
+	 void Render (GLuint model, glm::mat4 mvmat);
+
+	 class Node {
+	 public:
+			Node (void);
+			~Node (void);
+			void Load (std::map<std::string, GLuint> &names,
+								 const YAML::Node &desc);
+			void Render (Geometry *geometry,
+									 glm::mat4 mvmat);
+	 private:
+			std::vector<Node> children;
+			std::vector<GLuint> models;
+			glm::quat orientation;
+			glm::vec3 translation;
+	 };
+
+	 friend class Node;
+
+	 Node root;
+
+	 std::vector<Model> models;
+
 	 gl::Sampler sampler;
 	 std::map<std::string, Material*> materials;
 
+	 GLuint pass;
+	 const gl::Program *program;
 	 gl::Program bboxprogram;
 
 	 friend class Model;

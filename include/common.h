@@ -23,6 +23,7 @@
 #include <map>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <yaml-cpp/yaml.h>
 #include <config.h>
 #include <oglp/oglp.h>
