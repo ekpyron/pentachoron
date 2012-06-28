@@ -31,6 +31,16 @@ Geometry::~Geometry (void)
 	materials.clear ();
 }
 
+const glm::vec3 &Geometry::GetBoxMin (void)
+{
+	return boxmin;
+}
+
+const glm::vec3 &Geometry::GetBoxMax (void)
+{
+	return boxmax;
+}
+
 const Material &Geometry::GetMaterial (const std::string &name)
 {
 	Material *material;
@@ -137,6 +147,14 @@ bool Geometry::Init (void)
 			if (!models.back ().Load (it->second.as<std::string> ()))
 				 return false;
 		}
+	}
+	try {
+	boxmin = scene["boxmin"].as<glm::vec3> ();
+	boxmax = scene["boxmax"].as<glm::vec3> ();
+	} catch (std::exception &e) {
+		(*logstream) << "Can't parse bounding box of the scene: "
+								 << e.what () << std::endl;
+		return false;
 	}
 
 	root.Load (names, streams[1]);

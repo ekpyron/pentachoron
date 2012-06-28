@@ -32,6 +32,8 @@ public:
 								const glm::mat4 &viewmat);
 	 const Material &GetMaterial (const std::string &name);
 	 void SetProjMatrix (const glm::mat4 &projmat);
+	 const glm::vec3 &GetBoxMin (void);
+	 const glm::vec3 &GetBoxMax (void);
 
 	 class Pass
 	 {
@@ -75,6 +77,9 @@ private:
 	 GLuint pass;
 	 const gl::Program *program;
 	 gl::Program bboxprogram;
+
+	 glm::vec3 boxmin;
+	 glm::vec3 boxmax;
 
 	 friend class Model;
 	 friend class Mesh;

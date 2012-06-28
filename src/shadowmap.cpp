@@ -203,18 +203,21 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	else
 	{
 		/* TODO: This must be configurable */
+		const glm::vec3 &boxmin = r->geometry.GetBoxMin ();
+		const glm::vec3 &boxmax = r->geometry.GetBoxMax ();
 		glm::vec3 corners[8] = {
-			glm::vec3 (-30, -3, -30),
-			glm::vec3 (-30, -3, 30),
-			glm::vec3 (30, -3, -30),
-			glm::vec3 (30, -3, 30),
+			glm::vec3 (boxmin.x, boxmin.y, boxmin.z),
+			glm::vec3 (boxmin.x, boxmin.y, boxmax.z),
+			glm::vec3 (boxmax.x, boxmin.y, boxmin.z),
+			glm::vec3 (boxmax.x, boxmin.y, boxmax.z),
 
-			glm::vec3 (-30, 0, -30),
-			glm::vec3 (-30, 0, 30),
-			glm::vec3 (30, 0, -30),
-			glm::vec3 (30, 0, 30)
+			glm::vec3 (boxmin.x, boxmax.y, boxmin.z),
+			glm::vec3 (boxmin.x, boxmax.y, boxmax.z),
+			glm::vec3 (boxmax.x, boxmax.y, boxmin.z),
+			glm::vec3 (boxmax.x, boxmax.y, boxmax.z),
 		};
-		float dist = 42.0f;
+
+		float dist = glm::distance (boxmin, boxmax);
 
 		glm::vec3 centroid (0, 0, 0);
 		for (auto i = 0; i < 8; i++)
