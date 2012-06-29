@@ -21,20 +21,35 @@
 
 typedef struct _Parameter
 {
-	 unsigned int model;
-	 union
+	 struct
 	 {
-			float smoothness;
-			float shininess;
-			float param1;
-	 };
-	 union
+			unsigned int model;
+			union
+			{
+				 float smoothness;
+				 float shininess;
+				 float param1;
+			};
+			union
+			{
+				 float gaussfactor;
+				 float param2;
+			};
+			struct
+			{
+				 float n;
+				 float k;
+			} fresnel;
+	 } specular;
+	 struct
 	 {
-			float gaussfactor;
-			float fresnel;
-			float param2;
-	 };
-	 float reflect;
+			float factor;
+			struct
+			{
+				 float n;
+				 float k;
+			} fresnel;
+	 } reflection;
 } Parameter;
 
 static_assert (sizeof (Parameter) % sizeof (glm::vec4) == 0,

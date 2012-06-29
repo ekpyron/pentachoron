@@ -32,7 +32,7 @@ float specular_phong (in struct Parameter param,
 	k = dot (viewdir, reflect (-lightdir, normal));
 	k = clamp (k, 0.0f, 1.0f);
 	k = pow (k, param.param1);
-	return k;
+	return k * dot (normal, viewdir);
 }
 
 float specular_beckmann (in struct Parameter param,
@@ -46,32 +46,6 @@ float specular_beckmann (in struct Parameter param,
 	m = m * m;
 
 	return exp (-(1 - e) / (e * m)) / (PI * m * e * e);
-}
-
-float specular_cooktorrance (in struct Parameter param,
-      			     in vec3 viewdir, in vec3 lightdir,
-      			     in vec3 normal, in vec3 halfvec)
-{
-	float fresnel = param.param2;
-	float k;
-
-	k = specular_beckmann (param, normal, halfvec);
-
-	float NdotH, VdotH, NdotV, NdotL;
-
-	NdotH = dot (normal, halfvec);
-	VdotH = dot (viewdir, halfvec);
-	NdotV = dot (normal, viewdir);
-	NdotL = dot (normal, lightdir);
-
-	float f;
-	f = fresnel + pow (1 - NdotV, 5) * (1 - fresnel);
-	float g, g1, g2;
-	g1 = (2 * NdotH * NdotV) / VdotH;
-	g2 = (2 * NdotH * NdotL) / VdotH;
-	g = min (1.0f, min (g1, g2));
-
-	return k * f * g / NdotV;
 }
 
 float ComputeSpecular (in struct Parameter param,
@@ -93,13 +67,31 @@ float ComputeSpecular (in struct Parameter param,
 		case 3:
 		     s = specular_beckmann (param, normal, halfvec);
 		break;
-		case 4:
-		     s = specular_cooktorrance (param, viewdir,
-		       	 		        lightdir, normal,
-						halfvec);
-		break;
 		default:
 		break;
 	}
+
+	s /= dot (normal, lightdir);
+
+	float n = param.specular_fresnel_n;
+	if (n != 0.0f)
+	{
+		float k = param.specular_fresnel_k;
+		float cos_theta = dot (halfvec, lightdir);
+		float f = (n - 1) * (n - 1) + k * k
+		      	  + 4 * n * pow (1 - cos_theta, 5);
+		f /= (n + 1) * (n + 1) + k * k;
+		s *= f;
+	}
+
+	float g, g1, g2;
+	g1 = 2 * dot (normal, halfvec) * dot (normal, viewdir);
+	g2 = 2 * dot (normal, halfvec) * dot (normal, lightdir);
+	g1 /= dot (viewdir, halfvec);
+	g2 /= dot (viewdir, halfvec);
+	g = min (1.0f, min (g1, g2));
+
+	s *= g / dot (normal, viewdir);
+
 	return s;
 }

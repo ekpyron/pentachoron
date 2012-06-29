@@ -64,7 +64,7 @@ void main (void)
 	if (specularmap_enabled)
 		specular.xyz = texture2D (specularmap, uv).xyz;
 	else
-		specular.xyz = vec3 (0.0, 0.0, 0.0);
+		specular.xyz = color.xyz;
 
 	// fetch normal
 	if (normalmap_enabled)

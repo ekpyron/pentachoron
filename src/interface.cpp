@@ -34,10 +34,12 @@
 #define EDIT_TONE_MAPPING_AVG_LUM 13
 #define EDIT_ANTIALIASING         14
 #define EDIT_PARAMS               15
-#define EDIT_SKY                  16
-#define EDIT_SKY_COEFFICIENTS_Y   17
-#define EDIT_SKY_COEFFICIENTS_x   18
-#define EDIT_SKY_COEFFICIENTS_y   19
+#define EDIT_PARAMS_SPECULAR      16
+#define EDIT_PARAMS_REFLECTION    17
+#define EDIT_SKY                  18
+#define EDIT_SKY_COEFFICIENTS_Y   19
+#define EDIT_SKY_COEFFICIENTS_x   20
+#define EDIT_SKY_COEFFICIENTS_y   12
 
 extern bool running;
 
@@ -881,9 +883,10 @@ Interface::Interface (void)
 			}
 		},
 		{
-			"Edit Material Parameters ", [&] (void) {
-				font.Print (active_parameter + 1, " / ",
-										r->GetNumParameters ());
+			"Edit Material Parameters: \"", [&] (void) {
+				font.Print (r->GetParameterName (active_parameter),
+										"\" (", active_parameter + 1, " / ",
+										r->GetNumParameters (), ")");
 			},
 			{
 				{ "Select Material", NULL , [&] (int what) {
@@ -893,46 +896,64 @@ Interface::Interface (void)
 						if (active_parameter >= r->GetNumParameters ())
 							 active_parameter = 0;
 					}, false },
-				{ "Reflection: ", [&] (void) {
-						font.Print (r->GetParameters(active_parameter).reflect
-												* 100.0f,	" %");
-					}, [&] (int what) {
-						float ref = r->GetParameters(active_parameter).reflect;
-						ref += what * timefactor * 0.01f;
-						if (ref < 0) ref = 0;
-						if (ref > 1) ref = 1;
-						r->GetParameters(active_parameter).reflect = ref;
-						r->UpdateParameters (active_parameter);
-					}, true },
+				{ "Specular", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_PARAMS_SPECULAR;
+							submenu = 0;
+						}
+					}, false },
+				{ "Reflection", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_PARAMS_REFLECTION;
+							submenu = 0;
+						}
+					}, false },
+				{ "Back", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = MAIN_MENU;
+							submenu = 0;
+						}
+					}, false }
+			}
+		},
+		{
+			"Edit Specular Parameters: \"", [&] (void) {
+				font.Print (r->GetParameterName (active_parameter),
+										"\" (", active_parameter + 1, " / ",
+										r->GetNumParameters (), ")");
+			},
+			{
 				{ "Model: ", [&] (void) {
-#define NUM_SPECULAR_MODELS 5
+#define NUM_SPECULAR_MODELS 4
 						const char *models[NUM_SPECULAR_MODELS] = {
-							"None", "Gaussian", "Phong", "Beckmann", "Cook-Torrance"
+							"None", "Gaussian", "Phong", "Beckmann"
 						};
 						font.Print (models[r->GetParameters
-															 (active_parameter).model]);
+															 (active_parameter).specular.model]);
 					}, [&] (int what) {
 						int model;
-						model = r->GetParameters (active_parameter).model;
+						model = r->GetParameters (active_parameter).specular.model;
 						model += what;
 						if (model >= NUM_SPECULAR_MODELS)
 							 model = 0;
 						if (model < 0)
 							 model = NUM_SPECULAR_MODELS - 1;
-						r->GetParameters (active_parameter).model = model;
+						r->GetParameters (active_parameter).specular.model = model;
 						r->UpdateParameters (active_parameter);
 					}, false },
 				{ "", [&] (void) {
 						float val;
-						val = r->GetParameters (active_parameter).param1;
-						switch (r->GetParameters (active_parameter).model)
+						val = r->GetParameters (active_parameter).specular.param1;
+						switch (r->GetParameters (active_parameter).specular.model)
 						{
 						case 0:
 							font.Print ("Ignored: ", val);
 							break;
 						case 1:
 						case 3:
-						case 4:
 							font.Print ("Smoothness: ", val);
 							break;
 						case 2:
@@ -942,23 +963,23 @@ Interface::Interface (void)
 					}, [&] (int what) {
 						if (!what) {
 							float defaults[NUM_SPECULAR_MODELS] = {
-								0.25, 0.25, 2.0, 0.25, 0.25
+								0.25, 0.25, 2.0, 0.25
 							};
-							r->GetParameters (active_parameter).param1
-							= defaults [r->GetParameters (active_parameter).model];
+							r->GetParameters (active_parameter).specular.param1
+							= defaults [r->GetParameters (active_parameter).specular.model];
 							r->UpdateParameters (active_parameter);
 						} else {
 							float val;
-							val = r->GetParameters (active_parameter).param1;
+							val = r->GetParameters (active_parameter).specular.param1;
 							val += what * timefactor;
-							r->GetParameters (active_parameter).param1 = val;
+							r->GetParameters (active_parameter).specular.param1 = val;
 							r->UpdateParameters (active_parameter);
 						}
 					}, true },
 				{ "", [&] (void) {
 						float val;
-						val = r->GetParameters (active_parameter).param2;
-						switch (r->GetParameters (active_parameter).model)
+						val = r->GetParameters (active_parameter).specular.param2;
+						switch (r->GetParameters (active_parameter).specular.model)
 						{
 						case 0:
 						case 2:
@@ -968,30 +989,100 @@ Interface::Interface (void)
 						case 1:
 							font.Print ("Gauss factor: ", val);
 							break;
-						case 4:
-							font.Print ("Fresnel factor: ", val);
-							break;
 						}
 					}, [&] (int what) {
 						if (!what) {
 							float defaults[NUM_SPECULAR_MODELS] = {
-								1.0, 1.0, 1.0, 1.0, 1.0
+								1.0, 1.0, 1.0, 1.0
 							};
-							r->GetParameters (active_parameter).param2
-							= defaults [r->GetParameters (active_parameter).model];
+							r->GetParameters (active_parameter).specular.param2
+							= defaults [r->GetParameters (active_parameter).specular.model];
 							r->UpdateParameters (active_parameter);
 						} else {
 							float val;
-							val = r->GetParameters (active_parameter).param2;
+							val = r->GetParameters (active_parameter).specular.param2;
 							val += what * timefactor;
-							r->GetParameters (active_parameter).param2 = val;
+							r->GetParameters (active_parameter).specular.param2 = val;
 							r->UpdateParameters (active_parameter);
 						}
+					}, true },
+				{ "Fresnel n: ", [&] (void) {
+						font.Print (r->GetParameters (active_parameter).specular.fresnel.n);
+					}, [&] (int what) {
+						float val;
+						val = r->GetParameters (active_parameter).specular.fresnel.n;
+						val += what * timefactor;
+						if (val < 0)
+							 val = 0;
+						r->GetParameters (active_parameter).specular.fresnel.n = val;
+						r->UpdateParameters (active_parameter);
+					}, true },
+				{ "Fresnel k: ", [&] (void) {
+						font.Print (r->GetParameters (active_parameter).specular.fresnel.k);
+					}, [&] (int what) {
+						float val;
+						val = r->GetParameters (active_parameter).specular.fresnel.k;
+						val += what * timefactor;
+						if (val < 0)
+							 val = 0;
+						r->GetParameters (active_parameter).specular.fresnel.k = val;
+						r->UpdateParameters (active_parameter);
 					}, true },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
 						{
-							menu = MAIN_MENU;
+							menu = EDIT_PARAMS;
+							submenu = 0;
+						}
+					}, false }
+			}
+		},
+		{
+			"Edit Reflection Parameters: \"", [&] (void) {
+				font.Print (r->GetParameterName (active_parameter),
+										"\" (", active_parameter + 1, " / ",
+										r->GetNumParameters (), ")");
+			},
+			{
+				{ "Factor: ", [&] (void) {
+						font.Print (r->GetParameters(active_parameter).reflection.factor
+												* 100.0f,	" %");
+					}, [&] (int what) {
+						float ref = r->GetParameters(active_parameter).reflection.factor;
+						ref += what * timefactor * 0.01f;
+						if (ref < 0) ref = 0;
+						if (ref > 1) ref = 1;
+						r->GetParameters(active_parameter).reflection.factor = ref;
+						r->UpdateParameters (active_parameter);
+					}, true },
+				{ "Fresnel n: ", [&] (void) {
+						font.Print (r->GetParameters (active_parameter)
+												.reflection.fresnel.n);
+					}, [&] (int what) {
+						float val;
+						val = r->GetParameters (active_parameter).reflection.fresnel.n;
+						val += what * timefactor;
+						if (val < 0)
+							 val = 0;
+						r->GetParameters (active_parameter).reflection.fresnel.n = val;
+						r->UpdateParameters (active_parameter);
+					}, true },
+				{ "Fresnel k: ", [&] (void) {
+						font.Print (r->GetParameters (active_parameter)
+												.reflection.fresnel.k);
+					}, [&] (int what) {
+						float val;
+						val = r->GetParameters (active_parameter).reflection.fresnel.k;
+						val += what * timefactor;
+						if (val < 0)
+							 val = 0;
+						r->GetParameters (active_parameter).reflection.fresnel.k = val;
+						r->UpdateParameters (active_parameter);
+					}, true },
+				{ "Back", NULL, [&] (int what) {
+						if (!what)
+						{
+							menu = EDIT_PARAMS;
 							submenu = 0;
 						}
 					}, false }

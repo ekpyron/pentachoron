@@ -54,8 +54,7 @@ vec4 compute_pixel (in struct PixelData data, out bool issky)
 	issky = false;	
 
 	struct Parameter param;
-	ReadParameter (param, int (data.specular.w * 255.0f)
-		       * SIZEOF_PARAMETER);
+	ReadParameter (param, int (data.specular.w * 255.0f));
 
 	pos = getpos (vec3 (invviewport * gl_FragCoord.xy, data.depth));
 	normal = normalize (data.normal.xyz * 2 - 1);
@@ -70,7 +69,7 @@ vec4 compute_pixel (in struct PixelData data, out bool issky)
 
 		float s = ComputeSpecular (param, normal, viewdir, lightdir);
 
-		specular = s * skynormal;
+		specular = s * vec3 (1, 1, 1) * skynormal;
 	}
 
 	num_lights = GetNumLights ();
@@ -122,15 +121,23 @@ vec4 compute_pixel (in struct PixelData data, out bool issky)
 	pixel = vec4 (data.color.xyz * diffuse, data.color.w); 
 	pixel.xyz += specular * data.specular.xyz;
 
-	if (param.reflect > 0)
+	if (param.reflect_factor > 0)
 	{
-		float f;
-		f = dot (-viewdir, normal);
-		if (f < 0) f = -f;
-		f = mix (pow (1 - f, 5), 1, param.reflect);
-		f = clamp (f, 0.0f, 1.0f);
-		vec3 refl = compute_sky (reflect (-viewdir, normal));
-		pixel.xyz =  mix (pixel.xyz, refl, f);
+		float factor;
+		vec3 refdir = normalize (reflect (-viewdir, normal));
+		factor = param.reflect_factor;
+		float n = param.reflect_fresnel_n;
+		vec3 refl = compute_sky (refdir);
+		if (n != 0.0)
+		{
+			float k = param.reflect_fresnel_k;
+			float cos_theta = dot (refdir, normal);
+			float f = (n - 1) * (n - 1) + k * k
+		  	    	  + 4 * n * pow (1 - cos_theta, 5);
+			f /= (n + 1) * (n + 1) + k * k;
+			factor *= clamp (f, 0.0f, 1.0f);
+		}
+		pixel.xyz =  mix (pixel.xyz, refl, factor);
 	}
 
 	float shadow = mix (1.0, compute_shadow (pos), shadow_alpha);

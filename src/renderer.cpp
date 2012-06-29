@@ -127,38 +127,30 @@ bool Renderer::Init (void)
 		for (const YAML::Node &node : parameterlist)
 		{
 			Parameter parameter;
-			parameter.reflect = node["reflect"].as<float> (0.0f);
 			{
 				YAML::Node specular = node["specular"];
 				std::string model = specular["model"].as<std::string> ("none");
 				if (!model.compare ("gaussian"))
 				{
-					parameter.model = 1;
-					parameter.smoothness = specular["smoothness"].as<float>
-						 (0.25f);
-					parameter.gaussfactor = specular["gaussfactor"].as<float>
-						 (1.0f);
+					parameter.specular.model = 1;
+					parameter.specular.smoothness
+						 = specular["smoothness"].as<float> (0.25f);
+					parameter.specular.gaussfactor
+						 = specular["gaussfactor"].as<float> (1.0f);
 				}
 				else if (!model.compare ("phong"))
 				{
-					parameter.model = 2;
-					parameter.shininess = specular["shininess"].as<float>
-						 (2.0f);
-					parameter.param2 = 1.0f;
+					parameter.specular.model = 2;
+					parameter.specular.shininess
+						 = specular["shininess"].as<float> (2.0f);
+					parameter.specular.param2 = 1.0f;
 				}
 				else if (!model.compare ("beckmann"))
 				{
-					parameter.model = 3;
-					parameter.smoothness = specular["smoothness"].as<float>
-						 (0.25);
-					parameter.param2 = 1.0f;
-				}
-				else if (!model.compare ("cooktorrance"))
-				{
-					parameter.model = 4;
-					parameter.smoothness = specular["smoothness"].as<float>
-						 (0.25f);
-					parameter.fresnel = specular["fresnel"].as<float> (1.0f);
+					parameter.specular.model = 3;
+					parameter.specular.smoothness
+						 = specular["smoothness"].as<float> (0.25);
+					parameter.specular.param2 = 1.0f;
 				}
 				else
 				{
@@ -166,12 +158,26 @@ bool Renderer::Init (void)
 						 (*logstream) << "The parameter file " << filename
 													<< " contains an unknown specular model:"
 													<< model << std::endl;
-					parameter.model = 0;
-					parameter.param1 = 0.25f;
-					parameter.param2 = 1.0f;
+					parameter.specular.model = 0;
+					parameter.specular.param1 = 0.25f;
+					parameter.specular.param2 = 1.0f;
 				}
+				parameter.specular.fresnel.n
+					 = specular["fresnel"]["n"].as<float> (0.0f);
+				parameter.specular.fresnel.k
+					 = specular["fresnel"]["k"].as<float> (0.0f);
+			}
+			{
+				YAML::Node reflection = node["reflection"];
+				parameter.reflection.factor
+					 = reflection["factor"].as<float> (0.0f);
+				parameter.reflection.fresnel.n
+					 = reflection["fresnel"]["n"].as<float> (0.0f);
+				parameter.reflection.fresnel.k
+					 = reflection["fresnel"]["k"].as<float> (0.0f);
 			}
 			parameters.push_back (parameter);
+			parameter_names.push_back (node["name"].as<std::string> ("unnamed"));
 		}
 	}
 	parameterbuffer.Data (sizeof (Parameter) * parameters.size (),
@@ -238,6 +244,11 @@ gl::Texture &Renderer::GetParameterTexture (void)
 GLuint Renderer::GetNumParameters (void)
 {
 	return parameters.size ();
+}
+
+const std::string &Renderer::GetParameterName (GLuint param)
+{
+	return parameter_names[param];
 }
 
 Light &Renderer::GetLight (GLuint light)
