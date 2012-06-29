@@ -149,6 +149,9 @@ private:
 		* Stores the horizontal camera rotation.
 		*/
 	 float horizontal_angle;
+	 /** Up view angle.
+		* Stores the vertical camera rotation.
+		*/
 	 float up_angle;
 };
 

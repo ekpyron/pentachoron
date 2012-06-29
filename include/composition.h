@@ -64,7 +64,17 @@ public:
 		* \param threshold the luminance threshold
 		*/
 	 void SetLuminanceThreshold (float threshold);
+	 /** Get screen limit.
+		* Obtains the screen limit, i.e. the maximum value that's
+		* written to the screen texture.
+		* \returns the screen limit
+		*/
 	 float GetScreenLimit (void);
+	 /** Set screen limit.
+		* Sets the screen limit, i.e. the maximum value that's
+		* written to the screen texture.
+		* \param limit the screen limit
+		*/
 	 void SetScreenLimit (float limit);
 	 /** Set mode.
 		* Sets the composition mode.
@@ -83,39 +93,140 @@ public:
 		*/
 	 const gl::Texture &GetScreen (void);
 
+	 /** Generate perez coefficients.
+		* Generates the 15 perez coefficients from the turbidity value.
+		*/
 	 void GeneratePerezCoefficients (void);
+	 /** Obtain perez coefficient.
+		* Obtains the specified perez coefficient for luminacity.
+		* \param idx Which perez coefficient to return (range 1..5).
+		* \returns the perez coefficient.
+		*/
 	 float GetPerezY (int idx);
+	 /** Set perez coefficient.
+		* Sets the specified perez coefficient for luminacity.
+		* \param idx Which perez coefficient to specify (range 1..5).
+		* \param val the perez coefficient
+		*/
 	 void SetPerezY (int idx, float val);
+	 /** Obtain perez coefficient.
+		* Obtains the specified perez coefficient x chromacity.
+		* \param idx Which perez coefficient to return (range 1..5).
+		* \returns the perez coefficient.
+		*/
 	 float GetPerezx (int idx);
+	 /** Set perez coefficient.
+		* Sets the specified perez coefficient for x chromacity.
+		* \param idx Which perez coefficient to specify (range 1..5).
+		* \param val the perez coefficient
+		*/
 	 void SetPerezx (int idx, float val);
+	 /** Obtain perez coefficient.
+		* Obtains the specified perez coefficient y chromacity.
+		* \param idx Which perez coefficient to return (range 1..5).
+		* \returns the perez coefficient.
+		*/
 	 float GetPerezy (int idx);
+	 /** Set perez coefficient.
+		* Sets the specified perez coefficient for y chromacity.
+		* \param idx Which perez coefficient to specify (range 1..5).
+		* \param val the perez coefficient
+		*/
 	 void SetPerezy (int idx, float val);
+	 /** Obtain turbidity.
+		* Obtain the turbidity value.
+		* \returns the turbidity value.
+		*/
 	 float GetTurbidity (void);
+	 /** Set turbidity.
+		* Sets the turbidity value.
+		* \param t turbidity value
+		*/
 	 void SetTurbidity (float t);
+	 /** Obtain latitude.
+		* Obtain the latitude, used for calculating the position of the sun.
+		* \returns the current latitude
+		*/
 	 float GetLatitude (void);
+	 /** Set latitude.
+		* Sets the latitude used for calculating the position of the sun.
+		* \param l latitude
+		*/
 	 void SetLatitude (float l);
+   /** Obtain date.
+		* Obtains the current date (in days since the first of January).
+		* Used to calculate the position of the sun.
+		* \return current date
+		*/
 	 int GetDate (void);
-	 void SetDate (int m);
+   /** Set date.
+		* Sets the current date (in days since the first of January).
+		* Used to calculate the position of the sun.
+		* \param d date
+		*/
+	 void SetDate (int d);
+	 /** Obtain time of day.
+		* Obtains the time of day as floating point value in hours.
+		* Used to calculate the position of the sun.
+		* \returns the time of day.
+		*/
 	 float GetTimeOfDay (void);
+	 /** Set time of day.
+		* Sets the time of day.
+		* Used to calculate the position of the sun.
+		* \param t the time of day as floating point value in hours.
+		*/
 	 void SetTimeOfDay (float t);
-
+	 /** Calculate and setup zenith Yxy.
+		* Calculates the zenith Yxy color from the current position
+		* of the sun and sets the shader uniforms accordingly.
+		*/
 	 void SetupSkyZenithYxy (void);
+	 /** Calculate and setup the position of the sun.
+		* Calculates the current position of the sun
+		* and sets the shader uniforms accordingly.
+		*/
 	 void SetupSunPosition (void);
-
+	 /** Check, whether rendering is tile-based.
+		* Returns true, if tile-based light culling is currently used,
+		* false, if not.
+		*/
 	 bool GetTileBased (void);
+	 /** Enable or disable tile-based light culling.
+		* Enables or disables tile-based light culling. Tile-based
+		* light culling results in a major speedup in most situations
+		* with around 16 lights or more.
+		* \param tb state of tile-based light culling
+		*/
 	 void SetTileBased (bool tb);
-
 	 /** Get glow.
 		* Returns a reference to the internal glow effect class.
 		* \returns a referene to the Glow class
 		*/
 	 Glow &GetGlow (void);
-
+	 /** dummy texture.
+		* Dummy texture. Necessary, because a framebuffer has to have
+		* at least one attachment.
+		*/
 	 gl::Texture dummy;
 
+	 /** Sun parameters.
+		* Uniform parameters of the sun.
+		*/
 	 struct {
+			/** Sun inclination.
+			 * Inclination of the sun (i.e. the angle between sun and zenith)
+			 * in radians.
+			 */
 			gl::SmartUniform<GLfloat> theta;
+			/** Cosine of sun inclination.
+			 * Cosine of the inclination of the sun (i.e. the angle between
+			 * sun and zenith).
+			 */
 			gl::SmartUniform<GLfloat> cos_theta;
+			/** Direction of the sun.
+			 * Normalized direction of the sun.
+			 */
 			gl::SmartUniform<glm::vec3> direction;
 	 } sun;
 

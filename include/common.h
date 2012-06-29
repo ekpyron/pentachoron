@@ -113,7 +113,20 @@ extern std::ostream *logstream;
 #define DRE_PI 3.14159265358979323846
 #endif
 
+/** Compute a blur weight.
+ * Computes a weight for a gaussian blur.
+ * \param n Size of the blur.
+ * \param k Weight index.
+ * \returns The blur weight.
+ */
 float ComputeWeight (unsigned long n, unsigned long k);
+
+/** Compute weigth offset array.
+ * Computes an array of weights and offsets for an
+ * gaussian blur with linear sampling.
+ * \param data Vector in which to return the weights and offsets.
+ * \param size Desired blur size.
+ */
 void ComputeWeightOffsets (std::vector<float> &data, GLuint size);
 
 #endif /* COMMON_H */
