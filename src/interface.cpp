@@ -131,15 +131,15 @@ Interface::Interface (void)
 							"glow",
 							"shadow mask"
 						};
-						font.Print (rendermodes[r->finalpass.GetRenderMode ()]);
+						font.Print (rendermodes[r->postprocess.GetRenderMode ()]);
 					}, [&] (int what) {
-						GLint rendermode = r->finalpass.GetRenderMode ();
+						GLint rendermode = r->postprocess.GetRenderMode ();
 						rendermode += what;
 						if (rendermode < 0)
 							 rendermode += NUM_RENDERMODES;
 						if (rendermode >= NUM_RENDERMODES)
 							 rendermode = 0;
-						r->finalpass.SetRenderMode (rendermode);
+						r->postprocess.SetRenderMode (rendermode);
 					}, false },
 				{ "Material Parameters", NULL,
 					[&] (int what) {
@@ -665,25 +665,25 @@ Interface::Interface (void)
 							"Exponential",
 							"Drago"
 						};
-						font.Print (tone_mapping_modes [r->finalpass.
+						font.Print (tone_mapping_modes [r->postprocess.
 																						GetTonemappingMode ()]);
 					}, [&] (int what) {
 						GLint mode;
-						mode = r->finalpass.GetTonemappingMode ();
+						mode = r->postprocess.GetTonemappingMode ();
 						mode += what;
 						if (mode < 0)
 							 mode += NUM_TONE_MAPPING_MODES;
 						if (mode >= NUM_TONE_MAPPING_MODES)
 							 mode = 0;
-						r->finalpass.SetTonemappingMode (mode);
+						r->postprocess.SetTonemappingMode (mode);
 					}, false },
 				{ "Image Key ", [&] (void) {
-						font.Print (r->finalpass.GetImageKey ());
+						font.Print (r->postprocess.GetImageKey ());
 					}, [&] (int what) {
 						float key;
-						key = r->finalpass.GetImageKey ();
+						key = r->postprocess.GetImageKey ();
 						key += what * timefactor;
-						r->finalpass.SetImageKey (key);
+						r->postprocess.SetImageKey (key);
 					}, true },
 				{ "Average Luminance", NULL,
 					[&] (int what) {
@@ -694,28 +694,28 @@ Interface::Interface (void)
 						}
 					}, false },
 				{ "White Threshold ", [&] (void) {
-						font.Print (r->finalpass.GetWhiteThreshold ());
+						font.Print (r->postprocess.GetWhiteThreshold ());
 					}, [&] (int what) {
 						float threshold;
-						threshold = r->finalpass.GetWhiteThreshold ();
+						threshold = r->postprocess.GetWhiteThreshold ();
 						threshold += what * timefactor;
-						r->finalpass.SetWhiteThreshold (threshold);
+						r->postprocess.SetWhiteThreshold (threshold);
 					}, true },
 				{ "Sigma: ", [&] (void) {
-						font.Print (r->finalpass.GetTonemappingSigma ());
+						font.Print (r->postprocess.GetTonemappingSigma ());
 					}, [&] (int what) {
 						float sigma;
-						sigma = r->finalpass.GetTonemappingSigma ();
+						sigma = r->postprocess.GetTonemappingSigma ();
 						sigma += what * timefactor;
-						r->finalpass.SetTonemappingSigma (sigma);
+						r->postprocess.SetTonemappingSigma (sigma);
 					}, true },
 				{ "n: ", [&] (void) {
-						font.Print (r->finalpass.GetTonemappingExponent ());
+						font.Print (r->postprocess.GetTonemappingExponent ());
 					}, [&] (int what) {
 						float n;
-						n = r->finalpass.GetTonemappingExponent ();
+						n = r->postprocess.GetTonemappingExponent ();
 						n += what * timefactor;
-						r->finalpass.SetTonemappingExponent (n);
+						r->postprocess.SetTonemappingExponent (n);
 					}, true },
 #define NUM_RGB_WORKING_SPACES 16
 				{ "RGB Working Space: ", [&] (void) {
@@ -737,17 +737,17 @@ Interface::Interface (void)
 							"sRGB",
 							"Wide Gamut RGB"
 						};
-						font.Print (rgb_working_spaces[r->finalpass.
+						font.Print (rgb_working_spaces[r->postprocess.
 																					 GetRGBWorkingSpace ()]);
 					}, [&] (int what) {
 						GLint rgb_working_space;
-						rgb_working_space = r->finalpass.GetRGBWorkingSpace ();
+						rgb_working_space = r->postprocess.GetRGBWorkingSpace ();
 						rgb_working_space += what;
 						if (rgb_working_space < 0)
 							 rgb_working_space += NUM_RGB_WORKING_SPACES;
 						if (rgb_working_space >= NUM_RGB_WORKING_SPACES)
 							 rgb_working_space = 0;
-						r->finalpass.SetRGBWorkingSpace (rgb_working_space);
+						r->postprocess.SetRGBWorkingSpace (rgb_working_space);
 					}, false },
 				{ "Back", NULL, [&] (int what) {
 						if (!what)
@@ -804,43 +804,43 @@ Interface::Interface (void)
 			{
 				{ "Constant: ", [&] (void) {
 						float c;
-						c = r->finalpass.GetAvgLumConst ();
+						c = r->postprocess.GetAvgLumConst ();
 						font.Print (c);
 					}, [&] (int what) {
 						float c;
-						c = r->finalpass.GetAvgLumConst ();
+						c = r->postprocess.GetAvgLumConst ();
 						c += what * timefactor;
-						r->finalpass.SetAvgLumConst (c);
+						r->postprocess.SetAvgLumConst (c);
 					}, true },
 				{ "Linear: ", [&] (void) {
 						float c;
-						c = r->finalpass.GetAvgLumLinear ();
+						c = r->postprocess.GetAvgLumLinear ();
 						font.Print (c);
 					}, [&] (int what) {
 						float c;
-						c = r->finalpass.GetAvgLumLinear ();
+						c = r->postprocess.GetAvgLumLinear ();
 						c += what * timefactor;
-						r->finalpass.SetAvgLumLinear (c);
+						r->postprocess.SetAvgLumLinear (c);
 					}, true },
 				{ "Delta: ", [&] (void) {
 						float c;
-						c = r->finalpass.GetAvgLumDelta ();
+						c = r->postprocess.GetAvgLumDelta ();
 						font.Print (c);
 					}, [&] (int what) {
 						float c;
-						c = r->finalpass.GetAvgLumDelta ();
+						c = r->postprocess.GetAvgLumDelta ();
 						c += what * timefactor;
-						r->finalpass.SetAvgLumDelta (c);
+						r->postprocess.SetAvgLumDelta (c);
 					}, true },
 				{ "Lod: ", [&] (void) {
 						float c;
-						c = r->finalpass.GetAvgLumLod ();
+						c = r->postprocess.GetAvgLumLod ();
 						font.Print (c);
 					}, [&] (int what) {
 						float c;
-						c = r->finalpass.GetAvgLumLod ();
+						c = r->postprocess.GetAvgLumLod ();
 						c += what * 0.1;
-						r->finalpass.SetAvgLumLod (c);
+						r->postprocess.SetAvgLumLod (c);
 					}, true },
 				{ "Back", NULL, [&](int what) {
 						if (!what)
@@ -866,12 +866,12 @@ Interface::Interface (void)
 						}
 					}, true },
 				{ "Threshold: ", [&] (void) {
-						font.Print (r->finalpass.
+						font.Print (r->postprocess.
 												GetAntialiasingThreshold () * 100.0f, " %");
 					}, [&] (int what) {
-						GLfloat threshold = r->finalpass.GetAntialiasingThreshold ();
+						GLfloat threshold = r->postprocess.GetAntialiasingThreshold ();
 						threshold += what * timefactor * 0.01;
-						r->finalpass.SetAntialiasingThreshold (threshold);
+						r->postprocess.SetAntialiasingThreshold (threshold);
 					}, true },
 				{ "Back", NULL, [&](int what) {
 						if (!what)

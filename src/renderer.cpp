@@ -188,8 +188,8 @@ bool Renderer::Init (void)
 	if (!composition.Init ())
 		 return false;
 
-	(*logstream) << "Initialize Final Pass..." << std::endl;
-	if (!finalpass.Init ())
+	(*logstream) << "Initialize Postprocessing..." << std::endl;
+	if (!postprocess.Init ())
 		 return false;
 
 	(*logstream) << "Initialization complete." << std::endl;
@@ -349,7 +349,7 @@ void Renderer::Frame (void)
 
 	composition.Frame (timefactor);
 
-	finalpass.Render ();
+	postprocess.Frame ();
 
 	interface.Frame (timefactor);
 

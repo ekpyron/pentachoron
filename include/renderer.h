@@ -20,7 +20,7 @@
 #include <common.h>
 #include "geometry.h"
 #include "gbuffer.h"
-#include "finalpass.h"
+#include "postprocess.h"
 #include "windowgrid.h"
 #include "camera.h"
 #include "shadowmap.h"
@@ -67,7 +67,7 @@ public:
 	 Geometry geometry;
 	 GBuffer gbuffer;
 	 ShadowMap shadowmap;
-	 FinalPass finalpass;
+	 PostProcess postprocess;
 	 WindowGrid windowgrid;
 	 Composition composition;
 	 Culling culling;

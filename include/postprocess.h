@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef FINALPASS_H
-#define FINALPASS_H
+#ifndef POSTPROCESS_H
+#define POSTPROCESS_H
 
 #include <common.h>
 
-class FinalPass
+class PostProcess
 {
 public:
-	 FinalPass (void);
-	 ~FinalPass (void);
+	 PostProcess (void);
+	 ~PostProcess (void);
 	 bool Init (void);
-	 void Render (void);
+	 void Frame (void);
 
 	 void SetAntialiasingThreshold (GLfloat threshold);
 	 GLfloat GetAntialiasingThreshold (void);
@@ -82,4 +82,4 @@ private:
 	 } tonemapping;
 };
 
-#endif /* !defined FINALPASS_H */
+#endif /* !defined POSTPROCESS_H */

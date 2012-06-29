@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "finalpass.h"
+#include "postprocess.h"
 #include "gbuffer.h"
 #include "renderer.h"
 
-FinalPass::FinalPass (void)
+PostProcess::PostProcess (void)
 	: rendermode (0), 
 		tonemapping ({ 0.18f, 0.9f, 1.0f, 1.0f, 0, 0,
 				{ 0.5f, 0.0f, 0.01f, 0.0f } })
 {
 }
 
-FinalPass::~FinalPass (void)
+PostProcess::~PostProcess (void)
 {
 }
 
@@ -163,7 +163,7 @@ const std::vector<glm::mat3x3> XYZ2RGB = {
 							 0.0349342f, -0.0968930f,  1.2884099f)
 };
 
-bool FinalPass::Init (void)
+bool PostProcess::Init (void)
 {
 	std::vector<const char *> fprogram_sources = {
 		"compose.txt", "normal.txt", "passthrough.txt", "shadowmap.txt",
@@ -273,38 +273,38 @@ bool FinalPass::Init (void)
 	return true;
 }
 
-void FinalPass::SetAntialiasingThreshold (GLfloat threshold)
+void PostProcess::SetAntialiasingThreshold (GLfloat threshold)
 {
 	antialiasing_threshold.Set (threshold);
 }
 
-GLfloat FinalPass::GetAntialiasingThreshold (void)
+GLfloat PostProcess::GetAntialiasingThreshold (void)
 {
 	return antialiasing_threshold.Get ();
 }
 
-void FinalPass::SetRenderMode (GLuint mode)
+void PostProcess::SetRenderMode (GLuint mode)
 {
 	rendermode = mode;
 }
 
-GLuint FinalPass::GetRenderMode (void)
+GLuint PostProcess::GetRenderMode (void)
 {
 	return rendermode;
 }
 
-void FinalPass::SetImageKey (float key)
+void PostProcess::SetImageKey (float key)
 {
 	tonemapping.image_key = key;
 	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2, sizeof (GLfloat), &key);
 }
 
-float FinalPass::GetImageKey (void)
+float PostProcess::GetImageKey (void)
 {
 	return tonemapping.image_key;
 }
 
-void FinalPass::SetWhiteThreshold (float threshold)
+void PostProcess::SetWhiteThreshold (float threshold)
 {
 	tonemapping.white_threshold = threshold;
 	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat),
@@ -312,12 +312,12 @@ void FinalPass::SetWhiteThreshold (float threshold)
 														 &threshold);
 }
 
-float FinalPass::GetWhiteThreshold (void)
+float PostProcess::GetWhiteThreshold (void)
 {
 	return tonemapping.white_threshold;
 }
 
-void FinalPass::SetTonemappingSigma (float sigma)
+void PostProcess::SetTonemappingSigma (float sigma)
 {
 	tonemapping.sigma = sigma;
 	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat) * 2,
@@ -325,12 +325,12 @@ void FinalPass::SetTonemappingSigma (float sigma)
 														 &sigma);
 }
 
-float FinalPass::GetTonemappingSigma (void)
+float PostProcess::GetTonemappingSigma (void)
 {
 	return tonemapping.sigma;
 }
 
-void FinalPass::SetTonemappingExponent (float n)
+void PostProcess::SetTonemappingExponent (float n)
 {
 	tonemapping.n = n;
 	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat) * 3,
@@ -338,12 +338,12 @@ void FinalPass::SetTonemappingExponent (float n)
 														 &n);
 }
 
-float FinalPass::GetTonemappingExponent (void)
+float PostProcess::GetTonemappingExponent (void)
 {
 	return tonemapping.n;
 }
 
-void FinalPass::SetRGBWorkingSpace (GLuint ws)
+void PostProcess::SetRGBWorkingSpace (GLuint ws)
 {
 	tonemapping.rgb_working_space = ws;
 	if (tonemapping.rgb_working_space >= RGB2XYZ.size ())
@@ -356,69 +356,69 @@ void FinalPass::SetRGBWorkingSpace (GLuint ws)
 														 &mat[0][0]);
 }
 
-GLuint FinalPass::GetRGBWorkingSpace (void)
+GLuint PostProcess::GetRGBWorkingSpace (void)
 {
 	return tonemapping.rgb_working_space;
 }
 
-void FinalPass::SetTonemappingMode (GLuint mode)
+void PostProcess::SetTonemappingMode (GLuint mode)
 {
 	tonemapping.mode = mode;
 }
 
-GLuint FinalPass::GetTonemappingMode (void)
+GLuint PostProcess::GetTonemappingMode (void)
 {
 	return tonemapping.mode;
 }
 
-void FinalPass::SetAvgLumConst (float constant)
+void PostProcess::SetAvgLumConst (float constant)
 {
 	tonemapping.avgLum.constant = constant;
 	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat) * 4,
 														 sizeof (GLfloat), &constant);
 }
 
-float FinalPass::GetAvgLumConst (void)
+float PostProcess::GetAvgLumConst (void)
 {
 	return tonemapping.avgLum.constant;
 }
 
-void FinalPass::SetAvgLumLinear (float linear)
+void PostProcess::SetAvgLumLinear (float linear)
 {
 	tonemapping.avgLum.linear = linear;
 	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat) * 5,
 														 sizeof (GLfloat), &linear);
 }
 
-float FinalPass::GetAvgLumLinear (void)
+float PostProcess::GetAvgLumLinear (void)
 {
 	return tonemapping.avgLum.linear;
 }
 
-void FinalPass::SetAvgLumDelta (float delta)
+void PostProcess::SetAvgLumDelta (float delta)
 {
 	tonemapping.avgLum.delta = delta;
 	fprograms.back ()["delta"] = tonemapping.avgLum.delta;
 }
 
-float FinalPass::GetAvgLumDelta (void)
+float PostProcess::GetAvgLumDelta (void)
 {
 	return tonemapping.avgLum.delta;
 }
 
-void FinalPass::SetAvgLumLod (float lod)
+void PostProcess::SetAvgLumLod (float lod)
 {
 	tonemapping.avgLum.lod = lod;
 	tonemappingBuffer.SubData (sizeof (glm::mat3x4) * 2 + sizeof (GLfloat) * 6,
 														 sizeof (GLfloat), &lod);
 }
 
-float FinalPass::GetAvgLumLod (void)
+float PostProcess::GetAvgLumLod (void)
 {
 	return tonemapping.avgLum.lod;
 }
 
-void FinalPass::Render (void)
+void PostProcess::Frame (void)
 {
 	glm::uvec2 viewport;
 	GLuint program;
