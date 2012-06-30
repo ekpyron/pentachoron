@@ -80,10 +80,6 @@ bool Mesh::Load (void *m, const Material *mat,
 	material = mat;
 	aiMesh *mesh = static_cast<aiMesh*> (m);
 
-	if (mesh->HasBones ())
-	{
-		(*logstream) << "Warning: A mesh contains bones." << std::endl;
-	}
 	if (!mesh->HasFaces ())
 	{
 		(*logstream) << "No faces in the mesh." << std::endl;
@@ -93,6 +89,11 @@ bool Mesh::Load (void *m, const Material *mat,
 	{
 		(*logstream) << "No normals in the mesh." << std::endl;
 		return false;
+	}
+#ifdef ASSIMP_DEBUG
+	if (mesh->HasBones ())
+	{
+		(*logstream) << "Warning: A mesh contains bones." << std::endl;
 	}
 	if (mesh->GetNumColorChannels () > 0)
 	{
@@ -111,6 +112,7 @@ bool Mesh::Load (void *m, const Material *mat,
 		(*logstream) << "Warning: No tangents and bitangents in the mesh."
 								 << std::endl;
 	}
+#endif
 
 	trianglecount = mesh->mNumFaces;
 	vertexcount = mesh->mNumVertices;
