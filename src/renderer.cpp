@@ -31,30 +31,32 @@ Renderer::~Renderer (void)
 
 bool Renderer::Init (void)
 {
+	(*logstream) << glfwGetTime () << " Initialization starts..." << std::endl;
+
 	gl::FrontFace (GL_CCW);
 	gl::CullFace (GL_BACK);
 	gl::Enable (GL_CULL_FACE);
 
-	(*logstream) << "Initialize Interface..." << std::endl;
+	(*logstream) << glfwGetTime () << " Initialize Interface..." << std::endl;
 
 	gl::Hint (GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
 
 	if (!interface.Init ())
 		 return false;
 
-	(*logstream) << "Initialize Window Grid..." << std::endl;
+	(*logstream) << glfwGetTime ()  << " Initialize Window Grid..." << std::endl;
 	if (!windowgrid.Init ())
 		 return false;
 
-	(*logstream) << "Initialize Geometry..." << std::endl;
+	(*logstream) << glfwGetTime () << " Initialize Geometry..." << std::endl;
 	if (!geometry.Init ())
 		 return false;
 
-	(*logstream) << "Initialize GBuffer..." << std::endl;
+	(*logstream) << glfwGetTime () << " Initialize GBuffer..." << std::endl;
 	if (!gbuffer.Init ())
 		 return false;
 
-	(*logstream) << "Initialize Shadow Pass..." << std::endl;
+	(*logstream) << glfwGetTime () << " Initialize Shadow Map..." << std::endl;
 	if (!shadowmap.Init ())
 		 return false;
 
@@ -184,15 +186,16 @@ bool Renderer::Init (void)
 												&parameters[0], GL_STATIC_DRAW);
 	parametertexture.Buffer (GL_RGBA32F, parameterbuffer);
 
-	(*logstream) << "Initialize Composition..." << std::endl;
+	(*logstream) << glfwGetTime () << " Initialize Composition..." << std::endl;
 	if (!composition.Init ())
 		 return false;
 
-	(*logstream) << "Initialize Postprocessing..." << std::endl;
+	(*logstream) << glfwGetTime () << " Initialize Postprocessing..."
+							 << std::endl;
 	if (!postprocess.Init ())
 		 return false;
 
-	(*logstream) << "Initialization complete." << std::endl;
+	(*logstream) << glfwGetTime () << " Initialization complete." << std::endl;
 
 	return true;
 }

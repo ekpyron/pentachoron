@@ -34,4 +34,8 @@
  */
 #define DEBUG
 
+/**
+ * #define ASSIMP_DEBUG
+ */
+
 #endif /* !defined CONIG_H */

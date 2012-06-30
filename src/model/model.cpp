@@ -104,12 +104,18 @@ bool Model::Load (const std::string &filename)
 		return false;
 	}
 
-	Assimp::DefaultLogger::create ("", Assimp::Logger::VERBOSE);
+#ifdef ASSIMP_DEBUG
+	Assimp::DefaultLogger::create ("" ,Assimp::Logger::VERBOSE);
+#else
+	Assimp::DefaultLogger::create ("");
+#endif
 	Assimp::DefaultLogger::get ()->attachStream (new LogStream,
-																							 //Assimp::Logger::DEBUGGING|
-																							 //Assimp::Logger::INFO|
-																							 Assimp::Logger::ERR|
-																							 Assimp::Logger::WARN);
+#ifdef ASSIMP_DEBUG
+																							 Assimp::Logger::DEBUGGING|
+																							 Assimp::Logger::INFO|
+																							 Assimp::Logger::WARN|
+#endif
+																							 Assimp::Logger::ERR);
 	Assimp::Importer importer;
 
 	const aiScene *scene;
@@ -138,6 +144,7 @@ bool Model::Load (const std::string &filename)
 		return false;
 	}
 
+#ifdef ASSIMP_DEBUG
 	if (scene->HasAnimations ())
 	{
 		(*logstream) << "Warning: " << modelfile << " contains animations."
@@ -163,6 +170,7 @@ bool Model::Load (const std::string &filename)
 		(*logstream) << "Warning: " << modelfile << " contains materials."
 								 << std::endl;
 	}
+#endif
 
 	if (!desc["meshes"].IsSequence ())
 	{
