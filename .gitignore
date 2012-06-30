@@ -13,4 +13,5 @@ Makefile.in
 /data/materials
 /data/models
 /data/textures
+/data/shaders/bin
 /build*

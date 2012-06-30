@@ -31,81 +31,19 @@ bool Glow::Init (gl::Texture &screenmap, gl::Texture &gm,
 								 GLuint mipmap_level)
 {
 	glowmap = &gm;
-	{
-		gl::Shader obj (GL_FRAGMENT_SHADER);
-		std::string source;
-		if (!ReadFile (MakePath ("shaders", "glow", "hblur.txt"), source))
-			 return false;
-		obj.Source (source);
-		if (!obj.Compile ())
-		{
-			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "glow", "hblur.txt")
-									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
-			 return false;
-		}
+	if (!LoadProgram (hblur.prog, MakePath ("shaders", "bin", "glow_hblur.bin"),
+										GL_FRAGMENT_SHADER, std::string (),
+										{ MakePath ("shaders", "glow", "hblur.txt") }))
+		 return false;
+	if (!LoadProgram (vblur.prog, MakePath ("shaders", "bin", "glow_vblur.bin"),
+										GL_FRAGMENT_SHADER, std::string (),
+										{ MakePath ("shaders", "glow", "vblur.txt") }))
+		 return false;
+	if (!LoadProgram (blendprog, MakePath ("shaders", "bin", "glow_blend.bin"),
+										GL_FRAGMENT_SHADER, std::string (),
+										{ MakePath ("shaders", "glow", "blend.txt") }))
+		 return false;
 
-		hblur.prog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		hblur.prog.Attach (obj);
-		if (!hblur.prog.Link ())
-		{
-			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "glow", "hblur.txt")
-									 << ": " << std::endl << hblur.prog.GetInfoLog ()
-									 << std::endl;
-			 return false;
-		}
-	}
-	{
-		gl::Shader obj (GL_FRAGMENT_SHADER);
-		std::string source;
-		if (!ReadFile (MakePath ("shaders", "glow", "vblur.txt"), source))
-			 return false;
-		obj.Source (source);
-		if (!obj.Compile ())
-		{
-			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "glow", "vblur.txt")
-									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
-			 return false;
-		}
-
-		vblur.prog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		vblur.prog.Attach (obj);
-		if (!vblur.prog.Link ())
-		{
-			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "glow", "vblur.txt")
-									 << ": " << std::endl << vblur.prog.GetInfoLog ()
-									 << std::endl;
-			 return false;
-		}
-	}
-	{
-		gl::Shader obj (GL_FRAGMENT_SHADER);
-		std::string source;
-		if (!ReadFile (MakePath ("shaders", "glow", "blend.txt"), source))
-			 return false;
-		obj.Source (source);
-		if (!obj.Compile ())
-		{
-			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "glow", "blend.txt")
-									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
-			 return false;
-		}
-
-		blendprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		blendprog.Attach (obj);
-		if (!blendprog.Link ())
-		{
-			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "glow", "blend.txt")
-									 << ": " << std::endl << blendprog.GetInfoLog ()
-									 << std::endl;
-			 return false;
-		}
-	}
 	width = r->gbuffer.GetWidth () >> mipmap_level;
 	height = r->gbuffer.GetHeight () >> mipmap_level;
 	hblur.pipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,

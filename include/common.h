@@ -30,6 +30,7 @@
 #include <ctime>
 #include <array>
 #include "yaml.h"
+#include "tiger.h"
 
 /** Defined to avoid conflicts.
  * Defined to avoid the inclusion of an conflicting gl.h
@@ -128,5 +129,35 @@ float ComputeWeight (unsigned long n, unsigned long k);
  * \param size Desired blur size.
  */
 void ComputeWeightOffsets (std::vector<float> &data, GLuint size);
+
+/** Load program.
+ * Loads a program.
+ * \param program Program object, into which to load the program.
+ * \param filename Filename of a program binary to be used if possible.
+ * \param type Shader type.
+ * \param definitions Preprocessor definitions.
+ * \param filenames Array of source files used to compile the program,
+ *                  if loading a binary is not possible or the binary
+ *                  is not up to date.
+ * \returns Whether the program binary was loaded successfully.
+ */
+bool LoadProgram (gl::Program &program, const std::string &filename,
+									GLenum type, const std::string &definitions,
+									const std::vector<std::string> &filenames);
+
+/** Load program.
+ * Loads a program.
+ * \param program Program object, into which to load the program.
+ * \param filename Filename of a program binary to be used if possible.
+ * \param definitions Preprocessor definitions for each source file.
+ * \param sources Array of type/source files-pairs used to compile
+ *                the program, if loading a binary is not possible or
+ *                the binary is not up to date.
+ * \returns Whether the program binary was loaded successfully.
+ */
+bool LoadProgram (gl::Program &program, const std::string &filename,
+									const std::vector<std::string> &definitions,
+									const std::vector<std::pair<GLenum,
+									std::string>> &filenames);
 
 #endif /* COMMON_H */

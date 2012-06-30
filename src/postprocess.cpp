@@ -169,32 +169,20 @@ bool PostProcess::Init (void)
 		"compose.txt", "normal.txt", "passthrough.txt", "shadowmap.txt",
 		"glow.txt", "depth.txt", "edge.txt", "luminance.txt"
 	};
-	for (const char *&filename : fprogram_sources)
+	std::vector<const char *> fprogram_binaries = {
+		"pp_compose.bin", "pp_normal.bin", "pp_passthrough.bin",
+		"pp_shadowmap.bin", "pp_glow.bin", "pp_depth.bin", "pp_edge.bin",
+		"pp_luminance.bin"
+	};
+	for (auto i = 0; i < fprogram_sources.size (); i++)
 	{
-		gl::Shader obj (GL_FRAGMENT_SHADER);
-		std::string source;
-		if (!ReadFile (MakePath ("shaders", "finalpass", filename), source))
-			 return false;
-		obj.Source (source);
-		if (!obj.Compile ())
-		{
-			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "finalpass", filename)
-									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
-			 return false;
-		}
-
 		fprograms.emplace_back ();
-		fprograms.back ().Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		fprograms.back ().Attach (obj);
-		if (!fprograms.back ().Link ())
-		{
-			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "finalpass", filename)
-									 << ": " << std::endl << fprograms.back ().GetInfoLog ()
-									 << std::endl;
+		if (!LoadProgram (fprograms.back (), MakePath ("shaders", "bin",
+																									 fprogram_binaries[i]),
+											GL_FRAGMENT_SHADER, std::string (),
+											{ MakePath ("shaders", "postprocess",
+																	fprogram_sources[i]) }))
 			 return false;
-		}
 
 		gl::SmartUniform<glm::uvec2> uniform (fprograms.back ()["viewport"],
 																					r->camera.GetViewport ());

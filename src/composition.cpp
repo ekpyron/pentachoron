@@ -30,9 +30,6 @@ Composition::~Composition (void)
 bool Composition::Init (void)
 {
 	{
-		gl::Shader obj (GL_FRAGMENT_SHADER);
-		std::vector<std::string> sources;
-		std::string source;
 		std::stringstream stream;
 		stream << "#version 420 core" << std::endl;
 		stream << "#define MAX_DEPTH_LAYERS "
@@ -49,44 +46,24 @@ bool Composition::Init (void)
 		stream << "#define NUM_TILES_Y "
 					 << (r->gbuffer.GetHeight () >> 5)
 					 << std::endl;
-		sources.push_back (stream.str ());
-		const char *sourcefiles[] = {
+		std::vector<std::string> sources;
+		const char *sourcefiles [] = {
 			"header.txt", "light.txt", "parameter.txt", "specular.txt",
 			"getpos.txt", "sky.txt", "shadow.txt", "composition.txt"
 		};
-
 		for (auto i = 0; i < sizeof (sourcefiles) / sizeof (sourcefiles[0]); i++)
 		{
-			if (!ReadFile (MakePath ("shaders", "composition",
-															 sourcefiles[i]), source))
-				 return false;
-			sources.push_back (source);
+			sources.push_back (MakePath ("shaders", "composition",
+																	 sourcefiles[i]));
 		}
-		obj.Source (sources);
-		if (!obj.Compile ())
-		{
-			(*logstream) << "Could not compile the composition shader: "
-									 << std::endl << obj.GetInfoLog () << std::endl;
+		if (!LoadProgram (fprogram, MakePath ("shaders", "bin", "composition.bin"),
+											GL_FRAGMENT_SHADER, stream.str (), sources))
 			 return false;
-		}
-		
-		fprogram.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		fprogram.Attach (obj);
-		if (!fprogram.Link ())
-		{
-			(*logstream) << "Could not link the composition shader: "
-									 << std::endl << fprogram.GetInfoLog () << std::endl;
-			 return false;
-		}
 	}
 
 	{
-		gl::Shader obj (GL_FRAGMENT_SHADER);
-		std::vector<std::string> sources;
-		std::string source;
 		std::stringstream stream;
-		if (!ReadFile (MakePath ("shaders", "lightculling.txt"), source))
-			 return false;
+		stream << "#version 420 core" << std::endl;
 		stream << "#define SIZEOF_LIGHT "
 					 << sizeof (Light) / sizeof (glm::vec4)
 					 << std::endl;
@@ -96,54 +73,18 @@ bool Composition::Init (void)
 		stream << "#define NUM_TILES_Y "
 					 << (r->gbuffer.GetHeight () >> 5)
 					 << std::endl;
-		sources.push_back (stream.str ());
-		sources.push_back (source);
-		obj.Source (sources);
-		if (!obj.Compile ())
-		{
-			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "lightculling.txt")
-									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
+		if (!LoadProgram (lightcullprog, MakePath ("shaders", "bin",
+																							 "lightculling.bin"),
+											GL_FRAGMENT_SHADER, stream.str (), {
+												MakePath ("shaders", "lightculling.txt") }))
 			 return false;
-		}
-		
-		lightcullprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		lightcullprog.Attach (obj);
-		if (!lightcullprog.Link ())
-		{
-			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "lightculling.txt")
-									 << ": " << std::endl << lightcullprog.GetInfoLog ()
-									 << std::endl;
-			 return false;
-		}
 	}
 
-	{
-		gl::Shader obj (GL_FRAGMENT_SHADER);
-		std::string source;
-		if (!ReadFile (MakePath ("shaders", "minmaxdepth.txt"), source))
-			 return false;
-		obj.Source (source);
-		if (!obj.Compile ())
-		{
-			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "minmaxdepth.txt")
-									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
-			 return false;
-		}
-		
-		minmaxdepthprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		minmaxdepthprog.Attach (obj);
-		if (!minmaxdepthprog.Link ())
-		{
-			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "minmaxdepth.txt")
-									 << ": " << std::endl << minmaxdepthprog.GetInfoLog ()
-									 << std::endl;
-			 return false;
-		}
-	}
+	if (!LoadProgram (minmaxdepthprog, MakePath ("shaders", "bin",
+																							 "minmaxdepth.bin"),
+										GL_FRAGMENT_SHADER, std::string (), {
+											MakePath ("shaders", "minmaxdepth.txt") }))
+		 return false;
 
 	tile_based = gl::SmartUniform<bool>
 		 (fprogram["tile_based"], true);

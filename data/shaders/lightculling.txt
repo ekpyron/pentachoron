@@ -14,8 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#version 420 core
-
+/* #version 420 core [ specified externally ] */
 /*
  * external definitions: 
  * SIZEOF_LIGHT

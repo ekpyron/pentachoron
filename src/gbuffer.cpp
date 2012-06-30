@@ -30,85 +30,31 @@ GBuffer::~GBuffer (void)
 
 bool GBuffer::Init (void)
 {
-	{
-		gl::Shader vshader (GL_VERTEX_SHADER),
-			 fshader (GL_FRAGMENT_SHADER);
-		std::string src;
-		if (!ReadFile (MakePath ("shaders", "gbuffer", "vshader.txt"), src))
-			 return false;
-		vshader.Source (src);
-		if (!vshader.Compile ())
-		{
-			(*logstream) << "Cannot compile "
-									 << MakePath ("shaders", "gbuffer", "vshader.txt")
-									 << ":" << std::endl << vshader.GetInfoLog () << std::endl;
-			return false;
-		}
-
-		if (!ReadFile (MakePath ("shaders", "gbuffer", "fshader.txt"), src))
-			 return false;
-		fshader.Source (src);
-		if (!fshader.Compile ())
-		{
-			(*logstream) << "Cannot compile "
-									 << MakePath ("shaders", "gbuffer", "fshader.txt")
-									 << ":" << std::endl << fshader.GetInfoLog () << std::endl;
-			return false;
-		}
-
-		program.Attach (vshader);
-		program.Attach (fshader);
-		if (!program.Link ())
-		{
-			(*logstream) << "Cannot link the gbuffer shader:" << std::endl
-									 << program.GetInfoLog () << std::endl;
-			return false;
-		}
-
-		fshader = gl::Shader (GL_FRAGMENT_SHADER);
-		if (!ReadFile (MakePath ("shaders", "gbuffer", "sraa.txt"), src))
-			 return false;
-		fshader.Source (src);
-		if (!fshader.Compile ())
-		{
-			(*logstream) << "Cannot compile "
-									 << MakePath ("shaders", "gbuffer", "sraa.txt")
-									 << ":" << std::endl << fshader.GetInfoLog () << std::endl;
-			return false;
-		}
-
-		sraaprog.Attach (vshader);
-		sraaprog.Attach (fshader);
-		if (!sraaprog.Link ())
-		{
-			(*logstream) << "Cannot link the gbuffer sraa shader:"
-									 << std::endl << sraaprog.GetInfoLog ()
-									 << std::endl;
-			return false;
-		}
-
-		fshader = gl::Shader (GL_FRAGMENT_SHADER);
-		if (!ReadFile (MakePath ("shaders", "gbuffer", "transparency.txt"), src))
-			 return false;
-		fshader.Source (src);
-		if (!fshader.Compile ())
-		{
-			(*logstream) << "Cannot compile "
-									 << MakePath ("shaders", "gbuffer", "transparency.txt")
-									 << ":" << std::endl << fshader.GetInfoLog () << std::endl;
-			return false;
-		}
-
-		transparencyprog.Attach (vshader);
-		transparencyprog.Attach (fshader);
-		if (!transparencyprog.Link ())
-		{
-			(*logstream) << "Cannot link the gbuffer transparency shader:"
-									 << std::endl << transparencyprog.GetInfoLog ()
-									 << std::endl;
-			return false;
-		}
-	}
+	if (!LoadProgram (program, MakePath ("shaders", "bin", "gbuffer.bin"),
+										{}, {	std::make_pair (GL_VERTEX_SHADER,
+																					MakePath ("shaders", "gbuffer",
+																										"vshader.txt")),
+												 std::make_pair (GL_FRAGMENT_SHADER,
+																				 MakePath ("shaders", "gbuffer",
+																									 "fshader.txt")) }))
+		 return false;
+	if (!LoadProgram (sraaprog, MakePath ("shaders", "bin", "gbuffer_sraa.bin"),
+										{}, {	std::make_pair (GL_VERTEX_SHADER,
+																					MakePath ("shaders", "gbuffer",
+																										"vshader.txt")),
+												 std::make_pair (GL_FRAGMENT_SHADER,
+																				 MakePath ("shaders", "gbuffer",
+																									 "sraa.txt")) }))
+		 return false;
+	if (!LoadProgram (transparencyprog,
+										MakePath ("shaders", "bin", "gbuffer_transparency.bin"),
+										{}, {	std::make_pair (GL_VERTEX_SHADER,
+																					MakePath ("shaders", "gbuffer",
+																										"vshader.txt")),
+												 std::make_pair (GL_FRAGMENT_SHADER,
+																				 MakePath ("shaders", "gbuffer",
+																									 "transparency.txt")) }))
+		 return false;
 
 	width = config["gbuffer"]["width"].as<GLuint> ();
 	height = config["gbuffer"]["height"].as<GLuint> ();

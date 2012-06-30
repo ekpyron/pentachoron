@@ -34,92 +34,25 @@ bool ShadowMap::Init (void)
 								 &weightoffsets[0], GL_STATIC_DRAW);
 		buffertex.Buffer (GL_RG32F, buffer);
 	}
-	{
-		gl::Shader vshader (GL_VERTEX_SHADER),
-			 fshader (GL_FRAGMENT_SHADER);
-		std::string src;
-		
-		if (!ReadFile (MakePath ("shaders", "shadowmap", "vshader.txt"), src))
-			 return false;
-		vshader.Source (src);
-		if (!vshader.Compile ())
-		{
-			(*logstream) << "Cannot compile "
-									 << MakePath ("shaders", "shadowmap", "vshader.txt")
-									 << ":" << std::endl << vshader.GetInfoLog () << std::endl;
-			return false;
-		}
+	if (!LoadProgram (program, MakePath ("shaders", "bin", "shadowmap.bin"),
+										{}, {	std::make_pair (GL_VERTEX_SHADER,
+																					MakePath ("shaders", "shadowmap",
+																										"vshader.txt")),
+												 std::make_pair (GL_FRAGMENT_SHADER,
+																				 MakePath ("shaders", "shadowmap",
+																									 "fshader.txt")) }))
+		 return false;
+	if (!LoadProgram (hblurprog, MakePath ("shaders", "bin",
+																				 "shadowmap_hblur.bin"),
+										GL_FRAGMENT_SHADER, std::string (),
+										{ MakePath ("shaders", "shadowmap", "hblur.txt") }))
+		 return false;
+	if (!LoadProgram (vblurprog, MakePath ("shaders", "bin",
+																				 "shadowmap_vblur.bin"),
+										GL_FRAGMENT_SHADER, std::string (),
+										{ MakePath ("shaders", "shadowmap", "vblur.txt") }))
+		 return false;
 
-		if (!ReadFile (MakePath ("shaders", "shadowmap", "fshader.txt"), src))
-			 return false;
-		fshader.Source (src);
-		if (!fshader.Compile ())
-		{
-			(*logstream) << "Cannot compile "
-									 << MakePath ("shaders", "shadowmap", "fshader.txt")
-									 << ":" << std::endl << vshader.GetInfoLog () << std::endl;
-			return false;
-		}
-
-		program.Attach (vshader);
-		program.Attach (fshader);
-		if (!program.Link ())
-		{
-			(*logstream) << "Cannot link the shadow map shader program:" << std::endl
-									 << vshader.GetInfoLog () << std::endl;
-			return false;
-		}
-	}
-	{
-		gl::Shader obj (GL_FRAGMENT_SHADER);
-		std::string source;
-		if (!ReadFile (MakePath ("shaders", "shadowmap", "hblur.txt"), source))
-			 return false;
-		obj.Source (source);
-		if (!obj.Compile ())
-		{
-			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "shadowmap", "hblur.txt")
-									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
-			return false;
-		}
-
-		hblurprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		hblurprog.Attach (obj);
-		if (!hblurprog.Link ())
-		{
-			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "shadowmap", "hblur.txt")
-									 << ": " << std::endl << hblurprog.GetInfoLog ()
-									 << std::endl;
-			 return false;
-		}
-	}
-	{
-		gl::Shader obj (GL_FRAGMENT_SHADER);
-		std::string source;
-		if (!ReadFile (MakePath ("shaders", "shadowmap", "vblur.txt"), source))
-			 return false;
-		obj.Source (source);
-		if (!obj.Compile ())
-		{
-			(*logstream) << "Could not compile "
-									 << MakePath ("shaders", "shadowmap", "vblur.txt")
-									 << ": " << std::endl << obj.GetInfoLog () << std::endl;
-			return false;
-		}
-
-		vblurprog.Parameter (GL_PROGRAM_SEPARABLE, GL_TRUE);
-		vblurprog.Attach (obj);
-		if (!vblurprog.Link ())
-		{
-			(*logstream) << "Could not link the shader program "
-									 << MakePath ("shaders", "shadowmap", "vblur.txt")
-									 << ": " << std::endl << vblurprog.GetInfoLog ()
-									 << std::endl;
-			 return false;
-		}
-	}
 
 	hblurpipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
 																	r->windowgrid.vprogram);
