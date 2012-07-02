@@ -15,8 +15,6 @@
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "model/material.h"
-#include <assimp.hpp>
-#include <aiScene.h>
 #include <oglimg/oglimg.h>
 #include <fstream>
 

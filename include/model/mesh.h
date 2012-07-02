@@ -37,7 +37,8 @@ public:
 	 static GLuint culled;
 private:
 	 bool shadows;
-	 bool Load (void*, const Material *mat, glm::vec3 &min, glm::vec3 &max,
+	 bool Load (const std::string &filename, const Material *mat,
+							glm::vec3 &min, glm::vec3 &max,
 							bool shadows);
 	 Model &parent;
 	 friend class Model;

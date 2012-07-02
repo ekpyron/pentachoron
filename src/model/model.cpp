@@ -16,10 +16,6 @@
  */
 #include "model/model.h"
 #include "geometry.h"
-#include <assimp.hpp>
-#include <aiScene.h>
-#include <aiPostProcess.h>
-#include <DefaultLogger.h>
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -59,29 +55,6 @@ Model &Model::operator= (Model &&model)
 	bsphere.radius = model.bsphere.radius;
 }
 
-/** @cond */
-class LogStream : public Assimp::LogStream
-{
-public:
-	 LogStream (void);
-	 ~LogStream (void);
-	 void write (const char *msg);
-};
-
-LogStream::LogStream (void)
-{
-}
-
-LogStream::~LogStream (void)
-{
-}
-
-void LogStream::write (const char *msg)
-{
-	(*logstream) << msg;
-}
-/** @endcond */
-
 bool Model::Load (const std::string &filename)
 {
 #ifdef DEBUG
@@ -104,74 +77,6 @@ bool Model::Load (const std::string &filename)
 		return false;
 	}
 
-#ifdef ASSIMP_DEBUG
-	Assimp::DefaultLogger::create ("" ,Assimp::Logger::VERBOSE);
-#else
-	Assimp::DefaultLogger::create ("");
-#endif
-	Assimp::DefaultLogger::get ()->attachStream (new LogStream,
-#ifdef ASSIMP_DEBUG
-																							 Assimp::Logger::DEBUGGING|
-																							 Assimp::Logger::INFO|
-																							 Assimp::Logger::WARN|
-#endif
-																							 Assimp::Logger::ERR);
-	Assimp::Importer importer;
-
-	const aiScene *scene;
-	std::string modelfile (MakePath ("models", desc["model"].as<std::string> ()));
-	scene = importer.ReadFile (modelfile,aiProcess_CalcTangentSpace
-														 | aiProcess_Triangulate
-														 | aiProcess_JoinIdenticalVertices
-														 | aiProcess_SortByPType
-														 | aiProcess_GenSmoothNormals
-														 | aiProcess_GenUVCoords
-														 | aiProcess_TransformUVCoords
-														 | aiProcess_OptimizeMeshes
-														 | aiProcess_OptimizeGraph);
-	if (!scene)
-	{
-		(*logstream) << "Cannot load " << modelfile << ":" << std::endl
-								 << importer.GetErrorString () << std::endl;
-		return false;
-	}
-
-	scene = importer.ApplyPostProcessing (aiProcess_CalcTangentSpace);
-	if (!scene)
-	{
-		(*logstream) << "Cannot load " << modelfile << ":" << std::endl
-								 << importer.GetErrorString () << std::endl;
-		return false;
-	}
-
-#ifdef ASSIMP_DEBUG
-	if (scene->HasAnimations ())
-	{
-		(*logstream) << "Warning: " << modelfile << " contains animations."
-								 << std::endl;
-	}
-	if (scene->HasCameras ())
-	{
-		(*logstream) << "Warning: " << modelfile << " contains camera information."
-								 << std::endl;
-	}
-	if (scene->HasLights ())
-	{
-		(*logstream) << "Warning: " << modelfile << " contains lights."
-								 << std::endl;
-	}
-	if (scene->HasTextures ())
-	{
-		(*logstream) << "Warning: " << modelfile << " contains textures."
-								 << std::endl;
-	}
-	if (scene->HasMaterials ())
-	{
-		(*logstream) << "Warning: " << modelfile << " contains materials."
-								 << std::endl;
-	}
-#endif
-
 	if (!desc["meshes"].IsSequence ())
 	{
 		(*logstream) << filename << " has an invalid format." << std::endl;
@@ -184,29 +89,15 @@ bool Model::Load (const std::string &filename)
 
 	for (const YAML::Node &node : desc["meshes"])
 	{
-		unsigned int mesh = node["number"].as<unsigned int> ();
+		std::string filename = node["filename"].as<std::string> ();
 		const Material &material = r->geometry.GetMaterial
 			 (node["material"].as<std::string> ());
-		if (mesh >= scene->mNumMeshes)
-		{
-			(*logstream) << "Requested mesh number " << (mesh+1)
-									 << ", but only " << scene->mNumMeshes
-									 << " were found in " << modelfile << "."
-									 << std::endl;
-			return false;
-		}
-		if (scene->mMeshes[mesh]->mPrimitiveTypes != aiPrimitiveType_TRIANGLE)
-		{
-			(*logstream) << "Mesh " << (mesh+1) << " in " << modelfile
-									 << " has an invalid primitive type." << std::endl;
-			return false;
-		}
 		meshes.emplace_back (*this);
-		if (!meshes.back ().Load (static_cast<void*> (scene->mMeshes[mesh]),
+		if (!meshes.back ().Load (MakePath ("models", filename),
 															&material, bbox.min, bbox.max,
 															node["shadows"].as<bool> (true)))
 		{
-			(*logstream) << "Mesh " << mesh << " in " << modelfile
+			(*logstream) << "Mesh " << filename
 									 << " could not be loaded." << std::endl;
 			return false;
 		}
@@ -260,7 +151,6 @@ bool Model::Load (const std::string &filename)
 		bsphere.radius = glm::distance (bbox.min, bsphere.center);
 	}
 
-	Assimp::DefaultLogger::kill ();
 	return true;
 }
 

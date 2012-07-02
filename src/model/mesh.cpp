@@ -15,8 +15,7 @@
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "model/mesh.h"
-#include <assimp.hpp>
-#include <aiScene.h>
+#include <openctmpp.h>
 #include <iostream>
 #include "model/model.h"
 #include "geometry.h"
@@ -72,50 +71,49 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 	mesh.shadows = true;
 }
 
-bool Mesh::Load (void *m, const Material *mat,
+bool Mesh::Load (const std::string &filename, const Material *mat,
 								 glm::vec3 &min, glm::vec3 &max,
 								 bool s)
 {
 	shadows = s;
 	material = mat;
-	aiMesh *mesh = static_cast<aiMesh*> (m);
 
-	if (!mesh->HasFaces ())
-	{
-		(*logstream) << "No faces in the mesh." << std::endl;
-		return false;
-	}
-	if (!mesh->HasNormals ())
-	{
-		(*logstream) << "No normals in the mesh." << std::endl;
-		return false;
-	}
-#ifdef ASSIMP_DEBUG
-	if (mesh->HasBones ())
-	{
-		(*logstream) << "Warning: A mesh contains bones." << std::endl;
-	}
-	if (mesh->GetNumColorChannels () > 0)
-	{
-		(*logstream) << "Warning: A mesh contains color channels." << std::endl;
-	}
-	if (mesh->GetNumUVChannels () < 1)
-	{
-		(*logstream) << "Warning: No texture coords in the mesh." << std::endl;
-	}
-	if (mesh->GetNumUVChannels () > 1)
-	{
-		(*logstream) << "Warning: Several texture coords in the mesh." << std::endl;
-	}
-	if (!mesh->HasTangentsAndBitangents ())
-	{
-		(*logstream) << "Warning: No tangents and bitangents in the mesh."
-								 << std::endl;
-	}
-#endif
+	try {
+		CTMimporter importer;
+		const glm::vec3 *vertices;
+		const glm::vec3 *normals;
+		const glm::vec4 *tangents;
+		const glm::vec4 *bitangents;
+		const GLuint *indexarray;
 
-	trianglecount = mesh->mNumFaces;
-	vertexcount = mesh->mNumVertices;
+		importer.Load (filename.c_str ());
+
+		if (!importer.GetInteger (CTM_HAS_NORMALS))
+			 return false;
+
+		if (importer.GetInteger (CTM_UV_MAP_COUNT) < 1)
+			 return false;
+
+		trianglecount = importer.GetInteger (CTM_TRIANGLE_COUNT);
+		vertexcount = importer.GetInteger (CTM_VERTEX_COUNT);
+		indexarray = importer.GetIntegerArray (CTM_INDICES);
+
+		vertices = reinterpret_cast<const glm::vec3*>
+			 (importer.GetFloatArray (CTM_VERTICES));
+		normals = reinterpret_cast<const glm::vec3*>
+			 (importer.GetFloatArray (CTM_NORMALS));
+
+		CTMenum attrib = importer.GetNamedAttribMap ("TANGENTS");
+		if (attrib == CTM_NONE)
+			 return false;
+		tangents = reinterpret_cast<const glm::vec4*>
+			 (importer.GetFloatArray (attrib));
+
+		attrib = importer.GetNamedAttribMap ("BITANGENTS");
+		if (attrib == CTM_NONE)
+			 return false;
+		bitangents = reinterpret_cast<const glm::vec4*>
+			 (importer.GetFloatArray (attrib));
 
 	// calculate the center of the bounding sphere
 	// and calculate the bounding box
@@ -124,8 +122,7 @@ bool Mesh::Load (void *m, const Material *mat,
 		bsphere.center = glm::vec3 (0, 0, 0);
 		for (auto i = 0; i < vertexcount; i++)
 		{
-			glm::vec3 vertex (mesh->mVertices[i].x, mesh->mVertices[i].y,
-												mesh->mVertices[i].z);
+			glm::vec3 vertex = vertices[i];
 			bsphere.center += factor * vertex;
 			if (vertex.x < min.x)
 				 min.x = vertex.x;
@@ -147,8 +144,7 @@ bool Mesh::Load (void *m, const Material *mat,
 		bsphere.radius = 0;
 		for (auto i = 0; i < vertexcount; i++)
 		{
-			glm::vec3 vertex (mesh->mVertices[i].x, mesh->mVertices[i].y,
-												mesh->mVertices[i].z);
+			glm::vec3 vertex = vertices[i];
 			float distance = glm::distance (bsphere.center, vertex);
 			if (distance > bsphere.radius)
 				 bsphere.radius = distance;
@@ -156,14 +152,24 @@ bool Mesh::Load (void *m, const Material *mat,
 	}
 
 	buffers.emplace_back ();
-	buffers.back ().Data (vertexcount * sizeof (aiVector3D),
-												mesh->mVertices, GL_STATIC_DRAW);
+	buffers.back ().Data (vertexcount * sizeof (glm::vec3),
+												vertices, GL_STATIC_DRAW);
 	buffers.emplace_back ();
-	buffers.back ().Data (vertexcount * sizeof (aiVector3D),
-												mesh->mNormals, GL_STATIC_DRAW);
+	buffers.back ().Data (vertexcount * sizeof (glm::vec3),
+												normals, GL_STATIC_DRAW);
 	buffers.emplace_back ();
-	buffers.back ().Data (vertexcount * sizeof (aiVector3D),
-												mesh->mTangents, GL_STATIC_DRAW);
+
+	{
+		buffers.back ().Data (vertexcount * sizeof (glm::vec3),
+													NULL, GL_STATIC_DRAW);
+		glm::vec3 *dst = reinterpret_cast<glm::vec3*>
+			 (buffers.back ().Map (GL_WRITE_ONLY));
+		for (auto i = 0; i < vertexcount; i++)
+		{
+			dst[i] = glm::vec3 (tangents[i]);
+		}
+		buffers.back ().Unmap ();
+	}
 
 	depthonlyarray.VertexAttribOffset(buffers[0], 0, 3, GL_FLOAT,
 																		GL_FALSE, 0, 0);
@@ -176,20 +182,15 @@ bool Mesh::Load (void *m, const Material *mat,
 		vertexarray.EnableVertexAttrib (i);
 	}
 
-	for (auto i = 0; i < mesh->GetNumUVChannels (); i++)
+	for (auto i = 0; i < importer.GetInteger (CTM_UV_MAP_COUNT); i++)
 	{
+		const glm::vec2 *texcoords;
+		texcoords = reinterpret_cast<const glm::vec2*>
+			 (importer.GetFloatArray (CTM_UV_MAP_1));
 		buffers.emplace_back ();
-		buffers.back ().Data (vertexcount * sizeof (GLfloat) * 2, NULL,
+		buffers.back ().Data (vertexcount * sizeof (glm::vec2),
+													texcoords,
 													GL_STATIC_DRAW);
-		GLfloat *ptr;
-		ptr = static_cast<GLfloat*> (buffers.back ().Map (GL_WRITE_ONLY));
-		for (auto j = 0; j < vertexcount; j++)
-		{
-			GLfloat t1, t2;
-			ptr[j * 2 + 0] = mesh->mTextureCoords[i][j].x;
-			ptr[j * 2 + 1] = mesh->mTextureCoords[i][j].y;
-		}
-		buffers.back ().Unmap ();
 		vertexarray.VertexAttribOffset (buffers.back (), 3 + i, 2, GL_FLOAT,
 																		GL_FALSE, 0, 0);
 		vertexarray.EnableVertexAttrib (3 + i);
@@ -197,19 +198,16 @@ bool Mesh::Load (void *m, const Material *mat,
 
 
 	indices.Data (trianglecount * sizeof (GLuint) * 3,
-								NULL, GL_STATIC_DRAW);
-	GLuint *indexptr = static_cast<GLuint*> (indices.Map (GL_WRITE_ONLY));
-	for (auto i = 0; i < trianglecount; i++)
-	{
-		for (auto j = 0; j < 3; j++)
-		{
-			 indexptr[i*3 + j] = mesh->mFaces[i].mIndices[j];
-		}
-	}
-	indices.Unmap ();
+								indexarray, GL_STATIC_DRAW);
 
 	GL_CHECK_ERROR;
 	return true;
+
+	} catch (ctm_error &err) {
+		(*logstream) << "Error loading " << filename << ": " << err.what ()
+								 << std::endl;
+		return false;
+	}
 }
 
 bool Mesh::IsTransparent (void) const

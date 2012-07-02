@@ -11,24 +11,24 @@ nodes:
     - translation: [ 0.0, -2.9, 0.0 ]
       nodes:
         - translation: [ 0.0, 0.0, 0.0 ]
-          models:      [ kitty, headglass ]
+          models:      [ kitty ]
 
         - translation: [ -7.5, 0.0, 7.5 ]
           rotations:
             - [ 45, 0.0, 1.0, 0.0 ]
-          models:      [ kitty, headglass ]
+          models:      [ kitty ]
 
         - translation: [ -10, 0.0, -7.5 ]
           rotations:
             - [ -135, 0.0, 1.0, 0.0 ]
-          models:      [ kitty, headglass ]
+          models:      [ kitty ]
 
         - translation: [ 10.0, 2.0, 10.0 ]
           rotations:
             - [ 90.0, 0.0, 1.0, 0.0 ]
             - [ -90.0, 1.0, 0.0, 0.0 ]
             - [ 180.0, 0.0, 0.0, 1.0 ]
-          models:    [ kitty, headglass ]
+          models:    [ kitty ]
 
         - translation: [ -5.0, 0.5, -5.0 ]
           models:      [ box ]
