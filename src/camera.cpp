@@ -30,7 +30,10 @@ Camera::~Camera (void)
 
 void Camera::Frame (float timefactor)
 {
-	vmat = glm::lookAt (GetEye (), center, glm::vec3 (0, 1, 0));
+	glm::quat rot;
+	rot = glm::rotate (rot, horizontal_angle, glm::vec3 (0, 1, 0));
+	rot = glm::rotate (rot, up_angle, glm::vec3 (1, 0, 0));
+	vmat = glm::lookAt (GetEye (), center, rot * glm::vec3 (0, 1, 0));
 }
 
 void Camera::Resize (int w, int h)
@@ -95,8 +98,11 @@ void Camera::RotateY (float angle)
 
 glm::vec3 Camera::GetDirection (void) const
 {
-	glm::vec3 dir (sin (horizontal_angle), sin (up_angle),
-								 cos (horizontal_angle));
+	glm::quat rot;
+	glm::vec3 dir (0, 0, 1);
+	rot = glm::rotate (rot, horizontal_angle, glm::vec3 (0, 1, 0));
+	rot = glm::rotate (rot, up_angle, glm::vec3 (1, 0, 0));
+	dir = rot * dir;
 	return glm::normalize (dir);
 }
 
@@ -108,8 +114,8 @@ glm::vec4 Camera::GetProjInfo (void) const
 
 void Camera::MoveForward (float distance)
 {
-	glm::vec3 dir (sin (horizontal_angle), 0, cos (horizontal_angle));
-	center += dir * distance;
+	center += glm::rotate (glm::quat (), horizontal_angle, glm::vec3 (0, 1, 0))
+		 * glm::vec3 (0, 0, 1) * distance;
 }
 
 void Camera::MoveUp (float distance)

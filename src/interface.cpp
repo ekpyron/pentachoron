@@ -1527,11 +1527,11 @@ void Interface::Frame (float tf)
 	}
 	if (glfwGetKey ('A'))
 	{
-		r->camera.RotateY (timefactor);
+		r->camera.RotateY (timefactor * 60.0f);
 	}
 	if (glfwGetKey ('D'))
 	{
-		r->camera.RotateY (-timefactor);
+		r->camera.RotateY (-timefactor * 60.0f);
 	}
 	if (glfwGetKey ('W'))
 	{
@@ -1551,10 +1551,10 @@ void Interface::Frame (float tf)
 	}
 	if (glfwGetKey ('R'))
 	{
-		r->camera.RotateUp (timefactor);
+		r->camera.RotateUp (timefactor * 60.0f);
 	}
 	if (glfwGetKey ('F'))
 	{
-		r->camera.RotateUp (-timefactor);
+		r->camera.RotateUp (-timefactor * 60.0f);
 	}
 }
