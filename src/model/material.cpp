@@ -15,8 +15,8 @@
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "model/material.h"
-#include <oglimg/oglimg.h>
 #include <fstream>
+#include <cstring>
 
 GLenum TranslateFormat (const std::string &str);
 
@@ -67,42 +67,91 @@ Material &Material::operator= (Material &&material)
 	material.transparent = false;
 }
 
+typedef struct {
+	 uint8_t identifier[12];
+	 uint32_t endianness;
+	 uint32_t glType;
+	 uint32_t glTypeSize;
+	 uint32_t glFormat;
+	 uint32_t glInternalFormat;
+	 uint32_t glBaseInternalFormat;
+	 uint32_t pixelWidth;
+	 uint32_t pixelHeight;
+	 uint32_t pixelDepth;
+	 uint32_t numberOfArrayElements;
+	 uint32_t numberOfFaces;
+	 uint32_t numberOfMipmapLevels;
+	 uint32_t bytesOfKeyValueData;
+} ktx_header_t;
+
 bool LoadTex (gl::Texture &texture, bool &result,
-							const YAML::Node node, GLenum default_format)
+							const YAML::Node node)
 {
-	gl::Image image;
 	std::string filename;
-	GLenum format;
-	if (node.IsSequence ())
-	{
-		filename = MakePath ("textures", node[0].as<std::string> ());
-		format = TranslateFormat (node[1].as<std::string> ("AUTO"));
-		if (!format)
-			 format = default_format;
-	}
-	else if (node.IsScalar ())
-	{
-		filename = MakePath ("textures", node[0].as<std::string> ());
-		format = default_format;
-	}
-	else
+	if (!node.IsScalar ())
 	{
 		result = false;
 		return true;
 	}
 
-	if (!image.Load (filename))
-	{
-		(*logstream) << "Could not load the texture " << filename
-								 << "." << std::endl;
-		return false;
-	}
-	image.GetBuffer ().Bind (GL_PIXEL_UNPACK_BUFFER);
-	texture.Image2D (GL_TEXTURE_2D, 0, format, image.GetWidth (),
-									 image.GetHeight (), 0, image.GetFormat (),
-									 image.GetType (), NULL);
-	texture.GenerateMipmap (GL_TEXTURE_2D);
 	result = true;
+
+	filename = MakePath ("textures", node.as<std::string> ());
+
+	ktx_header_t header;
+	std::ifstream file (filename, std::ios_base::in|std::ios_base::binary);
+	if (!file.is_open ())
+		 return false;
+
+	file.read (reinterpret_cast<char*> (&header), sizeof (ktx_header_t));
+
+	const uint8_t id[12] = {
+		0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
+	};
+	if (file.gcount () != sizeof (ktx_header_t)
+			|| memcmp (header.identifier, id, 12))
+		 return false;
+	if (header.endianness != 0x04030201)
+		 return false;
+	if (header.pixelDepth != 0)
+		 return false;
+	if (header.numberOfArrayElements)
+		 return false;
+	if (header.numberOfFaces != 1)
+		 return false;
+	if (header.numberOfMipmapLevels != 1)
+		 return false;
+
+	file.ignore (header.bytesOfKeyValueData);
+
+	uint32_t size;
+	file.read (reinterpret_cast<char*> (&size), sizeof (uint32_t));
+	if (file.gcount () != sizeof (uint32_t))
+		 return false;
+
+	gl::Buffer data;
+	data.Data (size, NULL, GL_STREAM_DRAW);
+
+	void *ptr = data.Map (GL_WRITE_ONLY);
+	file.read (reinterpret_cast<char*> (ptr), size);
+	data.Unmap ();
+
+	data.Bind (GL_PIXEL_UNPACK_BUFFER);
+	if (header.glType == 0)
+	{
+		texture.CompressedImage2D (GL_TEXTURE_2D, 0, header.glInternalFormat,
+															 header.pixelWidth, header.pixelHeight, 0,
+															 size, NULL);
+	}
+	else
+	{
+		texture.Image2D (GL_TEXTURE_2D, 0, header.glInternalFormat,
+										 header.pixelWidth, header.pixelHeight, 0,
+										 header.glFormat, header.glType, NULL);
+	}
+	texture.GenerateMipmap (GL_TEXTURE_2D);
+	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
+
 	return true;
 }
 
@@ -128,21 +177,16 @@ bool Material::Load (const std::string &name)
 		 transparent = desc["transparent"].as<bool> ();
 
 	if (!LoadTex (diffuse, diffuse_enabled,
-								desc["textures"]["diffuse"],
-								transparent ? GL_COMPRESSED_RGBA_BPTC_UNORM_ARB
-								: GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB))
+								desc["textures"]["diffuse"]))
 		 return false;
 	if (!LoadTex (normalmap, normalmap_enabled,
-								desc["textures"]["normalmap"],
-								GL_COMPRESSED_RG_RGTC2))
+								desc["textures"]["normalmap"]))
 		 return false;
 	if (!LoadTex (specularmap, specularmap_enabled,
-								desc["textures"]["specularmap"],
-								GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB))
+								desc["textures"]["specularmap"]))
 		 return false;
 	if (!LoadTex (parametermap, parametermap_enabled,
-								desc["textures"]["parametermap"],
-								GL_R8))
+								desc["textures"]["parametermap"]))
 		 return false;
 
 	return true;

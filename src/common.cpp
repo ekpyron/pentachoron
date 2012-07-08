@@ -286,6 +286,8 @@ bool LoadProgram (gl::Program &program, const std::string &filename,
 		program.Attach (obj);
 	}
 
+	program.Parameter (GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+
 	if (!program.Link ())
 	{
 		(*logstream) << "Could not link " << filename << ": "
