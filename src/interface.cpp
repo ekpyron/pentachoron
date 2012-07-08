@@ -39,7 +39,7 @@
 #define EDIT_SKY                  18
 #define EDIT_SKY_COEFFICIENTS_Y   19
 #define EDIT_SKY_COEFFICIENTS_x   20
-#define EDIT_SKY_COEFFICIENTS_y   12
+#define EDIT_SKY_COEFFICIENTS_y   21
 
 extern bool running;
 
