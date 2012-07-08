@@ -34,6 +34,7 @@ public:
 	 Mesh &operator= (const Mesh&) = delete;
 	 void Render (const gl::Program &program, GLuint passtype);
 	 bool IsTransparent (void) const;
+	 bool IsDoubleSided (void) const;
 	 static GLuint culled;
 private:
 	 bool shadows;

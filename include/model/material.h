@@ -31,6 +31,7 @@ public:
 	 Material &operator= (const Material&) = delete;
 	 void Use (const gl::Program &program) const;
 	 bool IsTransparent (void) const;
+	 bool IsDoubleSided (void) const;
 private:
 	 bool Load (const std::string &name);
 	 gl::Texture diffuse;
@@ -42,6 +43,7 @@ private:
 	 gl::Texture parametermap;
 	 bool parametermap_enabled;
 	 bool transparent;
+	 bool doublesided;
 	 friend class Scene;
 	 friend class Geometry;
 };

@@ -23,7 +23,7 @@ GLenum TranslateFormat (const std::string &str);
 Material::Material (void)
 	: diffuse_enabled (false), normalmap_enabled (false),
 		specularmap_enabled (false), transparent (false),
-		parametermap_enabled (false)
+		parametermap_enabled (false), doublesided (false)
 {
 }
 
@@ -36,13 +36,15 @@ Material::Material (Material &&material)
 		specularmap_enabled (material.specularmap_enabled),
 		parametermap (std::move (material.parametermap)),
 		parametermap_enabled (material.parametermap_enabled),
-		transparent (material.transparent)
+		transparent (material.transparent),
+		doublesided (material.doublesided)
 {
 	material.diffuse_enabled = false;
 	material.normalmap_enabled = false;
 	material.specularmap_enabled = false;
 	material.parametermap_enabled = false;
 	material.transparent = false;
+	material.doublesided = false;
 }
 
 Material::~Material (void)
@@ -65,6 +67,8 @@ Material &Material::operator= (Material &&material)
 	material.parametermap_enabled = false;
 	transparent = material.transparent;
 	material.transparent = false;
+	doublesided = material.doublesided;
+	material.doublesided = false;
 }
 
 typedef struct {
@@ -173,8 +177,8 @@ bool Material::Load (const std::string &name)
 		return false;
 	}
 
-	if (desc["transparent"])
-		 transparent = desc["transparent"].as<bool> ();
+	transparent = desc["transparent"].as<bool> (false);
+	doublesided = desc["doublesided"].as<bool> (false);
 
 	if (!LoadTex (diffuse, diffuse_enabled,
 								desc["textures"]["diffuse"]))
@@ -195,6 +199,11 @@ bool Material::Load (const std::string &name)
 bool Material::IsTransparent (void) const
 {
 	return transparent;
+}
+
+bool Material::IsDoubleSided (void) const
+{
+	return doublesided;
 }
 
 void Material::Use (const gl::Program &program) const

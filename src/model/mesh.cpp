@@ -235,9 +235,15 @@ void Mesh::Render (const gl::Program &program, GLuint passtype)
 		break;
 	}
 	indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
+
+	if (material->IsDoubleSided ())
+		 gl::Disable (GL_CULL_FACE);
 	
 	gl::DrawElements (GL_TRIANGLES, trianglecount * 3,
 										GL_UNSIGNED_INT, NULL);
+
+	if (material->IsDoubleSided ())
+		 gl::Enable (GL_CULL_FACE);
 
 	GL_CHECK_ERROR;
 }

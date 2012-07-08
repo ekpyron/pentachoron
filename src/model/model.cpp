@@ -221,8 +221,6 @@ void Model::Render (GLuint pass, const gl::Program &program)
 
 	if (result == GL_TRUE)
 	{
-		if (passtype == Geometry::Pass::GBufferTransparency)
-			 gl::Disable (GL_CULL_FACE);
 		for (Mesh &mesh : meshes)
 		{
 			if (((passtype == Geometry::Pass::GBufferTransparency)
@@ -230,8 +228,6 @@ void Model::Render (GLuint pass, const gl::Program &program)
 					|| (passtype == Geometry::Pass::ShadowMap))
 				 mesh.Render (program, passtype);
 		}
-		if (passtype == Geometry::Pass::GBufferTransparency)
-			 gl::Enable (GL_CULL_FACE);
 	}
 	else if (passtype != Geometry::Pass::GBufferSRAA)
 	{
@@ -239,7 +235,6 @@ void Model::Render (GLuint pass, const gl::Program &program)
 		{
 			gl::ColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 			gl::DepthMask (GL_FALSE);
-			gl::Disable (GL_CULL_FACE);
 		}
 		r->geometry.bboxprogram.Use ();
 		bbox.array.Bind ();
@@ -249,7 +244,6 @@ void Model::Render (GLuint pass, const gl::Program &program)
 		program.Use ();
 		if (passtype != Geometry::Pass::GBufferTransparency)
 		{
-			gl::Enable (GL_CULL_FACE);
 			gl::DepthMask (GL_TRUE);
 			gl::ColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		}
