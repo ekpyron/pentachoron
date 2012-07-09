@@ -26,6 +26,7 @@ uniform struct {
 	float perezx[5];
 	float perezy[5];
 	vec3 zenithYxy;
+	float luminosity;
 } sky;
 
 vec3 getskypos (in vec3 pin);
@@ -68,7 +69,7 @@ vec3 compute_sky (in vec3 dir, bool render_sun)
 
 	vec3 Yxy;
 
-	Yxy.x = 0.04f * sky.zenithYxy.x
+	Yxy.x = sky.luminosity * sky.zenithYxy.x
 	        * perez (cos_theta, gamma, cos_gamma,
 		  	 sky.perezY)
 		/ perez (1, theta_s, cos_theta_s,

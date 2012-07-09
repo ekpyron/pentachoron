@@ -187,6 +187,8 @@ public:
 		* and sets the shader uniforms accordingly.
 		*/
 	 void SetupSunPosition (void);
+	 void SetSkyLuminosity (GLfloat l);
+	 GLfloat GetSkyLuminosity (void);
 	 /** Check, whether rendering is tile-based.
 		* Returns true, if tile-based light culling is currently used,
 		* false, if not.
@@ -267,6 +269,7 @@ private:
 			gl::SmartUniform<std::array<GLfloat, 5>> perezx;
 			gl::SmartUniform<std::array<GLfloat, 5>> perezy;
 			gl::SmartUniform<glm::vec3> zenithYxy;
+			gl::SmartUniform<GLfloat> luminosity;
 	 } sky;
 
 	 gl::Framebuffer framebuffer;

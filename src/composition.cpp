@@ -113,6 +113,8 @@ bool Composition::Init (void)
 		 (fprogram["sky.perezy"], std::array<GLfloat, 5> ());
 	sky.zenithYxy = gl::SmartUniform<glm::vec3>
 		 (fprogram["sky.zenithYxy"], glm::vec3 ());
+	sky.luminosity = gl::SmartUniform<GLfloat>
+		 (fprogram["sky.luminosity"], 0.04f);
 
 	SetupSunPosition ();
 	GeneratePerezCoefficients ();
@@ -486,6 +488,16 @@ void Composition::SetupSkyZenithYxy (void)
 	zenithYxy.z = glm::dot (T3, maty * th);
 
 	sky.zenithYxy.Set (zenithYxy);
+}
+
+GLfloat Composition::GetSkyLuminosity (void)
+{
+	return sky.luminosity.Get ();
+}
+
+void Composition::SetSkyLuminosity (GLfloat l)
+{
+	sky.luminosity.Set (l);
 }
 
 void Composition::Frame (float timefactor)

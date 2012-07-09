@@ -1098,6 +1098,13 @@ Interface::Interface (void)
 						T += what * timefactor;
 						r->composition.SetTurbidity (T);
 					}, true },
+				{ "Luminosity ", [&] (void) {
+						font.Print (r->composition.GetSkyLuminosity ());
+					}, [&] (int what) {
+						float l = r->composition.GetSkyLuminosity ();
+						l += what * timefactor * 0.01f;
+						r->composition.SetSkyLuminosity (l);
+					}, true },
 				{ "Coefficients Y", NULL, [&] (int what) {
 						if (!what)
 						{
