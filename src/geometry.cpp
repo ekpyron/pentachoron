@@ -160,13 +160,17 @@ bool Geometry::Init (void)
 	root.Load (names, streams[1]);
 
 	tessLevel = 1;
+	gl::GetIntegerv (GL_MAX_TESS_GEN_LEVEL, &maxTessLevel);
 
 	return true;
 }
 
 void Geometry::SetTessLevel (GLuint l)
 {
-	tessLevel = l;
+	if (l < maxTessLevel)
+		 tessLevel = l;
+	else
+		 tessLevel = maxTessLevel;
 }
 
 GLuint Geometry::GetTessLevel (void)

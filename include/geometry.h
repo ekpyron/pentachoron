@@ -85,6 +85,7 @@ private:
 	 glm::vec3 boxmax;
 
 	 GLuint tessLevel;
+	 GLint maxTessLevel;
 
 	 friend class Model;
 	 friend class Mesh;
