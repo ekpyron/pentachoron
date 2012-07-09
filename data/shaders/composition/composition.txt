@@ -49,7 +49,7 @@ vec4 compute_pixel (in struct PixelData data, out bool issky)
 		dir = normalize (getskypos (vec3 (invviewport * gl_FragCoord.xy,
 	      			    	    data.depth)));
 		issky = true;
-		return vec4 (compute_sky (dir), 1.0f);
+		return vec4 (compute_sky (dir, true), 1.0f);
 	}
 	issky = false;	
 
@@ -62,14 +62,13 @@ vec4 compute_pixel (in struct PixelData data, out bool issky)
 	viewdir = normalize (eye - pos);
 
 	{
-		vec3 skynormal = compute_sky (normal);
-		diffuse = dot (skynormal, luminance_factor)
+		diffuse = dot (compute_sky (normal, false), luminance_factor)
 			  * vec3 (1, 1, 1);
 		vec3 lightdir = normalize (sun.direction);
 
 		float s = ComputeSpecular (param, normal, viewdir, lightdir);
 
-		specular = s * vec3 (1, 1, 1) * skynormal;
+		specular = s * vec3 (1, 1, 1) * compute_sky (normal, true);
 	}
 
 	num_lights = GetNumLights ();
@@ -127,7 +126,7 @@ vec4 compute_pixel (in struct PixelData data, out bool issky)
 		vec3 refdir = normalize (reflect (-viewdir, normal));
 		factor = param.reflect_factor;
 		float n = param.reflect_fresnel_n;
-		vec3 refl = compute_sky (refdir);
+		vec3 refl = compute_sky (refdir, true);
 		if (n != 0.0)
 		{
 			float k = param.reflect_fresnel_k;

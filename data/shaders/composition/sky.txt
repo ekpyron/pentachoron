@@ -50,7 +50,7 @@ vec3 Yxy2RGB (in vec3 Yxy)
 		     -0.498535f, 0.041556f, 1.057311f) * XYZ;
 }
 
-vec3 compute_sky (in vec3 dir)
+vec3 compute_sky (in vec3 dir, bool render_sun)
 {
 	vec3 sundir;
 
@@ -84,7 +84,7 @@ vec3 compute_sky (in vec3 dir)
 		/ perez (1, theta_s, cos_theta_s,
 		  	 sky.perezy);
 
-	if (cos_gamma > 0.999f)
+	if (render_sun && cos_gamma > 0.999f)
 	{
 	   Yxy.x *= 1 + (cos_gamma - 0.999f) * 10000.0f;
 	}
