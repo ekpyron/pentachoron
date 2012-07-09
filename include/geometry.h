@@ -34,6 +34,8 @@ public:
 	 void SetProjMatrix (const glm::mat4 &projmat);
 	 const glm::vec3 &GetBoxMin (void);
 	 const glm::vec3 &GetBoxMax (void);
+	 GLuint GetTessLevel (void);
+	 void SetTessLevel (GLuint l);
 
 	 class Pass
 	 {
@@ -81,6 +83,8 @@ private:
 
 	 glm::vec3 boxmin;
 	 glm::vec3 boxmax;
+
+	 GLuint tessLevel;
 
 	 friend class Model;
 	 friend class Mesh;

@@ -159,7 +159,19 @@ bool Geometry::Init (void)
 
 	root.Load (names, streams[1]);
 
+	tessLevel = 1;
+
 	return true;
+}
+
+void Geometry::SetTessLevel (GLuint l)
+{
+	tessLevel = l;
+}
+
+GLuint Geometry::GetTessLevel (void)
+{
+	return tessLevel;
 }
 
 Geometry::Node::Node (void)
@@ -248,11 +260,15 @@ void Geometry::Render (GLuint p,
 	program = &prog;
 	switch (p & Pass::Mask)
 	{
+	case Pass::GBufferTess:
+		prog["tessLevel"] = tessLevel;
+		sampler.Bind (4);
 	case Pass::GBuffer:
 	case Pass::GBufferTransparency:
 		sampler.Bind (0);
 		sampler.Bind (1);
 		sampler.Bind (2);
+		sampler.Bind (3);
 		break;
 	}
 

@@ -23,7 +23,8 @@ GLenum TranslateFormat (const std::string &str);
 Material::Material (void)
 	: diffuse_enabled (false), normalmap_enabled (false),
 		specularmap_enabled (false), transparent (false),
-		parametermap_enabled (false), doublesided (false)
+		heightmap_enabled (false), parametermap_enabled (false),
+		doublesided (false)
 {
 }
 
@@ -36,6 +37,8 @@ Material::Material (Material &&material)
 		specularmap_enabled (material.specularmap_enabled),
 		parametermap (std::move (material.parametermap)),
 		parametermap_enabled (material.parametermap_enabled),
+		heightmap (std::move (material.heightmap)),
+		heightmap_enabled (material.heightmap_enabled),
 		transparent (material.transparent),
 		doublesided (material.doublesided)
 {
@@ -43,6 +46,7 @@ Material::Material (Material &&material)
 	material.normalmap_enabled = false;
 	material.specularmap_enabled = false;
 	material.parametermap_enabled = false;
+	material.heightmap_enabled = false;
 	material.transparent = false;
 	material.doublesided = false;
 }
@@ -65,6 +69,9 @@ Material &Material::operator= (Material &&material)
 	parametermap = std::move (material.parametermap);
 	parametermap_enabled = material.parametermap_enabled;
 	material.parametermap_enabled = false;
+	heightmap = std::move (material.heightmap);
+	heightmap_enabled = material.heightmap_enabled;
+	material.heightmap_enabled = false;
 	transparent = material.transparent;
 	material.transparent = false;
 	doublesided = material.doublesided;
@@ -192,6 +199,9 @@ bool Material::Load (const std::string &name)
 	if (!LoadTex (parametermap, parametermap_enabled,
 								desc["textures"]["parametermap"]))
 		 return false;
+	if (!LoadTex (heightmap, heightmap_enabled,
+								desc["textures"]["heightmap"]))
+		 return false;
 
 	return true;
 }
@@ -227,6 +237,11 @@ void Material::Use (const gl::Program &program) const
 	if (parametermap_enabled)
 	{
 		parametermap.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
+	}
+	program["heightmap_enabled"] = heightmap_enabled;
+	if (heightmap_enabled)
+	{
+		heightmap.Bind (GL_TEXTURE4, GL_TEXTURE_2D);
 	}
 }
 

@@ -42,6 +42,8 @@ private:
 	 bool specularmap_enabled;
 	 gl::Texture parametermap;
 	 bool parametermap_enabled;
+	 gl::Texture heightmap;
+	 bool heightmap_enabled;
 	 bool transparent;
 	 bool doublesided;
 	 friend class Scene;

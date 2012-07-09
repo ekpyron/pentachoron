@@ -1,6 +1,6 @@
 #version 420 core
 
-layout (triangles, equal_spacing, cw) in;
+layout (triangles, equal_spacing, ccw) in;
 
 in vec3 tPosition[];
 in vec2 tTexcoord[];
@@ -16,21 +16,30 @@ uniform mat4 projmat;
 uniform mat4 mvmat;
 uniform mat3 normalmat;
 
+layout(binding = 4) uniform sampler2D heightmap;
+
 void main ()
 {
-	gl_Position = projmat * mvmat
-		      * vec4 (gl_TessCoord.x * tPosition[0]
-		      	      + gl_TessCoord.y * tPosition[1]
-			      + gl_TessCoord.z * tPosition[2], 1.0);
-
 	uv = gl_TessCoord.x * tTexcoord[0]
 	     + gl_TessCoord.y * tTexcoord[1]
 	     + gl_TessCoord.z * tTexcoord[2];
 	fTangent = gl_TessCoord.x * tTangent[0]
 		   + gl_TessCoord.y * tTangent[1]
 		   + gl_TessCoord.z * tTangent[2];
-	fNormal = normalmat * (gl_TessCoord.x * tNormal[0]
+	vec3 normal;
+	normal = (gl_TessCoord.x * tNormal[0]
 		   + gl_TessCoord.y * tNormal[1]
 		   + gl_TessCoord.z * tNormal[2]);
+	fNormal = normalmat * normal;
 	fBitangent = cross (fNormal, fTangent);
+
+
+	float height;
+	height = texture (heightmap, uv).x * 0.05;
+
+	gl_Position = projmat * mvmat
+		      * (vec4 (gl_TessCoord.x * tPosition[0]
+		      	       + gl_TessCoord.y * tPosition[1]
+			       + gl_TessCoord.z * tPosition[2], 1.0)
+			 + vec4 (height * normal, 0.0));
 }

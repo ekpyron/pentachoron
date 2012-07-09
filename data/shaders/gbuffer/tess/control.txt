@@ -10,6 +10,8 @@ out vec2 tTexcoord[];
 out vec3 tTangent[];
 out vec3 tNormal[];
 
+uniform unsigned int tessLevel;
+
 #define ID gl_InvocationID
 
 void main ()
@@ -20,9 +22,9 @@ void main ()
 	tNormal[ID] = vNormal[ID];
 	if (ID == 0)
 	{
-		gl_TessLevelInner[0] = 8;
-		gl_TessLevelOuter[0] = 8;
-		gl_TessLevelOuter[1] = 8;
-		gl_TessLevelOuter[2] = 8;
+		gl_TessLevelInner[0] = tessLevel;
+		gl_TessLevelOuter[0] = tessLevel;
+		gl_TessLevelOuter[1] = tessLevel;
+		gl_TessLevelOuter[2] = tessLevel;
 	}
 }

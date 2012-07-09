@@ -99,6 +99,16 @@ Interface::Interface (void)
 							r->gbuffer.SetWireframe (!r->gbuffer.GetWireframe ());
 						}
 					}, false },
+				{
+					"Tesselation level: ", [&] (void) {
+						font.Print (r->geometry.GetTessLevel ());
+					}, [&] (int what) {
+						GLint t = r->geometry.GetTessLevel ();
+						t += what;
+						if (t < 1)
+							 t = 1;
+						r->geometry.SetTessLevel (t);
+					}, false },
 				{ "Shadows", NULL, [&] (int what) {
 						if (!what)
 						{
