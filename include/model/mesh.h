@@ -34,13 +34,15 @@ public:
 	 Mesh &operator= (const Mesh&) = delete;
 	 void Render (const gl::Program &program, GLuint passtype);
 	 bool IsTransparent (void) const;
+	 bool IsTessellated (void) const;
 	 bool IsDoubleSided (void) const;
 	 static GLuint culled;
 private:
 	 bool shadows;
+	 bool tessellated;
 	 bool Load (const std::string &filename, const Material *mat,
 							glm::vec3 &min, glm::vec3 &max,
-							bool shadows);
+							bool shadows, bool tessellated=false);
 	 Model &parent;
 	 friend class Model;
 	 const Material *material;

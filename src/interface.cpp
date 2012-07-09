@@ -88,6 +88,17 @@ Interface::Interface (void)
 							r->composition.SetTileBased (!r->composition.GetTileBased ());
 						}
 					}, false },
+				{ "Wireframe: ", [&] (void) {
+						if (r->gbuffer.GetWireframe ())
+							 font.Print ("yes");
+						else
+							 font.Print ("no");
+					}, [&] (int what) {
+						if (!what)
+						{
+							r->gbuffer.SetWireframe (!r->gbuffer.GetWireframe ());
+						}
+					}, false },
 				{ "Shadows", NULL, [&] (int what) {
 						if (!what)
 						{

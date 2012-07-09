@@ -24,7 +24,7 @@
 Mesh::Mesh (Model &model) : trianglecount (0), vertexcount (0),
 														parent (model), material (NULL),
 														bsphere ({ glm::vec3 (0, 0, 0), 0.0f }),
-														shadows (true)
+														shadows (true), tessellated (false)
 {
 }
 
@@ -38,13 +38,15 @@ Mesh::Mesh (Mesh &&mesh)
 		material (mesh.material),
 		parent (mesh.parent),
 		bsphere ({ mesh.bsphere.center, mesh.bsphere.radius }),
-		shadows (mesh.shadows)
+		shadows (mesh.shadows),
+		tessellated (mesh.tessellated)
 {
 	mesh.trianglecount = mesh.vertexcount = 0;
 	mesh.bsphere.center = glm::vec3 (0, 0, 0);
 	mesh.bsphere.radius = 0.0f;
 	mesh.material = NULL;
 	mesh.shadows = true;
+	mesh.tessellated = false;
 }
 
 Mesh::~Mesh (void)
@@ -63,19 +65,22 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 	bsphere.center = mesh.bsphere.center;
 	bsphere.radius = mesh.bsphere.radius;
 	shadows = mesh.shadows;
+	tessellated = mesh.tessellated;
 	parent = std::move (mesh.parent);
 	mesh.trianglecount = mesh.vertexcount = 0;
 	mesh.material = NULL;
 	mesh.bsphere.center = glm::vec3 (0, 0, 0);
 	mesh.bsphere.radius = 0.0f;
 	mesh.shadows = true;
+	mesh.tessellated = false;
 }
 
 bool Mesh::Load (const std::string &filename, const Material *mat,
 								 glm::vec3 &min, glm::vec3 &max,
-								 bool s)
+								 bool s, bool tess)
 {
 	shadows = s;
+	tessellated = tess;
 	material = mat;
 
 	try {
@@ -210,6 +215,11 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 	}
 }
 
+bool Mesh::IsTessellated (void) const
+{
+	return tessellated;
+}
+
 bool Mesh::IsTransparent (void) const
 {
 	return material->IsTransparent ();
@@ -239,8 +249,17 @@ void Mesh::Render (const gl::Program &program, GLuint passtype)
 	if (material->IsDoubleSided ())
 		 gl::Disable (GL_CULL_FACE);
 	
-	gl::DrawElements (GL_TRIANGLES, trianglecount * 3,
-										GL_UNSIGNED_INT, NULL);
+	if (IsTessellated ())
+	{
+		gl::PatchParameteri (GL_PATCH_VERTICES, 3);
+		gl::DrawElements (GL_PATCHES, trianglecount * 3,
+											GL_UNSIGNED_INT, NULL);
+	}
+	else
+	{
+		gl::DrawElements (GL_TRIANGLES, trianglecount * 3,
+											GL_UNSIGNED_INT, NULL);
+	}
 
 	if (material->IsDoubleSided ())
 		 gl::Enable (GL_CULL_FACE);

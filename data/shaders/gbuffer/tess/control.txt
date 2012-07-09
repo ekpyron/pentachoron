@@ -1,0 +1,28 @@
+#version 420 core
+
+layout(vertices = 3) out;
+in vec3 vPosition[];
+in vec2 vTexcoord[];
+in vec3 vTangent[];
+in vec3 vNormal[];
+out vec3 tPosition[];
+out vec2 tTexcoord[];
+out vec3 tTangent[];
+out vec3 tNormal[];
+
+#define ID gl_InvocationID
+
+void main ()
+{
+	tPosition[ID] = vPosition[ID];
+	tTexcoord[ID] = vTexcoord[ID];
+	tTangent[ID] = vTangent[ID];
+	tNormal[ID] = vNormal[ID];
+	if (ID == 0)
+	{
+		gl_TessLevelInner[0] = 8;
+		gl_TessLevelOuter[0] = 8;
+		gl_TessLevelOuter[1] = 8;
+		gl_TessLevelOuter[2] = 8;
+	}
+}

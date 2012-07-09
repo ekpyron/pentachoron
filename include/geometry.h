@@ -41,7 +41,8 @@ public:
 		 static constexpr GLuint GBuffer = 0x00000000;
 		 static constexpr GLuint GBufferTransparency = 0x10000000;
 		 static constexpr GLuint GBufferSRAA = 0x20000000;
-		 static constexpr GLuint ShadowMap = 0x30000000;
+		 static constexpr GLuint GBufferTess = 0x30000000;
+		 static constexpr GLuint ShadowMap = 0x40000000;
 		 static constexpr GLuint Mask = 0xF0000000;
 	 };
 

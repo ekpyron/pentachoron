@@ -1,0 +1,36 @@
+#version 420 core
+
+layout (triangles, equal_spacing, cw) in;
+
+in vec3 tPosition[];
+in vec2 tTexcoord[];
+in vec3 tTangent[];
+in vec3 tNormal[];
+
+out vec2 uv;
+out vec3 fTangent;
+out vec3 fBitangent;
+out vec3 fNormal;
+
+uniform mat4 projmat;
+uniform mat4 mvmat;
+uniform mat3 normalmat;
+
+void main ()
+{
+	gl_Position = projmat * mvmat
+		      * vec4 (gl_TessCoord.x * tPosition[0]
+		      	      + gl_TessCoord.y * tPosition[1]
+			      + gl_TessCoord.z * tPosition[2], 1.0);
+
+	uv = gl_TessCoord.x * tTexcoord[0]
+	     + gl_TessCoord.y * tTexcoord[1]
+	     + gl_TessCoord.z * tTexcoord[2];
+	fTangent = gl_TessCoord.x * tTangent[0]
+		   + gl_TessCoord.y * tTangent[1]
+		   + gl_TessCoord.z * tTangent[2];
+	fNormal = normalmat * (gl_TessCoord.x * tNormal[0]
+		   + gl_TessCoord.y * tNormal[1]
+		   + gl_TessCoord.z * tNormal[2]);
+	fBitangent = cross (fNormal, fTangent);
+}

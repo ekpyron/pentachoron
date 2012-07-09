@@ -41,6 +41,9 @@ public:
 	 GLuint GetWidth (void);
 	 GLuint GetHeight (void);
 
+	 bool GetWireframe (void);
+	 void SetWireframe (bool w);
+
 	 void SetAntialiasing (GLuint samples);
 	 void SetProjMatrix (const glm::mat4 &projmat);
 	 gl::Texture fraglisttex;
@@ -49,6 +52,7 @@ public:
 
 private:
 	 GLuint width, height;
+	 bool wireframe;
 
 	 gl::Framebuffer framebuffer;
 	 gl::Framebuffer multisamplefb;
@@ -59,6 +63,8 @@ private:
 	 gl::Program transparencyprog;
 	 gl::Program sraaprog;
 	 gl::Sampler depthsampler;
+
+	 gl::Program tessprogram;
 
 	 gl::Buffer counter;
 };

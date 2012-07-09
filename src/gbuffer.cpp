@@ -30,6 +30,21 @@ GBuffer::~GBuffer (void)
 
 bool GBuffer::Init (void)
 {
+	if (!LoadProgram (tessprogram, MakePath ("shaders", "bin",
+																					 "gbuffer_tess.bin"),
+										{}, { std::make_pair (GL_TESS_CONTROL_SHADER,
+																					MakePath ("shaders", "gbuffer",
+																										"tess", "control.txt")),
+												 std::make_pair (GL_TESS_EVALUATION_SHADER,
+																				 MakePath ("shaders", "gbuffer",
+																									 "tess", "evaluation.txt")),
+												 std::make_pair (GL_VERTEX_SHADER,
+																				 MakePath ("shaders", "gbuffer",
+																									 "tess", "vshader.txt")),
+												 std::make_pair (GL_FRAGMENT_SHADER,
+																				 MakePath ("shaders", "gbuffer",
+																									 "tess", "fshader.txt")) }))
+		 return false;
 	if (!LoadProgram (program, MakePath ("shaders", "bin", "gbuffer.bin"),
 										{}, {	std::make_pair (GL_VERTEX_SHADER,
 																					MakePath ("shaders", "gbuffer",
@@ -120,6 +135,9 @@ bool GBuffer::Init (void)
 	program["viewport"] = glm::uvec2 (width, height);
 	program["farClipPlane"] = r->camera.GetFarClipPlane ();
 	program["nearClipPlane"] = r->camera.GetNearClipPlane ();
+	tessprogram["viewport"] = glm::uvec2 (width, height);
+	tessprogram["farClipPlane"] = r->camera.GetFarClipPlane ();
+	tessprogram["nearClipPlane"] = r->camera.GetNearClipPlane ();
 	transparencyprog["viewport"] = glm::uvec2 (width, height);
 	transparencyprog["farClipPlane"] = r->camera.GetFarClipPlane ();
 	transparencyprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
@@ -127,9 +145,21 @@ bool GBuffer::Init (void)
 	sraaprog["farClipPlane"] = r->camera.GetFarClipPlane ();
 	sraaprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
 
+	wireframe = false;
+
 	GL_CHECK_ERROR;
 
 	return true;
+}
+
+void GBuffer::SetWireframe (bool w)
+{
+	wireframe = w;
+}
+
+bool GBuffer::GetWireframe (void)
+{
+	return wireframe;
 }
 
 void GBuffer::SetAntialiasing (GLuint samples)
@@ -172,6 +202,7 @@ GLuint GBuffer::GetHeight (void)
 void GBuffer::SetProjMatrix (const glm::mat4 &projmat)
 {
 	program["projmat"] = projmat;
+	tessprogram["projmat"] = projmat;	
 	transparencyprog["projmat"] = projmat;
 	sraaprog["projmat"] = projmat;	
 }
@@ -179,6 +210,9 @@ void GBuffer::SetProjMatrix (const glm::mat4 &projmat)
 void GBuffer::Render (Geometry &geometry)
 {
 	r->culling.SetProjMatrix (r->camera.GetProjMatrix ());
+
+	if (wireframe)
+		 gl::PolygonMode (GL_FRONT_AND_BACK, GL_LINE);
 
 	gl::Enable (GL_DEPTH_TEST);
 	gl::DepthMask (GL_TRUE);
@@ -196,6 +230,11 @@ void GBuffer::Render (Geometry &geometry)
 
 	geometry.Render (Geometry::Pass::GBuffer,
 									 program, r->camera.GetViewMatrix ());
+
+	tessprogram.Use ();
+
+	geometry.Render (Geometry::Pass::GBufferTess,
+									 tessprogram, r->camera.GetViewMatrix ());
 
 	transparencyprog.Use ();
 
@@ -241,6 +280,9 @@ void GBuffer::Render (Geometry &geometry)
 
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	gl::Program::UseNone ();
+
+	if (wireframe)
+		 gl::PolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 	
 	GL_CHECK_ERROR;
 }
