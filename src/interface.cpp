@@ -104,7 +104,17 @@ Interface::Interface (void)
 						font.Print (r->geometry.GetTessLevel ());
 					}, [&] (int what) {
 						GLint t = r->geometry.GetTessLevel ();
-						t += what;
+						if (glfwGetKey (GLFW_KEY_LSHIFT))
+						{
+							if (what < 0)
+								 t /= 2;
+							if (what > 0)
+								 t *= 2;
+						}
+						else
+						{
+							t += what;
+						}
 						if (t < 1)
 							 t = 1;
 						r->geometry.SetTessLevel (t);
