@@ -76,6 +76,7 @@ private:
 		* of the shadow caster. Stored in a smart uniform wrapper.
 		*/
 	 gl::SmartUniform<glm::mat4> projmat;
+	 gl::SmartUniform<glm::mat4> tessprojmat;
 	 /** Shadow map width.
 		*/
 	 GLuint width;
@@ -86,6 +87,7 @@ private:
 		* OpenGL shader program used to fill the shadow map.
 		*/
 	 gl::Program program;
+	 gl::Program tessprogram;
 	 gl::Program vblurprog;
 	 gl::Program hblurprog;
 	 gl::Sampler sampler;

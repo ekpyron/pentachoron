@@ -24,7 +24,8 @@
 Mesh::Mesh (Model &model) : trianglecount (0), vertexcount (0),
 														parent (model), material (NULL),
 														bsphere ({ glm::vec3 (0, 0, 0), 0.0f }),
-														shadows (true), tessellated (false)
+														shadows (true), tessellated (false),
+														shadowtessellated (false)
 {
 }
 
@@ -39,7 +40,8 @@ Mesh::Mesh (Mesh &&mesh)
 		parent (mesh.parent),
 		bsphere ({ mesh.bsphere.center, mesh.bsphere.radius }),
 		shadows (mesh.shadows),
-		tessellated (mesh.tessellated)
+		tessellated (mesh.tessellated),
+		shadowtessellated (mesh.shadowtessellated)
 {
 	mesh.trianglecount = mesh.vertexcount = 0;
 	mesh.bsphere.center = glm::vec3 (0, 0, 0);
@@ -47,6 +49,7 @@ Mesh::Mesh (Mesh &&mesh)
 	mesh.material = NULL;
 	mesh.shadows = true;
 	mesh.tessellated = false;
+	mesh.shadowtessellated = false;
 }
 
 Mesh::~Mesh (void)
@@ -66,6 +69,7 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 	bsphere.radius = mesh.bsphere.radius;
 	shadows = mesh.shadows;
 	tessellated = mesh.tessellated;
+	shadowtessellated = mesh.shadowtessellated;
 	parent = std::move (mesh.parent);
 	mesh.trianglecount = mesh.vertexcount = 0;
 	mesh.material = NULL;
@@ -73,14 +77,16 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 	mesh.bsphere.radius = 0.0f;
 	mesh.shadows = true;
 	mesh.tessellated = false;
+	mesh.shadowtessellated = false;
 }
 
 bool Mesh::Load (const std::string &filename, const Material *mat,
 								 glm::vec3 &min, glm::vec3 &max,
-								 bool s, bool tess)
+								 bool s, bool tess, bool shadowtess)
 {
 	shadows = s;
 	tessellated = tess;
+	shadowtessellated = shadowtess;
 	material = mat;
 
 	try {
@@ -220,6 +226,11 @@ bool Mesh::IsTessellated (void) const
 	return tessellated;
 }
 
+bool Mesh::IsShadowTessellated (void) const
+{
+	return shadowtessellated;
+}
+
 bool Mesh::IsTransparent (void) const
 {
 	return material->IsTransparent ();
@@ -227,8 +238,16 @@ bool Mesh::IsTransparent (void) const
 
 void Mesh::Render (const gl::Program &program, GLuint passtype)
 {
-	if (passtype == Geometry::Pass::ShadowMap && !shadows)
+	if (((passtype == Geometry::Pass::ShadowMap)
+			 || (passtype == Geometry::Pass::ShadowMapTess))
+			&& !shadows)
 		 return;
+	if (!IsTessellated () && (passtype == Geometry::Pass::GBufferTess))
+			 return;
+	if ((!IsTessellated () || !IsShadowTessellated ())
+			&& (passtype == Geometry::Pass::ShadowMapTess))
+		 return;
+			
 	if (!r->culling.IsVisible
 			(bsphere.center, bsphere.radius))
 		return;
@@ -248,12 +267,20 @@ void Mesh::Render (const gl::Program &program, GLuint passtype)
 
 	if (material->IsDoubleSided ())
 		 gl::Disable (GL_CULL_FACE);
-	
+
 	if (IsTessellated ())
 	{
-		gl::PatchParameteri (GL_PATCH_VERTICES, 3);
-		gl::DrawElements (GL_PATCHES, trianglecount * 3,
-											GL_UNSIGNED_INT, NULL);
+		if ((passtype == Geometry::Pass::ShadowMap) && !IsShadowTessellated ())
+		{
+			gl::DrawElements (GL_TRIANGLES, trianglecount * 3,
+												GL_UNSIGNED_INT, NULL);
+		}
+		else
+		{
+			gl::PatchParameteri (GL_PATCH_VERTICES, 3);
+			gl::DrawElements (GL_PATCHES, trianglecount * 3,
+												GL_UNSIGNED_INT, NULL);
+		}
 	}
 	else
 	{

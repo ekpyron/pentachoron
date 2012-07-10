@@ -35,14 +35,17 @@ public:
 	 void Render (const gl::Program &program, GLuint passtype);
 	 bool IsTransparent (void) const;
 	 bool IsTessellated (void) const;
+	 bool IsShadowTessellated (void) const;
 	 bool IsDoubleSided (void) const;
 	 static GLuint culled;
 private:
 	 bool shadows;
 	 bool tessellated;
+	 bool shadowtessellated;
 	 bool Load (const std::string &filename, const Material *mat,
 							glm::vec3 &min, glm::vec3 &max,
-							bool shadows, bool tessellated=false);
+							bool shadows, bool tessellated=false,
+							bool shadowtessellated=false);
 	 Model &parent;
 	 friend class Model;
 	 const Material *material;

@@ -1,6 +1,3 @@
-* Have a look at freeimage (freeimage.sourceforge.net).
+* Fix light culling for all angles/Improve light culling in general.
 
-* Think about removing the initial glow map produced by the composition
-  kernel and use the screen map instead.
-
-* Fix light culling for all angles.  
+* Rewrite the geometry rendering (without the ugly Geometry::Pass enum).

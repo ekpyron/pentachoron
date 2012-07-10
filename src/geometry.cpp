@@ -264,6 +264,10 @@ void Geometry::Render (GLuint p,
 	program = &prog;
 	switch (p & Pass::Mask)
 	{
+	case Pass::ShadowMapTess:
+		prog["tessLevel"] = tessLevel;
+		sampler.Bind (4);
+		break;
 	case Pass::GBufferTess:
 		prog["tessLevel"] = tessLevel;
 		sampler.Bind (4);

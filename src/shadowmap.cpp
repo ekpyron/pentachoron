@@ -42,6 +42,21 @@ bool ShadowMap::Init (void)
 																				 MakePath ("shaders", "shadowmap",
 																									 "fshader.txt")) }))
 		 return false;
+	if (!LoadProgram (tessprogram, MakePath ("shaders", "bin",
+																					 "shadowmap_tess.bin"),
+										{}, {	std::make_pair (GL_TESS_CONTROL_SHADER,
+																					MakePath ("shaders", "shadowmap",
+																										"tess", "control.txt")),
+												 std::make_pair (GL_TESS_EVALUATION_SHADER,
+																				 MakePath ("shaders", "shadowmap",
+																									 "tess", "evaluation.txt")),
+												 std::make_pair (GL_VERTEX_SHADER,
+																				 MakePath ("shaders", "shadowmap",
+																									 "tess", "vshader.txt")),
+												 std::make_pair (GL_FRAGMENT_SHADER,
+																				 MakePath ("shaders", "shadowmap",
+																									 "tess", "fshader.txt")) }))
+		 return false;
 	if (!LoadProgram (hblurprog, MakePath ("shaders", "bin",
 																				 "shadowmap_hblur.bin"),
 										GL_FRAGMENT_SHADER, std::string (),
@@ -95,6 +110,8 @@ bool ShadowMap::Init (void)
 	vblurfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
 	projmat = gl::SmartUniform<glm::mat4> (program["projmat"], glm::mat4(1));
+	tessprojmat = gl::SmartUniform<glm::mat4> (tessprogram["projmat"],
+																						 glm::mat4(1));
 
 	return true;
 }
@@ -132,6 +149,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 																	 * 180.0f / float (DRE_PI),
 																	 (float) width / (float) height,
 																	 3.0f, 500.0f));
+		tessprojmat.Set (projmat.Get ());
 	}
 	else
 	{
@@ -189,6 +207,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 		projmat.Set (glm::ortho (mins.x, maxes.x,
 														 mins.y, maxes.y,
 														 -maxes.z, -mins.z));
+		tessprojmat.Set (projmat.Get ());
 	}
 	r->culling.SetProjMatrix (projmat.Get ());
 
@@ -207,6 +226,10 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 
 	geometry.Render (Geometry::Pass::ShadowMap + shadowid * 0x00010000,
 									 program, vmat);
+
+	tessprogram.Use ();
+	geometry.Render (Geometry::Pass::ShadowMapTess + shadowid * 0x00010000,
+									 tessprogram, vmat);
 
 	gl::DepthMask (GL_FALSE);
 

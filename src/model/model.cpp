@@ -96,7 +96,8 @@ bool Model::Load (const std::string &filename)
 		if (!meshes.back ().Load (MakePath ("models", filename),
 															&material, bbox.min, bbox.max,
 															node["shadows"].as<bool> (true),
-															node["tessellated"].as<bool> (false)))
+															node["tessellated"].as<bool> (false),
+															node["shadows_tessellated"].as<bool> (false)))
 		{
 			(*logstream) << "Mesh " << filename
 									 << " could not be loaded." << std::endl;
@@ -224,17 +225,25 @@ void Model::Render (GLuint pass, const gl::Program &program)
 	{
 		for (Mesh &mesh : meshes)
 		{
-			if (passtype == Geometry::Pass::GBufferTess)
+			if (mesh.IsTessellated ())
 			{
-				if (mesh.IsTessellated ())
+				if ((passtype == Geometry::Pass::GBufferTess)
+						|| (passtype == Geometry::Pass::ShadowMapTess)
+						|| ((passtype == Geometry::Pass::ShadowMap)
+								&& !mesh.IsShadowTessellated ()))
+				{
 					 mesh.Render (program, passtype);
+				}
 			}
 			else
 			{
+
 				if (((passtype == Geometry::Pass::GBufferTransparency)
 						 == mesh.IsTransparent ())
 						|| (passtype == Geometry::Pass::ShadowMap))
-					 mesh.Render (program, passtype);
+				{
+					mesh.Render (program, passtype);
+				}
 			}
 		}
 	}
