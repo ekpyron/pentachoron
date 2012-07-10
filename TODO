@@ -1,3 +1,5 @@
 * Fix light culling for all angles/Improve light culling in general.
 
 * Rewrite the geometry rendering (without the ugly Geometry::Pass enum).
+
+* Have another look at/fix the specular lighting.

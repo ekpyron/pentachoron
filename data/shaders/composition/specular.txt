@@ -32,15 +32,14 @@ float specular_phong (in struct Parameter param,
 	k = dot (viewdir, reflect (-lightdir, normal));
 	k = clamp (k, 0.0f, 1.0f);
 	k = pow (k, param.param1);
-	return k * dot (normal, viewdir);
+	return k * dot (normal, lightdir);
 }
 
 float specular_beckmann (in struct Parameter param,
       		        in vec3 normal, in vec3 halfvec)
 {
 	float e, m;
-	e = acos (dot (normal, halfvec));
-	e = cos (clamp (e, 0.0f, 1.0f));
+	e = dot (normal, halfvec);
 	e = e * e;
 	m = param.param1;
 	m = m * m;
@@ -54,10 +53,6 @@ float ComputeSpecular (in struct Parameter param,
 	float s;
 
 	vec3 halfvec = normalize (viewdir + lightdir);
-
-	// no specular if light is on the opposite side
-	if (dot (normal, lightdir) < 0)
-	   return 0.0f;
 
 	switch (param.model)
 	{
@@ -93,9 +88,10 @@ float ComputeSpecular (in struct Parameter param,
 	g2 = 2 * dot (normal, halfvec) * dot (normal, lightdir);
 	g1 /= dot (viewdir, halfvec);
 	g2 /= dot (viewdir, halfvec);
-	g = min (1.0f, min (g1, g2));
+	g = max (min (1.0f, min (g1, g2)), -1.0f);
 
 	s *= g / dot (normal, viewdir);
 
-	return s;
+
+	return clamp (abs (s), 0.0f, 10.0f);
 }
