@@ -55,6 +55,10 @@ float ComputeSpecular (in struct Parameter param,
 
 	vec3 halfvec = normalize (viewdir + lightdir);
 
+	// no specular if light is on the opposite side
+	if (dot (normal, lightdir) < 0)
+	   return 0.0f;
+
 	switch (param.model)
 	{
 		case 1:
