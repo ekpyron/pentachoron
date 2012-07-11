@@ -23,5 +23,5 @@ void main (void)
 {
 	vec2 coord;
 	coord = gl_FragCoord.xy / viewport;
-	color = texture2D (normalbuffer, coord);
+	color = texture2D (normalbuffer, coord) * 2 - 1;
 }

@@ -35,8 +35,10 @@ layout (early_fragment_tests) in;
 in vec2 uv;
 
 smooth in vec3 fTangent;
-smooth in vec3 fBinormal;
+smooth in vec3 fBitangent;
 smooth in vec3 fNormal;
+
+uniform mat3 normalmat;
 
 void main (void)
 {
@@ -54,15 +56,15 @@ void main (void)
 	{
 		vec3 n;
 		mat3x3 tangentmat;
-		tangentmat = mat3x3 (fTangent, fBinormal, fNormal);
+		tangentmat = mat3x3 (fTangent, fBitangent, fNormal);
 
 		n.xy = texture2D (normalmap, uv).xy * 2.0 - 1.0;
 		n.z = sqrt (1.0 - n.x * n.x - n.y * n.y);
-		normal.xyz = (tangentmat * n) * 0.5 + 0.5;
+		normal.xyz = (normalmat * tangentmat * n) * 0.5 + 0.5;
 	}
 	else
 	{
-		normal.xyz = fNormal * 0.5 + 0.5;
+		normal.xyz = normalmat * fNormal * 0.5 + 0.5;
 	}
 
 	if (parametermap_enabled)

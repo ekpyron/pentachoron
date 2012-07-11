@@ -34,7 +34,7 @@ out vec3 fNormal;
 void main (void)
 {
 	fTangent = tangent;
-	fNormal = normalmat * normal;
+	fNormal = normal;
 	fBitangent = cross (normal, tangent);
 	uv = texcoord;
 	gl_Position = projmat * mvmat * vec4 (vertex, 1.0);

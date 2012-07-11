@@ -25,6 +25,7 @@ out vec2 vTexcoord;
 
 out vec3 vTangent;
 out vec3 vNormal;
+out vec3 vBitangent;
 
 out vec3 vPosition;
 
@@ -32,6 +33,7 @@ void main (void)
 {
 	vTangent = tangent;
 	vNormal = normal;
+	vBitangent = cross (normal, tangent);
 	vTexcoord = texcoord;
 	vPosition = vertex;
 }
