@@ -57,7 +57,8 @@ private:
 	 } bsphere;
 
 	 gl::VertexArray vertexarray, depthonlyarray;
-	 GLuint trianglecount;
+	 GLuint facecount;
+	 GLuint edgesperface;
 	 GLuint vertexcount;
 	 std::vector<gl::Buffer> buffers;
 	 gl::Buffer indices;

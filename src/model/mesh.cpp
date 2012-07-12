@@ -15,13 +15,13 @@
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "model/mesh.h"
-#include <openctmpp.h>
 #include <iostream>
+#include <fstream>
 #include "model/model.h"
 #include "geometry.h"
 #include "renderer.h"
 
-Mesh::Mesh (Model &model) : trianglecount (0), vertexcount (0),
+Mesh::Mesh (Model &model) : facecount (0), edgesperface (0), vertexcount (0),
 														parent (model), material (NULL),
 														bsphere ({ glm::vec3 (0, 0, 0), 0.0f }),
 														shadows (true), tessellated (false),
@@ -32,7 +32,8 @@ Mesh::Mesh (Model &model) : trianglecount (0), vertexcount (0),
 Mesh::Mesh (Mesh &&mesh)
 	: vertexarray (std::move (mesh.vertexarray)),
 		depthonlyarray (std::move (mesh.depthonlyarray)),
-		trianglecount (mesh.trianglecount),
+		facecount (mesh.facecount),
+		edgesperface (mesh.edgesperface),
 		vertexcount (mesh.vertexcount),
 		buffers (std::move (mesh.buffers)),
 		indices (std::move (mesh.indices)),
@@ -43,7 +44,7 @@ Mesh::Mesh (Mesh &&mesh)
 		tessellated (mesh.tessellated),
 		shadowtessellated (mesh.shadowtessellated)
 {
-	mesh.trianglecount = mesh.vertexcount = 0;
+	mesh.facecount = mesh.edgesperface = mesh.vertexcount = 0;
 	mesh.bsphere.center = glm::vec3 (0, 0, 0);
 	mesh.bsphere.radius = 0.0f;
 	mesh.material = NULL;
@@ -60,7 +61,8 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 {
 	vertexarray = std::move (mesh.vertexarray);
 	depthonlyarray = std::move (mesh.depthonlyarray);
-	trianglecount = mesh.trianglecount;
+	facecount = mesh.facecount;
+	edgesperface = mesh.edgesperface,
 	vertexcount = mesh.vertexcount;
 	buffers = std::move (mesh.buffers);
 	indices = std::move (indices);
@@ -71,7 +73,7 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 	tessellated = mesh.tessellated;
 	shadowtessellated = mesh.shadowtessellated;
 	parent = std::move (mesh.parent);
-	mesh.trianglecount = mesh.vertexcount = 0;
+	mesh.facecount = mesh.edgesperface = mesh.vertexcount = 0;
 	mesh.material = NULL;
 	mesh.bsphere.center = glm::vec3 (0, 0, 0);
 	mesh.bsphere.radius = 0.0f;
@@ -89,42 +91,95 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 	shadowtessellated = shadowtess;
 	material = mat;
 
-	try {
-		CTMimporter importer;
-		const glm::vec3 *vertices;
-		const glm::vec3 *normals;
-		const glm::vec4 *tangents;
-		const glm::vec4 *bitangents;
-		const GLuint *indexarray;
+	typedef struct header
+	{
+		 char magic[4];
+		 GLuint edgesperface;
+		 GLuint vertexcount;
+		 GLuint facecount;
+	} header_t;
 
-		importer.Load (filename.c_str ());
+	header_t header;
 
-		if (!importer.GetInteger (CTM_HAS_NORMALS))
-			 return false;
+	std::ifstream file (filename, std::ios_base::in|std::ios_base::binary);
 
-		if (importer.GetInteger (CTM_UV_MAP_COUNT) < 1)
-			 return false;
+	if (!file.is_open ())
+	{
+		(*logstream) << "Cannot open " << filename << std::endl;
+		return false;
+	}
 
-		trianglecount = importer.GetInteger (CTM_TRIANGLE_COUNT);
-		vertexcount = importer.GetInteger (CTM_VERTEX_COUNT);
-		indexarray = importer.GetIntegerArray (CTM_INDICES);
+	file.read (reinterpret_cast<char*> (&header), sizeof (header_t));
+	if (file.gcount () != sizeof (header_t))
+	{
+		(*logstream) << "Cannot read the dmf header of "
+								 << filename << std::endl;
+		return false;
+	}
 
-		vertices = reinterpret_cast<const glm::vec3*>
-			 (importer.GetFloatArray (CTM_VERTICES));
-		normals = reinterpret_cast<const glm::vec3*>
-			 (importer.GetFloatArray (CTM_NORMALS));
+	const char magic[4] = { 'D', 'M', 'F', 0x00 };
+	if (memcmp (header.magic, magic, 4))
+	{
+		(*logstream) << filename << " is no dmf model." << std::endl;
+		return false;
+	}
 
-		CTMenum attrib = importer.GetNamedAttribMap ("TANGENTS");
-		if (attrib == CTM_NONE)
-			 return false;
-		tangents = reinterpret_cast<const glm::vec4*>
-			 (importer.GetFloatArray (attrib));
+	std::vector<glm::vec3> vertices;
+	std::vector<glm::vec3> normals;
+	std::vector<glm::vec3> tangents;
+	std::vector<glm::vec2> texcoords;
+	std::vector<GLuint> indexarray;
 
-		attrib = importer.GetNamedAttribMap ("BITANGENTS");
-		if (attrib == CTM_NONE)
-			 return false;
-		bitangents = reinterpret_cast<const glm::vec4*>
-			 (importer.GetFloatArray (attrib));
+	vertexcount = header.vertexcount;
+	facecount = header.facecount;
+	edgesperface = header.edgesperface;
+	
+	vertices.resize (vertexcount);
+	normals.resize (vertexcount);
+	tangents.resize (vertexcount);
+	texcoords.resize (vertexcount);
+	indexarray.resize (facecount * edgesperface);
+
+	file.read (reinterpret_cast<char*> (&vertices[0]),
+						 vertexcount * sizeof (glm::vec3));
+	if (file.gcount () != vertexcount * sizeof (glm::vec3))
+	{
+		(*logstream) << "Failed to load the vertices from "
+								 << filename << "." << std::endl;
+		return false;
+	}
+	file.read (reinterpret_cast<char*> (&normals[0]),
+						 vertexcount * sizeof (glm::vec3));
+	if (file.gcount () != vertexcount * sizeof (glm::vec3))
+	{
+		(*logstream) << "Failed to load the normals from "
+								 << filename << "." << std::endl;
+		return false;
+	}
+	file.read (reinterpret_cast<char*> (&tangents[0]),
+						 vertexcount * sizeof (glm::vec3));
+	if (file.gcount () != vertexcount * sizeof (glm::vec3))
+	{
+		(*logstream) << "Failed to load the tangents from "
+								 << filename << "." << std::endl;
+		return false;
+	}
+	file.read (reinterpret_cast<char*> (&texcoords[0]),
+						 vertexcount * sizeof (glm::vec2));
+	if (file.gcount () != vertexcount * sizeof (glm::vec2))
+	{
+		(*logstream) << "Failed to load the texture coordinates from "
+								 << filename << "." << std::endl;
+		return false;
+	}
+	file.read (reinterpret_cast<char*> (&indexarray[0]),
+						 facecount * edgesperface * sizeof (GLuint));
+	if (file.gcount () != facecount * edgesperface * sizeof (GLuint))
+	{
+		(*logstream) << "Failed to load the indices from "
+								 << filename << "." << std::endl;
+		return false;
+	}
 
 	// calculate the center of the bounding sphere
 	// and calculate the bounding box
@@ -164,23 +219,14 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 
 	buffers.emplace_back ();
 	buffers.back ().Data (vertexcount * sizeof (glm::vec3),
-												vertices, GL_STATIC_DRAW);
+												&vertices[0], GL_STATIC_DRAW);
+
 	buffers.emplace_back ();
 	buffers.back ().Data (vertexcount * sizeof (glm::vec3),
-												normals, GL_STATIC_DRAW);
+												&normals[0], GL_STATIC_DRAW);
 	buffers.emplace_back ();
-
-	{
-		buffers.back ().Data (vertexcount * sizeof (glm::vec3),
-													NULL, GL_STATIC_DRAW);
-		glm::vec3 *dst = reinterpret_cast<glm::vec3*>
-			 (buffers.back ().Map (GL_WRITE_ONLY));
-		for (auto i = 0; i < vertexcount; i++)
-		{
-			dst[i] = glm::vec3 (tangents[i]);
-		}
-		buffers.back ().Unmap ();
-	}
+	buffers.back ().Data (vertexcount * sizeof (glm::vec3),
+												&tangents[0], GL_STATIC_DRAW);
 
 	depthonlyarray.VertexAttribOffset(buffers[0], 0, 3, GL_FLOAT,
 																		GL_FALSE, 0, 0);
@@ -193,32 +239,18 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 		vertexarray.EnableVertexAttrib (i);
 	}
 
-	for (auto i = 0; i < importer.GetInteger (CTM_UV_MAP_COUNT); i++)
-	{
-		const glm::vec2 *texcoords;
-		texcoords = reinterpret_cast<const glm::vec2*>
-			 (importer.GetFloatArray (CTM_UV_MAP_1));
-		buffers.emplace_back ();
-		buffers.back ().Data (vertexcount * sizeof (glm::vec2),
-													texcoords,
-													GL_STATIC_DRAW);
-		vertexarray.VertexAttribOffset (buffers.back (), 3 + i, 2, GL_FLOAT,
-																		GL_FALSE, 0, 0);
-		vertexarray.EnableVertexAttrib (3 + i);
-	}
+	buffers.emplace_back ();
+	buffers.back ().Data (vertexcount * sizeof (glm::vec2),
+												&texcoords[0], GL_STATIC_DRAW);
+	vertexarray.VertexAttribOffset (buffers.back (), 3, 2, GL_FLOAT,
+																	GL_FALSE, 0, 0);
+	vertexarray.EnableVertexAttrib (3);
 
-
-	indices.Data (trianglecount * sizeof (GLuint) * 3,
-								indexarray, GL_STATIC_DRAW);
+	indices.Data (facecount * sizeof (GLuint) * edgesperface,
+								&indexarray[0], GL_STATIC_DRAW);
 
 	GL_CHECK_ERROR;
 	return true;
-
-	} catch (ctm_error &err) {
-		(*logstream) << "Error loading " << filename << ": " << err.what ()
-								 << std::endl;
-		return false;
-	}
 }
 
 bool Mesh::IsTessellated (void) const
@@ -272,20 +304,38 @@ void Mesh::Render (const gl::Program &program, GLuint passtype)
 	{
 		if ((passtype == Geometry::Pass::ShadowMap) && !IsShadowTessellated ())
 		{
-			gl::DrawElements (GL_TRIANGLES, trianglecount * 3,
-												GL_UNSIGNED_INT, NULL);
+			switch (edgesperface)
+			{
+			case 3:
+				gl::DrawElements (GL_TRIANGLES, facecount * 3,
+													GL_UNSIGNED_INT, NULL);
+				break;
+			case 4:
+/*				gl::DrawElements (GL_QUADS, facecount * 4,
+													GL_UNSIGNED_INT, NULL);*/
+				break;
+			}
 		}
 		else
 		{
-			gl::PatchParameteri (GL_PATCH_VERTICES, 3);
-			gl::DrawElements (GL_PATCHES, trianglecount * 3,
+			gl::PatchParameteri (GL_PATCH_VERTICES, edgesperface);
+			gl::DrawElements (GL_PATCHES, facecount * edgesperface,
 												GL_UNSIGNED_INT, NULL);
 		}
 	}
 	else
 	{
-		gl::DrawElements (GL_TRIANGLES, trianglecount * 3,
-											GL_UNSIGNED_INT, NULL);
+		switch (edgesperface)
+		{
+		case 3:
+			gl::DrawElements (GL_TRIANGLES, facecount * 3,
+												GL_UNSIGNED_INT, NULL);
+			break;
+		case 4:
+/*			gl::DrawElements (GL_QUADS, facecount * 4,
+												GL_UNSIGNED_INT, NULL);*/
+			break;
+		}
 	}
 
 	if (material->IsDoubleSided ())

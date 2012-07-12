@@ -11,9 +11,6 @@ AC_ARG_WITH([glm],
 	[CPPFLAGS="-I$withval ${CPPFLAGS}"])
 AC_CHECK_HEADERS(glm/glm.hpp, [], AC_MSG_FAILURE([glm headers missing]))
 
-AC_CHECK_LIB(openctm, ctmNewContext, [LDFLAGS="$LDFLAGS -lopenctm"],
-			 AC_MSG_FAILURE([OpenCTM library not foudn]))
-
 PKG_CHECK_MODULES([DEPS], [oglp libpng freetype2 libglfw yaml-cpp])
 
 DX_INIT_DOXYGEN($PACKAGE_NAME, doxygen.cfg)

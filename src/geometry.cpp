@@ -148,6 +148,7 @@ bool Geometry::Init (void)
 				 return false;
 		}
 	}
+
 	try {
 	boxmin = scene["boxmin"].as<glm::vec3> ();
 	boxmax = scene["boxmax"].as<glm::vec3> ();
@@ -203,7 +204,11 @@ void Geometry::Node::Load (std::map<std::string, GLuint> &names,
 		for (YAML::const_iterator it = desc["models"].begin ();
 				 it != desc["models"].end (); it++)
 		{
-			models.push_back (names [it->as<std::string> ()]);
+			auto m = names.find (it->as<std::string> ());
+			if (m == names.end ())
+				 throw std::runtime_error (std::string ("There's no model named ")
+																	 + it->as<std::string> ());
+			models.push_back (m->second);
 		}
 	}
 
