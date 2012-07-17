@@ -69,41 +69,14 @@ const Material &Geometry::GetMaterial (const std::string &name)
 
 bool Geometry::Init (void)
 {
-	{
-		gl::Shader vshader (GL_VERTEX_SHADER),
-			 fshader (GL_FRAGMENT_SHADER);
-		std::string src;
-		if (!ReadFile (MakePath ("shaders", "bbox", "vshader.txt"), src))
-			 return false;
-		vshader.Source (src);
-		if (!vshader.Compile ())
-		{
-			(*logstream) << "Cannot compile "
-									 << MakePath ("shaders", "bbox", "vshader.txt")
-									 << ":" << std::endl << vshader.GetInfoLog () << std::endl;
-			return false;
-		}
-
-		if (!ReadFile (MakePath ("shaders", "bbox", "fshader.txt"), src))
-			 return false;
-		fshader.Source (src);
-		if (!fshader.Compile ())
-		{
-			(*logstream) << "Cannot compile "
-									 << MakePath ("shaders", "bbox", "fshader.txt")
-									 << ":" << std::endl << fshader.GetInfoLog () << std::endl;
-			return false;
-		}
-
-		bboxprogram.Attach (vshader);
-		bboxprogram.Attach (fshader);
-		if (!bboxprogram.Link ())
-		{
-			(*logstream) << "Cannot link the bbox shader:" << std::endl
-									 << bboxprogram.GetInfoLog () << std::endl;
-			return false;
-		}		
-	}
+	if (!LoadProgram (bboxprogram, MakePath ("shaders", "bin", "bbox.bin"),
+										{}, { std::make_pair (GL_VERTEX_SHADER,
+																					MakePath ("shaders", "bbox",
+																										"vshader.txt")),
+												 std::make_pair (GL_FRAGMENT_SHADER,
+																				 MakePath ("shaders", "bbox",
+																									 "fshader.txt")) }))
+		 return false;
 
 	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
