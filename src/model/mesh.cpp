@@ -21,11 +21,10 @@
 #include "geometry.h"
 #include "renderer.h"
 
-Mesh::Mesh (Model &model) : facecount (0), edgesperface (0), vertexcount (0),
+Mesh::Mesh (Model &model) : facecount (0), patches (0), vertexcount (0),
 														parent (model), material (NULL),
 														bsphere ({ glm::vec3 (0, 0, 0), 0.0f }),
-														shadows (true), tessellated (false),
-														shadowtessellated (false)
+														shadows (true)
 {
 }
 
@@ -33,24 +32,20 @@ Mesh::Mesh (Mesh &&mesh)
 	: vertexarray (std::move (mesh.vertexarray)),
 		depthonlyarray (std::move (mesh.depthonlyarray)),
 		facecount (mesh.facecount),
-		edgesperface (mesh.edgesperface),
+		patches (mesh.patches),
 		vertexcount (mesh.vertexcount),
 		buffers (std::move (mesh.buffers)),
 		indices (std::move (mesh.indices)),
 		material (mesh.material),
 		parent (mesh.parent),
 		bsphere ({ mesh.bsphere.center, mesh.bsphere.radius }),
-		shadows (mesh.shadows),
-		tessellated (mesh.tessellated),
-		shadowtessellated (mesh.shadowtessellated)
+		shadows (mesh.shadows)
 {
-	mesh.facecount = mesh.edgesperface = mesh.vertexcount = 0;
+	mesh.facecount = mesh.patches = mesh.vertexcount = 0;
 	mesh.bsphere.center = glm::vec3 (0, 0, 0);
 	mesh.bsphere.radius = 0.0f;
 	mesh.material = NULL;
 	mesh.shadows = true;
-	mesh.tessellated = false;
-	mesh.shadowtessellated = false;
 }
 
 Mesh::~Mesh (void)
@@ -62,7 +57,7 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 	vertexarray = std::move (mesh.vertexarray);
 	depthonlyarray = std::move (mesh.depthonlyarray);
 	facecount = mesh.facecount;
-	edgesperface = mesh.edgesperface,
+	patches = mesh.patches;
 	vertexcount = mesh.vertexcount;
 	buffers = std::move (mesh.buffers);
 	indices = std::move (indices);
@@ -70,33 +65,41 @@ Mesh &Mesh::operator= (Mesh &&mesh)
 	bsphere.center = mesh.bsphere.center;
 	bsphere.radius = mesh.bsphere.radius;
 	shadows = mesh.shadows;
-	tessellated = mesh.tessellated;
-	shadowtessellated = mesh.shadowtessellated;
 	parent = std::move (mesh.parent);
-	mesh.facecount = mesh.edgesperface = mesh.vertexcount = 0;
+	mesh.facecount = mesh.patches = mesh.vertexcount = 0;
 	mesh.material = NULL;
 	mesh.bsphere.center = glm::vec3 (0, 0, 0);
 	mesh.bsphere.radius = 0.0f;
 	mesh.shadows = true;
-	mesh.tessellated = false;
-	mesh.shadowtessellated = false;
+}
+
+GLuint Mesh::GetPatchType (void) const
+{
+	return patches;
+}
+
+bool Mesh::CastsShadow (void) const
+{
+	return shadows;
 }
 
 bool Mesh::Load (const std::string &filename, const Material *mat,
 								 glm::vec3 &min, glm::vec3 &max,
-								 bool s, bool tess, bool shadowtess)
+								 bool s)
 {
 	shadows = s;
-	tessellated = tess;
-	shadowtessellated = shadowtess;
 	material = mat;
 
+#define DMF_FLAGS_TRIANGLES     0x0001
+#define DMF_FLAGS_QUADS         0x0002
+#define DMF_FLAGS_PATCHES       0x0004
 	typedef struct header
 	{
 		 char magic[4];
-		 GLuint edgesperface;
-		 GLuint vertexcount;
-		 GLuint facecount;
+		 uint16_t flags;
+		 uint16_t num_texcoords;
+		 uint32_t vertexcount;
+		 uint32_t facecount;
 	} header_t;
 
 	header_t header;
@@ -124,60 +127,96 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 		return false;
 	}
 
+	vertexcount = header.vertexcount;
+	facecount = header.facecount;
+
+	if (header.num_texcoords != 1)
+	{
+		(*logstream) << "Multiple texture coordinated in " << filename
+								 << " unsupported." << std::endl;
+		return false;
+	}
+
+	switch (header.flags)
+	{
+	case DMF_FLAGS_TRIANGLES:
+		if (!LoadTriangles (file, min, max))
+		{
+			(*logstream) << "Unable to load " << filename << std::endl;
+			return false;
+		}
+		break;
+	case DMF_FLAGS_QUADS|DMF_FLAGS_PATCHES:
+		if (!LoadQuadPatches (file, min, max))
+		{
+			(*logstream) << "Unable to load " << filename << std::endl;
+			return false;
+		}
+		break;
+	default:
+		(*logstream) << filename << " has unsupported flags." << std::endl;
+		return false;
+	}
+}
+
+bool Mesh::LoadQuadPatches (std::ifstream &file,
+														glm::vec3 &min, glm::vec3 &max)
+{
+	patches = GL_QUADS;
+	(*logstream) << "patches not supported" << std::endl;
+	return false;
+}
+
+bool Mesh::LoadTriangles (std::ifstream &file,
+													glm::vec3 &min, glm::vec3 &max)
+{
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec3> normals;
 	std::vector<glm::vec3> tangents;
 	std::vector<glm::vec2> texcoords;
 	std::vector<GLuint> indexarray;
 
-	vertexcount = header.vertexcount;
-	facecount = header.facecount;
-	edgesperface = header.edgesperface;
+	patches = 0;
 	
 	vertices.resize (vertexcount);
 	normals.resize (vertexcount);
 	tangents.resize (vertexcount);
 	texcoords.resize (vertexcount);
-	indexarray.resize (facecount * edgesperface);
+	indexarray.resize (facecount * 3);
 
 	file.read (reinterpret_cast<char*> (&vertices[0]),
 						 vertexcount * sizeof (glm::vec3));
 	if (file.gcount () != vertexcount * sizeof (glm::vec3))
 	{
-		(*logstream) << "Failed to load the vertices from "
-								 << filename << "." << std::endl;
+		(*logstream) << "Failed to load vertices." << std::endl;
 		return false;
 	}
 	file.read (reinterpret_cast<char*> (&normals[0]),
 						 vertexcount * sizeof (glm::vec3));
 	if (file.gcount () != vertexcount * sizeof (glm::vec3))
 	{
-		(*logstream) << "Failed to load the normals from "
-								 << filename << "." << std::endl;
+		(*logstream) << "Failed to load normals." << std::endl;
 		return false;
 	}
 	file.read (reinterpret_cast<char*> (&tangents[0]),
 						 vertexcount * sizeof (glm::vec3));
 	if (file.gcount () != vertexcount * sizeof (glm::vec3))
 	{
-		(*logstream) << "Failed to load the tangents from "
-								 << filename << "." << std::endl;
+		(*logstream) << "Failed to load tangents." << std::endl;
 		return false;
 	}
 	file.read (reinterpret_cast<char*> (&texcoords[0]),
 						 vertexcount * sizeof (glm::vec2));
 	if (file.gcount () != vertexcount * sizeof (glm::vec2))
 	{
-		(*logstream) << "Failed to load the texture coordinates from "
-								 << filename << "." << std::endl;
+		(*logstream) << "Failed to load texture coordinates." << std::endl;
 		return false;
 	}
 	file.read (reinterpret_cast<char*> (&indexarray[0]),
-						 facecount * edgesperface * sizeof (GLuint));
-	if (file.gcount () != facecount * edgesperface * sizeof (GLuint))
+						 facecount * 3 * sizeof (GLuint));
+	if (file.gcount () != facecount * 3 * sizeof (GLuint))
 	{
-		(*logstream) << "Failed to load the indices from "
-								 << filename << "." << std::endl;
+		(*logstream) << "Failed to load indices." << std::endl;
 		return false;
 	}
 
@@ -246,96 +285,44 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 																	GL_FALSE, 0, 0);
 	vertexarray.EnableVertexAttrib (3);
 
-	indices.Data (facecount * sizeof (GLuint) * edgesperface,
+	indices.Data (facecount * sizeof (GLuint) * 3,
 								&indexarray[0], GL_STATIC_DRAW);
 
 	GL_CHECK_ERROR;
 	return true;
 }
 
-bool Mesh::IsTessellated (void) const
+void Mesh::Render (const gl::Program &program, bool depthonly) const
 {
-	return tessellated;
-}
-
-bool Mesh::IsShadowTessellated (void) const
-{
-	return shadowtessellated;
-}
-
-bool Mesh::IsTransparent (void) const
-{
-	return material->IsTransparent ();
-}
-
-void Mesh::Render (const gl::Program &program, GLuint passtype)
-{
-	if (((passtype == Geometry::Pass::ShadowMap)
-			 || (passtype == Geometry::Pass::ShadowMapTess))
-			&& !shadows)
-		 return;
-	if (!IsTessellated () && (passtype == Geometry::Pass::GBufferTess))
-			 return;
-	if ((!IsTessellated () || !IsShadowTessellated ())
-			&& (passtype == Geometry::Pass::ShadowMapTess))
-		 return;
-			
 	if (!r->culling.IsVisible
 			(bsphere.center, bsphere.radius))
 		return;
 
-	switch (passtype)
-	{
-	case Geometry::Pass::ShadowMap:
-	case Geometry::Pass::GBufferSRAA:
-		depthonlyarray.Bind ();
-	break;
-	default:
-		material->Use (program);
-		vertexarray.Bind ();
-		break;
-	}
+	material->Use (program);
+	if (depthonly)
+		 depthonlyarray.Bind ();
+	else
+	 vertexarray.Bind ();
+
 	indices.Bind (GL_ELEMENT_ARRAY_BUFFER);
 
 	if (material->IsDoubleSided ())
 		 gl::Disable (GL_CULL_FACE);
 
-	if (IsTessellated ())
+	if (patches == GL_TRIANGLES)
 	{
-		if ((passtype == Geometry::Pass::ShadowMap) && !IsShadowTessellated ())
-		{
-			switch (edgesperface)
-			{
-			case 3:
-				gl::DrawElements (GL_TRIANGLES, facecount * 3,
-													GL_UNSIGNED_INT, NULL);
-				break;
-			case 4:
-/*				gl::DrawElements (GL_QUADS, facecount * 4,
-													GL_UNSIGNED_INT, NULL);*/
-				break;
-			}
-		}
-		else
-		{
-			gl::PatchParameteri (GL_PATCH_VERTICES, edgesperface);
-			gl::DrawElements (GL_PATCHES, facecount * edgesperface,
-												GL_UNSIGNED_INT, NULL);
-		}
+		throw std::runtime_error ("triangle patches not supported");
 	}
-	else
+	else if (patches == GL_QUADS)
 	{
-		switch (edgesperface)
-		{
-		case 3:
-			gl::DrawElements (GL_TRIANGLES, facecount * 3,
+			gl::PatchParameteri (GL_PATCH_VERTICES, 20);
+			gl::DrawElements (GL_PATCHES, facecount * 20,
 												GL_UNSIGNED_INT, NULL);
-			break;
-		case 4:
-/*			gl::DrawElements (GL_QUADS, facecount * 4,
-												GL_UNSIGNED_INT, NULL);*/
-			break;
-		}
+	}
+	else if (!patches)
+	{
+		gl::DrawElements (GL_TRIANGLES, facecount * 3,
+										GL_UNSIGNED_INT, NULL);
 	}
 
 	if (material->IsDoubleSided ())

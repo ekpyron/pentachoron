@@ -26,29 +26,33 @@ class Material;
 class Mesh
 {
 public:
-	 Mesh (Model &scene);
+	 Mesh (Model &model);
 	 Mesh (Mesh &&mesh);
 	 Mesh (const Mesh&) = delete;
 	 ~Mesh (void);
 	 Mesh &operator= (Mesh &&mesh);
 	 Mesh &operator= (const Mesh&) = delete;
-	 void Render (const gl::Program &program, GLuint passtype);
-	 bool IsTransparent (void) const;
-	 bool IsTessellated (void) const;
-	 bool IsShadowTessellated (void) const;
-	 bool IsDoubleSided (void) const;
+	 void Render (const gl::Program &program,
+								bool depthonly = false) const;
+	 GLuint GetPatchType (void) const;
+	 bool Load (const std::string &filename,
+							const Material *mat,
+							glm::vec3 &min,
+							glm::vec3 &max,
+							bool cast_shadows);
+	 bool CastsShadow (void) const;
 	 static GLuint culled;
 private:
-	 bool shadows;
-	 bool tessellated;
-	 bool shadowtessellated;
-	 bool Load (const std::string &filename, const Material *mat,
-							glm::vec3 &min, glm::vec3 &max,
-							bool shadows, bool tessellated=false,
-							bool shadowtessellated=false);
-	 Model &parent;
-	 friend class Model;
+
+	 bool LoadTriangles (std::ifstream &file,
+											 glm::vec3 &min,
+											 glm::vec3 &max);
+	 bool LoadQuadPatches (std::ifstream &file,
+												 glm::vec3 &min,
+												 glm::vec3 &max);
+
 	 const Material *material;
+	 bool shadows;
 
 	 struct
 	 {
@@ -56,9 +60,12 @@ private:
 			float radius;
 	 } bsphere;
 
+	 GLuint patches;
+
+	 Model &parent;
+
 	 gl::VertexArray vertexarray, depthonlyarray;
 	 GLuint facecount;
-	 GLuint edgesperface;
 	 GLuint vertexcount;
 	 std::vector<gl::Buffer> buffers;
 	 gl::Buffer indices;

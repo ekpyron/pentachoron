@@ -37,6 +37,8 @@ public:
 private:
 	 std::vector<Material> materials;
 	 std::vector<Mesh> meshes;
+	 std::vector<Mesh> tessellated;
+	 std::vector<Mesh> transparent;
 	 friend class Material;
 	 friend class Mesh;
 	 struct

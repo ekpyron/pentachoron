@@ -87,27 +87,34 @@ bool Model::Load (const std::string &filename)
 	bbox.min = glm::vec3 (FLT_MAX, FLT_MAX, FLT_MAX);
 	bbox.max = glm::vec3 (-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
+	GLuint num_meshes = 0;
 	for (const YAML::Node &node : desc["meshes"])
 	{
-		std::string filename = node["filename"].as<std::string> ();
+		std::string filename = MakePath ("models",
+																		 node["filename"].as<std::string> ());
 		const Material &material = r->geometry.GetMaterial
 			 (node["material"].as<std::string> ());
-		meshes.emplace_back (*this);
-		if (!meshes.back ().Load (MakePath ("models", filename),
-															&material, bbox.min, bbox.max,
-															node["shadows"].as<bool> (true),
-															node["tessellated"].as<bool> (false),
-															node["shadows_tessellated"].as<bool> (false)))
+
+		Mesh mesh (*this);
+		mesh.Load (filename, &material, bbox.min, bbox.max,
+							 node["shadows"].as<bool> (true));
+
+		switch (mesh.GetPatchType ())
 		{
+		case 0:
+			meshes.emplace_back (std::move (mesh));
+			num_meshes++;
+			break;
+		default:
 			(*logstream) << "Mesh " << filename
-									 << " could not be loaded." << std::endl;
-			return false;
+									 << " has an invalid type." << std::endl;
+			break;
 		}
 	}
 
-	if (meshes.size () < 1)
+	if (num_meshes < 1)
 	{
-		(*logstream) << filename << " contains no triangle meshes." << std::endl;
+		(*logstream) << filename << " contains no meshes." << std::endl;
 		return false;
 	}
 
@@ -167,7 +174,8 @@ void Model::Render (GLuint pass, const gl::Program &program)
 
 	passtype = pass & Geometry::Pass::Mask;
 
-	bool shadowpass = (passtype == Geometry::Pass::ShadowMap);
+	bool shadowpass = (passtype == Geometry::Pass::ShadowMap)
+		 || (passtype == Geometry::Pass::ShadowMapTess);
 
 	std::map<GLuint, gl::Query>::iterator query;
 	switch (passtype)
@@ -223,28 +231,49 @@ void Model::Render (GLuint pass, const gl::Program &program)
 
 	if (result == GL_TRUE)
 	{
-		for (Mesh &mesh : meshes)
+		switch (passtype)
 		{
-			if (mesh.IsTessellated ())
+		case Geometry::Pass::GBufferTess:
+			for (Mesh &mesh : tessellated)
 			{
-				if ((passtype == Geometry::Pass::GBufferTess)
-						|| (passtype == Geometry::Pass::ShadowMapTess)
-						|| ((passtype == Geometry::Pass::ShadowMap)
-								&& !mesh.IsShadowTessellated ()))
-				{
-					 mesh.Render (program, passtype);
-				}
+				if (!shadowpass || mesh.CastsShadow ())
+					 mesh.Render (program, false);
 			}
-			else
+			break;
+		case Geometry::Pass::ShadowMapTess:
+			for (Mesh &mesh : tessellated)
 			{
-
-				if (((passtype == Geometry::Pass::GBufferTransparency)
-						 == mesh.IsTransparent ())
-						|| (passtype == Geometry::Pass::ShadowMap))
-				{
-					mesh.Render (program, passtype);
-				}
+				if (!shadowpass || mesh.CastsShadow ())
+					 mesh.Render (program, true);
 			}
+			break;
+		case Geometry::Pass::GBufferTransparency:
+			for (Mesh &mesh : transparent)
+			{
+				if (!shadowpass || mesh.CastsShadow ())
+					 mesh.Render (program, false);
+			}
+			break;
+		case Geometry::Pass::ShadowMap:
+			for (Mesh &mesh : transparent)
+			{
+				if (!shadowpass || mesh.CastsShadow ())
+					 mesh.Render (program, true);
+			}
+		case Geometry::Pass::GBuffer:
+			for (Mesh &mesh : meshes)
+			{
+				if (!shadowpass || mesh.CastsShadow ())
+					 mesh.Render (program, false);
+			}
+			break;
+		case Geometry::Pass::GBufferSRAA:
+			for (Mesh &mesh : meshes)
+			{
+				if (!shadowpass || mesh.CastsShadow ())
+					 mesh.Render (program, true);
+			}
+			break;
 		}
 	}
 	else if (passtype != Geometry::Pass::GBufferSRAA)
