@@ -26,6 +26,8 @@ Model::Model (void)
 }
 
 Model::Model (Model &&model) : meshes (std::move (model.meshes)),
+															 quadpatches (std::move (model.quadpatches)),
+															 transparent (std::move (model.transparent)),
 															 materials (std::move (model.materials)),
 															 queries (std::move (model.queries))
 {
@@ -45,6 +47,8 @@ Model::~Model (void)
 Model &Model::operator= (Model &&model)
 {
 	meshes = std::move (model.meshes);
+	quadpatches = std::move (model.quadpatches);
+	transparent = std::move (model.transparent);
 	materials = std::move (model.materials);
 	bbox.min = model.bbox.min;
 	bbox.max = model.bbox.max;
@@ -103,6 +107,10 @@ bool Model::Load (const std::string &filename)
 		{
 		case 0:
 			meshes.emplace_back (std::move (mesh));
+			num_meshes++;
+			break;
+		case GL_QUADS:
+			quadpatches.emplace_back (std::move (mesh));
 			num_meshes++;
 			break;
 		default:
@@ -168,7 +176,7 @@ void Model::Render (GLuint pass, const gl::Program &program)
 	GLuint result = GL_TRUE;
 	GLuint passtype;
 
-	if (!r->culling.IsVisible
+  if (!r->culling.IsVisible
 			(bsphere.center, bsphere.radius))
 		return;
 
@@ -234,44 +242,40 @@ void Model::Render (GLuint pass, const gl::Program &program)
 		switch (passtype)
 		{
 		case Geometry::Pass::GBufferTess:
-			for (Mesh &mesh : tessellated)
+			for (Mesh &mesh : quadpatches)
 			{
-				if (!shadowpass || mesh.CastsShadow ())
-					 mesh.Render (program, false);
+				mesh.Render (program, false);
 			}
 			break;
 		case Geometry::Pass::ShadowMapTess:
-			for (Mesh &mesh : tessellated)
+			for (Mesh &mesh : quadpatches)
 			{
-				if (!shadowpass || mesh.CastsShadow ())
+				if (mesh.CastsShadow ())
 					 mesh.Render (program, true);
 			}
 			break;
 		case Geometry::Pass::GBufferTransparency:
 			for (Mesh &mesh : transparent)
 			{
-				if (!shadowpass || mesh.CastsShadow ())
-					 mesh.Render (program, false);
+				mesh.Render (program, false);
 			}
 			break;
 		case Geometry::Pass::ShadowMap:
 			for (Mesh &mesh : transparent)
 			{
-				if (!shadowpass || mesh.CastsShadow ())
+				if (mesh.CastsShadow ())
 					 mesh.Render (program, true);
 			}
 		case Geometry::Pass::GBuffer:
 			for (Mesh &mesh : meshes)
 			{
-				if (!shadowpass || mesh.CastsShadow ())
-					 mesh.Render (program, false);
+				mesh.Render (program, false);
 			}
 			break;
 		case Geometry::Pass::GBufferSRAA:
 			for (Mesh &mesh : meshes)
 			{
-				if (!shadowpass || mesh.CastsShadow ())
-					 mesh.Render (program, true);
+				mesh.Render (program, true);
 			}
 			break;
 		}

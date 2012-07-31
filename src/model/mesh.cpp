@@ -130,24 +130,17 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 	vertexcount = header.vertexcount;
 	facecount = header.facecount;
 
-	if (header.num_texcoords != 1)
-	{
-		(*logstream) << "Multiple texture coordinated in " << filename
-								 << " unsupported." << std::endl;
-		return false;
-	}
-
 	switch (header.flags)
 	{
 	case DMF_FLAGS_TRIANGLES:
-		if (!LoadTriangles (file, min, max))
+		if (!LoadTriangles (file, header.num_texcoords, min, max))
 		{
 			(*logstream) << "Unable to load " << filename << std::endl;
 			return false;
 		}
 		break;
 	case DMF_FLAGS_QUADS|DMF_FLAGS_PATCHES:
-		if (!LoadQuadPatches (file, min, max))
+		if (!LoadQuadPatches (file, header.num_texcoords, min, max))
 		{
 			(*logstream) << "Unable to load " << filename << std::endl;
 			return false;
@@ -159,15 +152,118 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 	}
 }
 
-bool Mesh::LoadQuadPatches (std::ifstream &file,
+bool Mesh::LoadQuadPatches (std::ifstream &file, GLuint num_texcoords,
 														glm::vec3 &min, glm::vec3 &max)
 {
+	std::vector<glm::vec3> vertices;
+	std::vector<glm::vec2> texcoords;
+	std::vector<GLuint> indexarray;
+
 	patches = GL_QUADS;
-	(*logstream) << "patches not supported" << std::endl;
-	return false;
+
+	if (num_texcoords > 1)
+	{
+		(*logstream) << "Multiple texture coordinates unsupported." << std::endl;
+		return false;
+	}
+
+	vertices.resize (vertexcount);
+	texcoords.resize (vertexcount);
+	indexarray.resize (facecount * 20);
+
+	file.read (reinterpret_cast<char*> (&vertices[0]),
+						 vertexcount * sizeof (glm::vec3));
+	if (file.gcount () != vertexcount * sizeof (glm::vec3))
+	{
+		(*logstream) << "Failed to load vertices." << std::endl;
+		return false;
+	}
+
+	if (num_texcoords)
+	{
+		file.read (reinterpret_cast<char*> (&texcoords[0]),
+							 vertexcount * sizeof (glm::vec2));
+		if (file.gcount () != vertexcount * sizeof (glm::vec2))
+		{
+			(*logstream) << "Failed to load texture coordinates." << std::endl;
+			return false;
+		}
+	}
+
+	file.read (reinterpret_cast<char*> (&indexarray[0]),
+						 facecount * 20 * sizeof (GLuint));
+	if (file.gcount () != facecount * 20 * sizeof (GLuint))
+	{
+		(*logstream) << "Failed to load indices." << std::endl;
+		return false;
+	}
+
+	// calculate the center of the bounding sphere
+	// and calculate the bounding box
+	{
+		float factor = 1.0f / float (vertexcount);
+		bsphere.center = glm::vec3 (0, 0, 0);
+		for (auto i = 0; i < vertexcount; i++)
+		{
+			glm::vec3 vertex = vertices[i];
+			bsphere.center += factor * vertex;
+			if (vertex.x < min.x)
+				 min.x = vertex.x;
+			if (vertex.y < min.y)
+				 min.y = vertex.y;
+			if (vertex.z < min.z)
+				 min.z = vertex.z;
+			if (vertex.x > max.x)
+				 max.x = vertex.x;
+			if (vertex.y > max.y)
+				 max.y = vertex.y;
+			if (vertex.z > max.z)
+				 max.z = vertex.z;
+		}
+	}
+
+	// calculate the radius of the bounding sphere
+	{
+		bsphere.radius = 0;
+		for (auto i = 0; i < vertexcount; i++)
+		{
+			glm::vec3 vertex = vertices[i];
+			float distance = glm::distance (bsphere.center, vertex);
+			if (distance > bsphere.radius)
+				 bsphere.radius = distance;
+		}
+	}
+
+	buffers.emplace_back ();
+	buffers.back ().Data (vertexcount * sizeof (glm::vec3),
+												&vertices[0], GL_STATIC_DRAW);
+
+	depthonlyarray.VertexAttribOffset(buffers[0], 0, 3, GL_FLOAT,
+																		GL_FALSE, 0, 0);
+	depthonlyarray.EnableVertexAttrib (0);
+
+	vertexarray.VertexAttribOffset (buffers[0], 0, 3, GL_FLOAT,
+																	GL_FALSE, 0, 0);
+	vertexarray.EnableVertexAttrib (0);
+
+	if (num_texcoords)
+	{
+		buffers.emplace_back ();
+		buffers.back ().Data (vertexcount * sizeof (glm::vec2),
+													&texcoords[0], GL_STATIC_DRAW);
+		vertexarray.VertexAttribOffset (buffers.back (), 1, 2, GL_FLOAT,
+																		GL_FALSE, 0, 0);
+		vertexarray.EnableVertexAttrib (1);
+	}
+
+	indices.Data (facecount * sizeof (GLuint) * 20,
+								&indexarray[0], GL_STATIC_DRAW);
+
+	GL_CHECK_ERROR;
+	return true;
 }
 
-bool Mesh::LoadTriangles (std::ifstream &file,
+bool Mesh::LoadTriangles (std::ifstream &file, unsigned int num_texcoords,
 													glm::vec3 &min, glm::vec3 &max)
 {
 	std::vector<glm::vec3> vertices;
@@ -178,6 +274,18 @@ bool Mesh::LoadTriangles (std::ifstream &file,
 
 	patches = 0;
 	
+	if (num_texcoords > 1)
+	{
+		(*logstream) << "Multiple texture coordinates unsupported." << std::endl;
+		return false;
+	}
+	if (num_texcoords < 1)
+	{
+		(*logstream) << "No texture coordinates." << std::endl;
+		return false;
+	}
+
+
 	vertices.resize (vertexcount);
 	normals.resize (vertexcount);
 	tangents.resize (vertexcount);
@@ -315,14 +423,14 @@ void Mesh::Render (const gl::Program &program, bool depthonly) const
 	}
 	else if (patches == GL_QUADS)
 	{
-			gl::PatchParameteri (GL_PATCH_VERTICES, 20);
-			gl::DrawElements (GL_PATCHES, facecount * 20,
-												GL_UNSIGNED_INT, NULL);
+		gl::PatchParameteri (GL_PATCH_VERTICES, 20);
+		gl::DrawElements (GL_PATCHES, facecount * 20,
+											GL_UNSIGNED_INT, NULL);
 	}
 	else if (!patches)
 	{
 		gl::DrawElements (GL_TRIANGLES, facecount * 3,
-										GL_UNSIGNED_INT, NULL);
+											GL_UNSIGNED_INT, NULL);
 	}
 
 	if (material->IsDoubleSided ())

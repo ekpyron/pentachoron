@@ -45,9 +45,11 @@ public:
 private:
 
 	 bool LoadTriangles (std::ifstream &file,
+											 unsigned int num_texcoords,
 											 glm::vec3 &min,
 											 glm::vec3 &max);
 	 bool LoadQuadPatches (std::ifstream &file,
+												 unsigned int num_texcoords,
 												 glm::vec3 &min,
 												 glm::vec3 &max);
 
