@@ -83,6 +83,11 @@ bool Mesh::CastsShadow (void) const
 	return shadows;
 }
 
+bool Mesh::IsTransparent (void) const
+{
+	return material->IsTransparent ();
+}
+
 bool Mesh::Load (const std::string &filename, const Material *mat,
 								 glm::vec3 &min, glm::vec3 &max,
 								 bool s)

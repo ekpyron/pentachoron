@@ -41,6 +41,7 @@ public:
 							glm::vec3 &max,
 							bool cast_shadows);
 	 bool CastsShadow (void) const;
+	 bool IsTransparent (void) const;
 	 static GLuint culled;
 private:
 

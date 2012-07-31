@@ -103,20 +103,37 @@ bool Model::Load (const std::string &filename)
 		mesh.Load (filename, &material, bbox.min, bbox.max,
 							 node["shadows"].as<bool> (true));
 
-		switch (mesh.GetPatchType ())
+		if (mesh.IsTransparent ())
 		{
-		case 0:
-			meshes.emplace_back (std::move (mesh));
-			num_meshes++;
-			break;
-		case GL_QUADS:
-			quadpatches.emplace_back (std::move (mesh));
-			num_meshes++;
-			break;
-		default:
-			(*logstream) << "Mesh " << filename
-									 << " has an invalid type." << std::endl;
-			break;
+			switch (mesh.GetPatchType ())
+			{
+			case 0:
+				transparent.emplace_back (std::move (mesh));
+				num_meshes++;
+				break;
+			default:
+				(*logstream) << "Mesh " << filename
+										 << " has an invalid type." << std::endl;
+				break;
+			}
+		}
+		else
+		{
+			switch (mesh.GetPatchType ())
+			{
+			case 0:
+				meshes.emplace_back (std::move (mesh));
+				num_meshes++;
+				break;
+			case GL_QUADS:
+				quadpatches.emplace_back (std::move (mesh));
+				num_meshes++;
+				break;
+			default:
+				(*logstream) << "Mesh " << filename
+										 << " has an invalid type." << std::endl;
+				break;
+			}
 		}
 	}
 
