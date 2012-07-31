@@ -58,7 +58,7 @@ void main (void)
 		mat3x3 tangentmat;
 		tangentmat = mat3x3 (fTangent, fBitangent, fNormal);
 
-		n.xy = texture2D (normalmap, fTexcoord * 4).xy * 2.0 - 1.0;
+		n.xy = texture2D (normalmap, fTexcoord * 16).xy * 2.0 - 1.0;
 		n.z = sqrt (1.0 - n.x * n.x - n.y * n.y);
 		normal.xyz = (normalmat * tangentmat * n) * 0.5 + 0.5;
 	}

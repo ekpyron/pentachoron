@@ -18,11 +18,13 @@ const mat4 B = mat4 (-1,  3, -3, 1,
 		     -3,  3,  0, 0,
 		      1,  0,  0, 0);
 
-const mat3 B3 = mat3 ( 1, -2, 1,
-      	      	      -2,  2, 0,
-		       1,  0, 0);;
-
 layout(binding = 4) uniform sampler2D heightmap;
+uniform bool heightmap_enabled;
+
+layout(binding = 5) uniform sampler2D displacementmap;
+uniform bool displacementmap_enabled;
+
+uniform float displacement;
 
 mat4 cx, cy, cz;
 float u = gl_TessCoord.x;
@@ -105,13 +107,28 @@ void main ()
 
 	fTexcoord = InterpolateTexcoords ();
 
-	float height;
-	height = texture (heightmap, fTexcoord).x * 0.05;
-
 	fTangent = InterpolateTangent ();
 	fBitangent = InterpolateBitangent ();
 	fNormal = cross (fTangent, fBitangent);
 
-	gl_Position = projmat * mvmat * vec4 (InterpolatePosition ()
-		      	      	      	      /*+ height * fNormal*/, 1.0);
+	vec3 pos;
+
+	pos = InterpolatePosition ();
+
+	if (displacement > 0.01f) {
+
+	if (displacementmap_enabled)
+	{
+		vec4 dir = texture (displacementmap, fTexcoord) - 0.5f;
+		pos += displacement * vec3 (dir.z, dir.y, dir.x);
+	}
+	else if (heightmap_enabled)
+	{
+		float height;
+		height = texture (heightmap, fTexcoord).x;
+		pos += displacement * height * fNormal;
+	}
+	}
+
+	gl_Position = projmat * mvmat * vec4 (pos, 1.0);
 }

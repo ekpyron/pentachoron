@@ -119,6 +119,14 @@ Interface::Interface (void)
 							 t = 1;
 						r->geometry.SetTessLevel (t);
 					}, false },
+				{
+					"Displacement: ", [&] (void) {
+						font.Print (r->geometry.GetDisplacement ());
+					}, [&] (int what) {
+						GLfloat d = r->geometry.GetDisplacement ();
+						d += what * timefactor * 0.1f;
+						r->geometry.SetDisplacement (d);
+					}, true },
 				{ "Shadows", NULL, [&] (int what) {
 						if (!what)
 						{

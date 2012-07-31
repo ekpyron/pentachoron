@@ -133,6 +133,7 @@ bool Geometry::Init (void)
 
 	root.Load (names, streams[1]);
 
+	displacement = 0.0f;
 	tessLevel = 1;
 	gl::GetIntegerv (GL_MAX_TESS_GEN_LEVEL, &maxTessLevel);
 
@@ -147,9 +148,26 @@ void Geometry::SetTessLevel (GLuint l)
 		 tessLevel = maxTessLevel;
 }
 
-GLuint Geometry::GetTessLevel (void)
+GLuint Geometry::GetTessLevel (void) const
 {
 	return tessLevel;
+}
+
+float Geometry::GetDisplacement (void) const
+{
+	return displacement;
+}
+
+void Geometry::SetDisplacement (float d)
+{
+	if (d >= 0)
+	{
+		displacement = d;
+	}
+	else
+	{
+		displacement = 0.0f;
+	}
 }
 
 Geometry::Node::Node (void)
@@ -243,12 +261,11 @@ void Geometry::Render (GLuint p,
 	switch (p & Pass::Mask)
 	{
 	case Pass::ShadowMapTess:
-		prog["tessLevel"] = tessLevel;
-		sampler.Bind (4);
-		break;
 	case Pass::GBufferTess:
 		prog["tessLevel"] = tessLevel;
+		prog["displacement"] = displacement;
 		sampler.Bind (4);
+		sampler.Bind (5);
 	case Pass::GBuffer:
 	case Pass::GBufferTransparency:
 		sampler.Bind (0);

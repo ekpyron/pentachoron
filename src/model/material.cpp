@@ -24,7 +24,7 @@ Material::Material (void)
 	: diffuse_enabled (false), normalmap_enabled (false),
 		specularmap_enabled (false), transparent (false),
 		heightmap_enabled (false), parametermap_enabled (false),
-		doublesided (false)
+		displacementmap_enabled (false), doublesided (false)
 {
 }
 
@@ -39,6 +39,8 @@ Material::Material (Material &&material)
 		parametermap_enabled (material.parametermap_enabled),
 		heightmap (std::move (material.heightmap)),
 		heightmap_enabled (material.heightmap_enabled),
+    displacementmap (std::move (material.displacementmap)),
+    displacementmap_enabled (material.displacementmap_enabled),
 		transparent (material.transparent),
 		doublesided (material.doublesided)
 {
@@ -47,6 +49,7 @@ Material::Material (Material &&material)
 	material.specularmap_enabled = false;
 	material.parametermap_enabled = false;
 	material.heightmap_enabled = false;
+	material.displacementmap_enabled = false;
 	material.transparent = false;
 	material.doublesided = false;
 }
@@ -72,6 +75,9 @@ Material &Material::operator= (Material &&material)
 	heightmap = std::move (material.heightmap);
 	heightmap_enabled = material.heightmap_enabled;
 	material.heightmap_enabled = false;
+	displacementmap = std::move (material.displacementmap);
+	displacementmap_enabled = material.displacementmap_enabled;
+	material.displacementmap_enabled = false;
 	transparent = material.transparent;
 	material.transparent = false;
 	doublesided = material.doublesided;
@@ -202,6 +208,9 @@ bool Material::Load (const std::string &name)
 	if (!LoadTex (heightmap, heightmap_enabled,
 								desc["textures"]["heightmap"]))
 		 return false;
+	if (!LoadTex (displacementmap, displacementmap_enabled,
+								desc["textures"]["displacementmap"]))
+		 return false;
 
 	return true;
 }
@@ -242,6 +251,11 @@ void Material::Use (const gl::Program &program) const
 	if (heightmap_enabled)
 	{
 		heightmap.Bind (GL_TEXTURE4, GL_TEXTURE_2D);
+	}
+	program["displacementmap_enabled"] = displacementmap_enabled;
+	if (displacementmap_enabled)
+	{
+		displacementmap.Bind (GL_TEXTURE5, GL_TEXTURE_2D);
 	}
 }
 

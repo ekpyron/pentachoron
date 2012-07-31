@@ -1,33 +1,129 @@
 #version 420 core
 
-layout (triangles, equal_spacing, ccw) in;
+layout (quads, equal_spacing, cw) in;
 
 in vec3 tPosition[];
 in vec2 tTexcoord[];
-in vec3 tNormal[];
+
+out vec2 fTexcoord;
+out vec3 fTangent;
+out vec3 fBitangent;
+out vec3 fNormal;
 
 uniform mat4 projmat;
 uniform mat4 mvmat;
 
+const mat4 B = mat4 (-1,  3, -3, 1,
+      	       	      3, -6,  3, 0,
+		     -3,  3,  0, 0,
+		      1,  0,  0, 0);
+
 layout(binding = 4) uniform sampler2D heightmap;
+uniform bool heightmap_enabled;
+
+layout(binding = 5) uniform sampler2D displacementmap;
+uniform bool displacementmap_enabled;
+
+
+mat4 cx, cy, cz;
+float u = gl_TessCoord.x;
+float v = gl_TessCoord.y;
+
+vec3 InterpolateBitangent (void)
+{
+	vec4 U = vec4 (3.0f * u * u, 2.0f * u, 1.0f, 0.0f);
+	vec4 V = vec4 (v * v * v, v * v, v, 1.0f);
+
+	return normalize (vec3 (dot (cx * V, U), dot (cy * V, U),
+	       	     	        dot (cz * V, U)));
+}
+
+vec3 InterpolateTangent (void)
+{
+	vec4 U = vec4 (u * u * u, u * u, u, 1.0f);
+	vec4 V = vec4 (3.0f * v * v, 2.0f * v, 1.0f, 0.0f);
+
+	return normalize (vec3 (dot (cx * V, U), dot (cy * V, U),
+	       	     	        dot (cz * V, U)));
+}
+
+vec2 InterpolateTexcoords (void)
+{
+	vec2 uv = mix (mix (tTexcoord[0], tTexcoord[3], u),
+		       mix (tTexcoord[16], tTexcoord[19], u), v);
+	return vec2 (uv.x, 1 - uv.y);
+}
+
+vec3 InterpolatePosition (void)
+{
+	vec4 U = vec4 (u * u * u, u * u, u, 1);
+	vec4 V = vec4 (v * v * v, v * v, v, 1);
+
+	return vec3 (dot (cx * V, U), dot (cy * V, U),
+	       	     dot (cz * V, U));
+}
 
 void main ()
 {
-	vec2 uv = gl_TessCoord.x * tTexcoord[0]
-	          + gl_TessCoord.y * tTexcoord[1]
-	          + gl_TessCoord.z * tTexcoord[2];
-	vec3 normal;
-	normal = (gl_TessCoord.x * tNormal[0]
-		   + gl_TessCoord.y * tNormal[1]
-		   + gl_TessCoord.z * tNormal[2]);
+	vec3 F0, F1, F2, F3;
+	mat4 Px, Py, Pz;
 
+	F0 = u * tPosition[6] + v * tPosition[5];
+	if (u + v != 0)
+	   F0 /= u + v;
+	F1 = (1.0f - u) * tPosition[11] + v * tPosition[12];
+	if (1.0f - u + v != 0)
+	   F1 /= 1.0f - u + v;
+	F2 = (1.0f - u) * tPosition[14] + (1.0f - v) * tPosition[3];
+	if (2.0f - u - v != 0)
+	   F2 /= 2.0f - u - v;
+	F3 = u * tPosition[7] + (1.0f - v) * tPosition[8];
+	if (1.0f + u - v != 0)
+	   F3 /= 1.0f + u - v;	
 
-	float height;
-	height = texture (heightmap, uv).x * 0.05;
-	vec3 pos = gl_TessCoord.x * tPosition[0]
-	     	   + gl_TessCoord.y * tPosition[1]
-		   + gl_TessCoord.z * tPosition[2]
-		   + height * normal;
+	Px = mat4 (tPosition[0].x, tPosition[1].x,
+	     	   tPosition[2].x, tPosition[3].x,
+		   tPosition[4].x, F0.x, F3.x, tPosition[9].x,
+		   tPosition[10].x, F1.x, F2.x, tPosition[15].x,
+		   tPosition[16].x, tPosition[17].x,
+		   tPosition[18].x, tPosition[19].x);
+	Py = mat4 (tPosition[0].y, tPosition[1].y,
+	     	   tPosition[2].y, tPosition[3].y,
+		   tPosition[4].y, F0.y, F3.y, tPosition[9].y,
+		   tPosition[10].y, F1.y, F2.y, tPosition[15].y,
+		   tPosition[16].y, tPosition[17].y,
+		   tPosition[18].y, tPosition[19].y);
+	Pz = mat4 (tPosition[0].z, tPosition[1].z,
+	   	   tPosition[2].z, tPosition[3].z,
+		   tPosition[4].z, F0.z, F3.z, tPosition[9].z,
+		   tPosition[10].z, F1.z, F2.z, tPosition[15].z,
+		   tPosition[16].z, tPosition[17].z,
+		   tPosition[18].z, tPosition[19].z);
+
+	cx = B * Px * B;
+	cy = B * Py * B;
+	cz = B * Pz * B;
+
+	fTexcoord = InterpolateTexcoords ();
+
+	fTangent = InterpolateTangent ();
+	fBitangent = InterpolateBitangent ();
+	fNormal = cross (fTangent, fBitangent);
+
+	vec3 pos;
+
+	pos = InterpolatePosition ();
+	if (displacementmap_enabled)
+	{
+		vec4 dir = texture (displacementmap, fTexcoord) - 0.5f;
+		pos += vec3 (dir.z, dir.y, dir.x);
+	}
+	else if (heightmap_enabled)
+	{
+		float height;
+		height = texture (heightmap, fTexcoord).x * 0.05;
+		pos += height * fNormal;
+	}
 
 	gl_Position = projmat * mvmat * vec4 (pos, 1.0);
 }

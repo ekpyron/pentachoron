@@ -44,6 +44,8 @@ private:
 	 bool parametermap_enabled;
 	 gl::Texture heightmap;
 	 bool heightmap_enabled;
+	 gl::Texture displacementmap;
+	 bool displacementmap_enabled;
 	 bool transparent;
 	 bool doublesided;
 	 friend class Scene;

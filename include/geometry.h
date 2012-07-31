@@ -34,8 +34,10 @@ public:
 	 void SetProjMatrix (const glm::mat4 &projmat);
 	 const glm::vec3 &GetBoxMin (void);
 	 const glm::vec3 &GetBoxMax (void);
-	 GLuint GetTessLevel (void);
+	 GLuint GetTessLevel (void) const;
 	 void SetTessLevel (GLuint l);
+	 float GetDisplacement (void) const;
+	 void SetDisplacement (float d);
 
 	 class Pass
 	 {
@@ -87,6 +89,7 @@ private:
 
 	 GLuint tessLevel;
 	 GLint maxTessLevel;
+	 float displacement;
 
 	 friend class Model;
 	 friend class Mesh;
