@@ -1,9 +1,12 @@
 ---
 models:
-    grid:      "grid.yaml"
-    kitty:     "kitty.yaml"
-    headglass: "headglass.yaml"
-    box:       "box.yaml"
+    grid:          "grid.yaml"
+    kitty:         "kitty.yaml"
+    headglass:     "headglass.yaml"
+    box:           "box.yaml"
+    simplewall:    "simplewall.yaml"
+    simpleceiling: "simpleceiling.yaml"
+    brokenwall: "brokenwall.yaml"
 boxmin: [ -30, -3, -30 ]
 boxmax: [ 30, 3, 30 ]
 ---
@@ -12,6 +15,9 @@ nodes:
       nodes:
         - translation: [ 0.0, 0.0, 0.0 ]
           models:      [ kitty ]
+
+        - translation: [ 0.0, 3.0, -15.0 ]
+          models:      [ brokenwall ]
 
         - translation: [ -7.5, 0.0, 7.5 ]
           rotations:
@@ -31,7 +37,10 @@ nodes:
           models:    [ kitty ]
 
         - translation: [ -5.0, 0.5, -5.0 ]
-          models:      [ box ]
+          models:      [ simplewall, simpleceiling ]
+
+#        - translation: [ -5.0, 0.5, -5.0 ]
+#          models:      [ box ]
 
         - translation: [ 10.0, 1.0, -5.0 ]
           rotations:

@@ -17,23 +17,13 @@
 #version 420 core
 
 layout(location = 0) in vec3 vertex;
-layout(location = 1) in vec3 normal;
-layout(location = 2) in vec3 tangent;
-layout(location = 3) in vec2 texcoord;
+layout(location = 1) in vec2 texcoord;
 
 out vec2 vTexcoord;
-
-out vec3 vTangent;
-out vec3 vNormal;
-out vec3 vBitangent;
-
 out vec3 vPosition;
 
 void main (void)
 {
-	vTangent = tangent;
-	vNormal = normal;
-	vBitangent = cross (normal, tangent);
 	vTexcoord = texcoord;
 	vPosition = vertex;
 }

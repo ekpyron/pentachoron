@@ -1,16 +1,10 @@
 #version 420 core
 
-layout(vertices = 3) out;
+layout(vertices = 20) out;
 in vec3 vPosition[];
 in vec2 vTexcoord[];
-in vec3 vTangent[];
-in vec3 vBitangent[];
-in vec3 vNormal[];
 out vec3 tPosition[];
 out vec2 tTexcoord[];
-out vec3 tTangent[];
-out vec3 tBitangent[];
-out vec3 tNormal[];
 
 uniform unsigned int tessLevel;
 
@@ -20,14 +14,13 @@ void main ()
 {
 	tPosition[ID] = vPosition[ID];
 	tTexcoord[ID] = vTexcoord[ID];
-	tTangent[ID] = vTangent[ID];
-	tBitangent[ID] = vBitangent[ID];
-	tNormal[ID] = vNormal[ID];
 	if (ID == 0)
 	{
 		gl_TessLevelInner[0] = tessLevel;
+		gl_TessLevelInner[1] = tessLevel;
 		gl_TessLevelOuter[0] = tessLevel;
 		gl_TessLevelOuter[1] = tessLevel;
 		gl_TessLevelOuter[2] = tessLevel;
+		gl_TessLevelOuter[3] = tessLevel;
 	}
 }
