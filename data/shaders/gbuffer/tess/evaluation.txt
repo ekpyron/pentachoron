@@ -64,7 +64,7 @@ vec3 InterpolatePosition (void)
 	       	     dot (cz * V, U));
 }
 
-void main ()
+void InterpolateCommon (void)
 {
 	vec3 F0, F1, F2, F3;
 	mat4 Px, Py, Pz;
@@ -104,12 +104,17 @@ void main ()
 	cx = B * Px * B;
 	cy = B * Py * B;
 	cz = B * Pz * B;
+}
+
+void main ()
+{
+	InterpolateCommon ();
 
 	fTexcoord = InterpolateTexcoords ();
 
 	fTangent = InterpolateTangent ();
 	fBitangent = InterpolateBitangent ();
-	fNormal = cross (fTangent, fBitangent);
+	fNormal = normalize (cross (fTangent, fBitangent));
 
 	vec3 pos;
 
@@ -119,8 +124,9 @@ void main ()
 
 	if (displacementmap_enabled)
 	{
-		vec4 dir = texture (displacementmap, fTexcoord) - 0.5f;
-		pos += displacement * vec3 (dir.z, dir.y, dir.x);
+		vec3 dir = texture (displacementmap, fTexcoord).zyx - 0.5f;
+		dir *= displacement;
+		pos += dir;
 	}
 	else if (heightmap_enabled)
 	{
