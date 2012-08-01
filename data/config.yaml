@@ -1,5 +1,5 @@
 ---
-basedir:           /home/daniel/dev/DRE/data
+basedir:           /home/daniel/dev/pentachoron/data
 window:	           { width: 1024, height: 768, fullscreen: false }
 font:              { fshader: font.fs, vshader: font.vs, font: liberation.ttf }
 model:	           kitty.yaml

@@ -1,4 +1,4 @@
-AC_INIT([DRE], [0.0], [daniel@ekpyron.org])
+AC_INIT([pentachoron], [0.0], [daniel@ekpyron.org])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 CXXFLAGS="$CXXFLAGS -std=c++0x"
 AC_PROG_CXX

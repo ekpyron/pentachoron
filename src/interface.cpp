@@ -1,18 +1,18 @@
 /*  
- * This file is part of DRE.
+ * This file is part of Pentachoron.
  *
- * DRE is free software: you can redistribute it and/or modify
+ * Pentachoron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * DRE is distributed in the hope that it will be useful,
+ * Pentachoron is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Pentachoron.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "interface.h"
 #include "renderer.h"
@@ -295,14 +295,14 @@ Interface::Interface (void)
 					}, false },
 				{ "Spot Angle ", [&] (void) {
 						font.Print (r->GetLight (active_light).spot.angle
-												* 180.0f / DRE_PI);
+												* 180.0f / PCH_PI);
 					}, [&] (int what) {
 						r->GetLight (active_light).spot.angle += what * timefactor;
 						r->UpdateLight (active_light);
 					}, true },
 				{ "Spot Penumbra Angle ", [&] (void) {
 						font.Print (r->GetLight (active_light).spot.penumbra_angle
-												* 180.0f / DRE_PI);
+												* 180.0f / PCH_PI);
 					}, [&] (int what) {
 						r->GetLight (active_light).spot.penumbra_angle
 						+= what * timefactor;
@@ -404,7 +404,7 @@ Interface::Interface (void)
 					}, false },
 				{ "Angle ", [&] (void) {
 						font.Print (r->shadows[active_shadow].spot.angle
-												* 180.0f / DRE_PI);
+												* 180.0f / PCH_PI);
 					}, [&] (int what) {
 						r->shadows[active_shadow].spot.angle += what * timefactor;
 						r->shadows[active_shadow].spot.cosine =
@@ -1378,7 +1378,7 @@ void Interface::AddLight (void)
 	light.color = glm::vec4 (1, 1, 1, 1);
 	light.direction = glm::vec4 (0, -1, 0, 0);
 	light.spot.exponent = 2.0f;
-	light.spot.angle = DRE_PI/4.0f;
+	light.spot.angle = PCH_PI/4.0f;
 	light.spot.cosine = cosf (light.spot.angle);
 	light.spot.tangent = tanf (light.spot.angle);
 	light.spot.penumbra_angle = light.spot.angle * 0.8f;
@@ -1394,7 +1394,7 @@ void Interface::AddShadow (void)
 	Shadow shadow;
 	shadow.position = glm::vec4 (0, 10, 0, 1);
 	shadow.direction = glm::vec4 (0, -1, 0, 1);
-	shadow.spot.angle = DRE_PI/4.0f;
+	shadow.spot.angle = PCH_PI/4.0f;
 	shadow.spot.cosine = cosf (shadow.spot.angle);
 	r->shadows.push_back (shadow);
 }

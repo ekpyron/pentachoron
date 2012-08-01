@@ -1,18 +1,18 @@
 /*  
- * This file is part of DRE.
+ * This file is part of Pentachoron.
  *
- * DRE is free software: you can redistribute it and/or modify
+ * Pentachoron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * DRE is distributed in the hope that it will be useful,
+ * Pentachoron is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Pentachoron.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "composition.h"
 #include "renderer.h"
@@ -426,25 +426,25 @@ void Composition::SetTimeOfDay (float t)
 
 void Composition::SetupSunPosition (void)
 {
-		float latitude = sky.latitude * DRE_PI / 180.0;
+		float latitude = sky.latitude * PCH_PI / 180.0;
 
 		int day = sky.date;
 
 		float solarTime = sky.time +
-			 (0.170 * sin (4 * DRE_PI * (sky.date - 80) / 373)
-				- 0.129 * sin (2 * DRE_PI * (sky.date - 8) / 355));
+			 (0.170 * sin (4 * PCH_PI * (sky.date - 80) / 373)
+				- 0.129 * sin (2 * PCH_PI * (sky.date - 8) / 355));
 		float solarDeclination;
-		solarDeclination = (0.4093 * sin (2 * DRE_PI * (sky.date - 81) / 368));
+		solarDeclination = (0.4093 * sin (2 * PCH_PI * (sky.date - 81) / 368));
 		float solarAltitude = asin (sin (latitude) * sin (solarDeclination)
 																- cos (latitude) * cos (solarDeclination)
-																* cos (DRE_PI * solarTime / 12));
-		float opp = -cos (solarDeclination) * sin (DRE_PI * solarTime / 12);
+																* cos (PCH_PI * solarTime / 12));
+		float opp = -cos (solarDeclination) * sin (PCH_PI * solarTime / 12);
 		float adj = -(cos (latitude) * sin (solarDeclination)
 									+ sin (latitude) * cos (solarDeclination)
-									* cos (DRE_PI * solarTime / 12));
+									* cos (PCH_PI * solarTime / 12));
 
 		float phi = -atan2 (opp, adj);
-		float theta = DRE_PI / 2.0 - solarAltitude;
+		float theta = PCH_PI / 2.0 - solarAltitude;
 
 		float sin_theta = sin (theta);
 		float cos_theta = cos (theta);
@@ -462,7 +462,7 @@ void Composition::SetupSkyZenithYxy (void)
 {
 	glm::vec3 zenithYxy;
 	float T = sky.turbidity;
-	float chi = (4.0 / 9.0 - T / 120.0) * (DRE_PI - 2.0 * sun.theta.Get ());
+	float chi = (4.0 / 9.0 - T / 120.0) * (PCH_PI - 2.0 * sun.theta.Get ());
 	zenithYxy.x = (4.0453 * T - 4.9710) * tan (chi)
 		 - 0.2155 * T + 2.4192;
 	glm::vec4 th;

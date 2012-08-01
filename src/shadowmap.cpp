@@ -1,18 +1,18 @@
 /*  
- * This file is part of DRE.
+ * This file is part of Pentachoron.
  *
- * DRE is free software: you can redistribute it and/or modify
+ * Pentachoron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * DRE is distributed in the hope that it will be useful,
+ * Pentachoron is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Pentachoron.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "shadowmap.h"
 #include "renderer.h"
@@ -146,7 +146,7 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	if (shadow.direction.w != 0.0f)
 	{
 		projmat.Set (glm::perspective (2 * shadow.spot.angle
-																	 * 180.0f / float (DRE_PI),
+																	 * 180.0f / float (PCH_PI),
 																	 (float) width / (float) height,
 																	 3.0f, 500.0f));
 		tessprojmat.Set (projmat.Get ());
