@@ -24,6 +24,13 @@
 #include <string>
 #include <iostream>
 
+#ifdef M_PI
+#define PCH_PI M_PI
+#else
+#define PCH_PI 3.14159265358979323846
+#endif
+
+
 inline std::ostream &operator<< (std::ostream &os, const glm::vec3 &v)
 {
 	os << "(" << v.x << ", " << v.y << ", " << v.z << ")";

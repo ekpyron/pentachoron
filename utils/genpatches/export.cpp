@@ -207,13 +207,16 @@ void Mesh::Export (const std::string &filename)
 		}
 	}
 
-#define DMF_FLAGS_TRIANGLES     0x0001
-#define DMF_FLAGS_QUADS         0x0002
-#define DMF_FLAGS_PATCHES       0x0004
+#define PCHM_FLAGS_TRIANGLES     0x0001
+#define PCHM_FLAGS_QUADS         0x0002
+#define PCHM_FLAGS_PATCHES       0x0004
+
+#define PCHM_VERSION 0x0000
 
 	typedef struct header
 	{
 		 char magic[4];
+		 uint16_t version;
 		 uint16_t flags;
 		 uint16_t num_texcoords;
 		 uint32_t vertexcount;
@@ -223,10 +226,11 @@ void Mesh::Export (const std::string &filename)
 	header_t header;
 
 	const char magic[4] = {
-		'D', 'M', 'F', 0x00
+		'P', 'C', 'H', 'M'
 	};
+	header.version = PCHM_VERSION;
 	memcpy (header.magic, magic, 4);
-	header.flags = DMF_FLAGS_QUADS|DMF_FLAGS_PATCHES;
+	header.flags = PCHM_FLAGS_QUADS|PCHM_FLAGS_PATCHES;
 	header.vertexcount = data.size ();
 	header.facecount = quadpatches.size ();
 	header.num_texcoords = data.begin ()->texcoords.size ();

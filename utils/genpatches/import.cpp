@@ -16,6 +16,7 @@
  */
 #include "common.h"
 #include "mesh.h"
+#include <cstring>
 #include <assimp.hpp>
 #include <aiScene.h>
 #include <aiPostProcess.h>

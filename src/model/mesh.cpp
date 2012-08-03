@@ -95,12 +95,15 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 	shadows = s;
 	material = mat;
 
-#define DMF_FLAGS_TRIANGLES     0x0001
-#define DMF_FLAGS_QUADS         0x0002
-#define DMF_FLAGS_PATCHES       0x0004
+#define PCHM_FLAGS_TRIANGLES     0x0001
+#define PCHM_FLAGS_QUADS         0x0002
+#define PCHM_FLAGS_PATCHES       0x0004
+
+#define PCHM_VERSION 0x0000
 	typedef struct header
 	{
 		 char magic[4];
+		 uint16_t version;
 		 uint16_t flags;
 		 uint16_t num_texcoords;
 		 uint32_t vertexcount;
@@ -120,15 +123,20 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 	file.read (reinterpret_cast<char*> (&header), sizeof (header_t));
 	if (file.gcount () != sizeof (header_t))
 	{
-		(*logstream) << "Cannot read the dmf header of "
+		(*logstream) << "Cannot read the pchm header of "
 								 << filename << std::endl;
 		return false;
 	}
 
-	const char magic[4] = { 'D', 'M', 'F', 0x00 };
+	const char magic[4] = { 'P', 'C', 'H', 'M' };
 	if (memcmp (header.magic, magic, 4))
 	{
-		(*logstream) << filename << " is no dmf model." << std::endl;
+		(*logstream) << filename << " is no pchm model." << std::endl;
+		return false;
+	}
+	if (header.version != PCHM_VERSION)
+	{
+		(*logstream) << filename << " has a invalid pchm version." << std::endl;
 		return false;
 	}
 
@@ -137,14 +145,14 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 
 	switch (header.flags)
 	{
-	case DMF_FLAGS_TRIANGLES:
+	case PCHM_FLAGS_TRIANGLES:
 		if (!LoadTriangles (file, header.num_texcoords, min, max))
 		{
 			(*logstream) << "Unable to load " << filename << std::endl;
 			return false;
 		}
 		break;
-	case DMF_FLAGS_QUADS|DMF_FLAGS_PATCHES:
+	case PCHM_FLAGS_QUADS|PCHM_FLAGS_PATCHES:
 		if (!LoadQuadPatches (file, header.num_texcoords, min, max))
 		{
 			(*logstream) << "Unable to load " << filename << std::endl;

@@ -217,7 +217,7 @@ glm::vec3 Mesh::GetEdgePoint (const glm::vec3 &v, const Edge &edge,
 			Edge b2 = GetSecondEdgeOnFace (v, faceid2, edge);
 
 			float gamma;
-			gamma = (3.0f / 8.0f) - (1.0f / 4.0f) * (M_PI / float (GetValence (v)));
+			gamma = (3.0f / 8.0f) - (1.0f / 4.0f) * (PCH_PI / float (GetValence (v)));
 			e = (3.0f / 4.0f - gamma) * v
 				 + gamma * edge.GetOther (v);
 
@@ -280,30 +280,30 @@ glm::vec3 Mesh::GetEdgePoint (const glm::vec3 &v, const Edge &edge,
 			c.insert (c.end (), c2.rbegin (), c2.rend () - 1);
 
 			glm::vec3 q;
-			float cos_pi_over_n = cosf (M_PI / float (m.size ()));
-			float cos_two_pi_over_n = cosf (2.0f * M_PI / float (m.size ()));
+			float cos_pi_over_n = cosf (PCH_PI / float (m.size ()));
+			float cos_two_pi_over_n = cosf (2.0f * PCH_PI / float (m.size ()));
 			float sigma = 1.0f / sqrtf (4.0f + cos_pi_over_n * cos_pi_over_n);
 			for (auto i = 0; i < m.size (); i++)
 			{
 				q += (1 - sigma * cos_pi_over_n)
-					 * cosf (2.0f * M_PI * float (i) / float (m.size ()))
+					 * cosf (2.0f * PCH_PI * float (i) / float (m.size ()))
 					 * m[i].GetMidpoint ();
 			}
 			q *= 2.0f / float (m.size ());
 
 			glm::vec3 q2;
-			cos_pi_over_n = cosf (M_PI / float (c.size ()));
-			cos_two_pi_over_n = cosf (2.0f * M_PI / float (c.size ()));
+			cos_pi_over_n = cosf (PCH_PI / float (c.size ()));
+			cos_two_pi_over_n = cosf (2.0f * PCH_PI / float (c.size ()));
 			sigma = 1.0f / sqrtf (4.0f + cos_pi_over_n * cos_pi_over_n);
 			for (auto i = 0; i < c.size (); i++)
 			{
-				q2 += cosf ((2.0f * M_PI * float (i) + M_PI) / float (c.size ()))
+				q2 += cosf ((2.0f * PCH_PI * float (i) + PCH_PI) / float (c.size ()))
 					 * 2.0f * sigma * faces[c[i]].GetCentroid ();
 			}
 			q2 *= 2.0f / float (c.size ());
 
-			cos_pi_over_n = cosf (M_PI / float (c.size () + m.size ()));
-			cos_two_pi_over_n = cosf (2.0f * M_PI / float (c.size () + m.size ()));
+			cos_pi_over_n = cosf (PCH_PI / float (c.size () + m.size ()));
+			cos_two_pi_over_n = cosf (2.0f * PCH_PI / float (c.size () + m.size ()));
 			float lambda = (cos_pi_over_n * sqrtf (18.0f + 2.0f * cos_two_pi_over_n)
 											+ cos_two_pi_over_n + 5.0f) / 16.0f;
 
@@ -327,17 +327,17 @@ glm::vec3 Mesh::GetEdgePoint (const glm::vec3 &v, const Edge &edge,
 	m.pop_back ();
 
 	glm::vec3 q;
-	float cos_pi_over_n = cosf (M_PI / float (m.size ()));
-	float cos_two_pi_over_n = cosf (2.0f * M_PI / float (m.size ()));
+	float cos_pi_over_n = cosf (PCH_PI / float (m.size ()));
+	float cos_two_pi_over_n = cosf (2.0f * PCH_PI / float (m.size ()));
 	float sigma = 1.0f / sqrtf (4.0f + cos_pi_over_n * cos_pi_over_n);
 	float lambda = (cos_pi_over_n * sqrtf (18.0f + 2.0f * cos_two_pi_over_n)
 									+ cos_two_pi_over_n + 5.0f) / 16.0f;
 	for (auto i = 0; i < m.size (); i++)
 	{
 		q += (1 - sigma * cos_pi_over_n)
-			 * cosf (2.0f * M_PI * float (i) / float (m.size ()))
+			 * cosf (2.0f * PCH_PI * float (i) / float (m.size ()))
 			 * m[i].GetMidpoint ();
-		q += cosf ((2.0f * M_PI * float (i) + M_PI) / float (m.size ()))
+		q += cosf ((2.0f * PCH_PI * float (i) + PCH_PI) / float (m.size ()))
 			 * 2.0f * sigma * faces[c[i]].GetCentroid ();
 	}
 	q *= 2.0f / float (m.size ());
@@ -411,8 +411,8 @@ glm::vec3 Mesh::GetFacePoint (const glm::vec3 &v, const Edge &edge,
 													- faces[c.back ()].GetCentroid ());
 	}
 
-	float c0 = cosf (2.0f * M_PI / float (n0));
-	float c1 = cosf (2.0f * M_PI / float (n1));
+	float c0 = cosf (2.0f * PCH_PI / float (n0));
+	float c1 = cosf (2.0f * PCH_PI / float (n1));
 	return (1.0f / d) * (c1 * p + (d - 2.0f * c0 - c1) * e1
 											 + 2.0f * c0 * e2 + r);
 }

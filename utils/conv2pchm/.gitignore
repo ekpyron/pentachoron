@@ -1,0 +1,4 @@
+*.o
+Makefile
+assimp2dmf
+assimp2dmf.exe

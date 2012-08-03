@@ -15,3 +15,4 @@ project (pentachoron)
 
 add_subdirectory (src)
 add_subdirectory (utils/genpatches)
+add_subdirectory (utils/conv2pchm)
