@@ -268,7 +268,7 @@ void Model::Render (GLuint pass, const gl::Program &program)
 			for (Mesh &mesh : quadpatches)
 			{
 				if (mesh.CastsShadow ())
-					 mesh.Render (program, true);
+					 mesh.Render (program, false);
 			}
 			break;
 		case Geometry::Pass::GBufferTransparency:

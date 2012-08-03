@@ -5,11 +5,6 @@ layout (quads, equal_spacing, cw) in;
 in vec3 tPosition[];
 in vec2 tTexcoord[];
 
-out vec2 fTexcoord;
-out vec3 fTangent;
-out vec3 fBitangent;
-out vec3 fNormal;
-
 uniform mat4 projmat;
 uniform mat4 mvmat;
 
@@ -24,6 +19,7 @@ uniform bool heightmap_enabled;
 layout(binding = 5) uniform sampler2D displacementmap;
 uniform bool displacementmap_enabled;
 
+uniform float displacement;
 
 mat4 cx, cy, cz;
 float u = gl_TessCoord.x;
@@ -63,7 +59,7 @@ vec3 InterpolatePosition (void)
 	       	     dot (cz * V, U));
 }
 
-void main ()
+void InterpolateCommon (void)
 {
 	vec3 F0, F1, F2, F3;
 	mat4 Px, Py, Pz;
@@ -103,26 +99,37 @@ void main ()
 	cx = B * Px * B;
 	cy = B * Py * B;
 	cz = B * Pz * B;
+}
 
-	fTexcoord = InterpolateTexcoords ();
+void main ()
+{
+	InterpolateCommon ();
 
-	fTangent = InterpolateTangent ();
-	fBitangent = InterpolateBitangent ();
-	fNormal = cross (fTangent, fBitangent);
+	vec2 texcoord = InterpolateTexcoords ();
+
 
 	vec3 pos;
 
 	pos = InterpolatePosition ();
+
+	if (displacement > 0.01f) {
+
 	if (displacementmap_enabled)
 	{
-		vec4 dir = texture (displacementmap, fTexcoord) - 0.5f;
-		pos += vec3 (dir.z, dir.y, dir.x);
+		vec3 dir = texture (displacementmap, texcoord).zyx - 0.5f;
+		dir *= displacement;
+		pos += dir;
 	}
 	else if (heightmap_enabled)
 	{
 		float height;
-		height = texture (heightmap, fTexcoord).x * 0.05;
-		pos += height * fNormal;
+		vec3 tangent, bitangent, normal;
+		tangent = InterpolateTangent ();
+		bitangent = InterpolateBitangent ();
+		normal = normalize (cross (tangent, bitangent));
+		height = texture (heightmap, texcoord).x;
+		pos += displacement * height * normal;
+	}
 	}
 
 	gl_Position = projmat * mvmat * vec4 (pos, 1.0);
