@@ -260,8 +260,10 @@ void Geometry::Render (GLuint p,
 	program = &prog;
 	switch (p & Pass::Mask)
 	{
-	case Pass::ShadowMapTess:
-	case Pass::GBufferTess:
+	case Pass::ShadowMapQuadTess:
+	case Pass::ShadowMapTriangleTess:
+	case Pass::GBufferQuadTess:
+	case Pass::GBufferTriangleTess:
 		prog["tessLevel"] = tessLevel;
 		prog["displacement"] = displacement;
 		sampler.Bind (4);

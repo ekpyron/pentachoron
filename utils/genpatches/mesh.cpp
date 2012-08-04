@@ -84,7 +84,97 @@ void Mesh::GeneratePatches (void)
 
 TrianglePatch Mesh::Triangle2Patch (unsigned int faceid) const
 {
-	throw std::runtime_error ("triangle patches are not yet supported");
+	TrianglePatch patch;
+
+	const Face &face = faces[faceid];
+
+	for (auto c = 0; c < 3; c++)
+	{
+		const glm::vec3 &v = face.GetVertex (c);
+
+		if (IsBorder (v))
+		{
+			if (GetFacesFromVertex (v).size () == 1)
+			{
+				patch.p[c] = v;
+			}
+			else
+			{
+				// find border edges
+				std::vector<Edge> borders;
+				for (const Edge &edge : GetEdgesFromVertex (v))
+				{
+					if (IsBorder (edge))
+						 borders.push_back (edge);
+				}
+				if (borders.size () < 2)
+					 throw std::runtime_error ("too few adjacent border edges");
+				if (borders.size () > 2)
+					 throw std::runtime_error ("too many adjacent border edges");
+				patch.p[c] = borders[0].GetOther (v);
+				patch.p[c] += borders[1].GetOther (v);
+				patch.p[c] += 4.0f * v;
+				patch.p[c] /= 6.0f;
+
+			}
+		}
+		else
+		{
+			const std::set<Edge> &edges = GetEdgesFromVertex (v);
+			for (const Edge &edge : edges)
+			{
+				patch.p[c] += edge.GetMidpoint ();
+			}
+			for (const unsigned int &f : GetFacesFromVertex (v))
+			{
+				patch.p[c] += faces[f].GetCentroid ();
+			}
+			patch.p[c] *= 4.0f / ((float (edges.size ()) + 5.0f)
+														* float (edges.size ()));
+			patch.p[c] += ((float (edges.size ()) - 3.0f)
+										 / (float (edges.size ()) + 5.0f)) * v;
+		}
+	}
+
+	for (auto i = 0; i < 3; i++)
+	{
+		patch.eplus[i] = GetEdgePoint (face.GetVertex (i),
+																	 Edge (face.GetVertex (i),
+																				 face.GetVertex ((i + 1) % 3)),
+																	 faceid, patch.p[i],
+																	 patch.p[(i + 1) % 3]);
+		
+		patch.eminus[i] = GetEdgePoint (face.GetVertex (i),
+																		Edge (face.GetVertex (i),
+																					face.GetVertex ((i + 2) % 3)),
+																		faceid, patch.p[i],
+																		patch.p[(i + 2) % 3]);
+	}
+	for (auto i = 0; i < 3; i++)
+	{
+		patch.fplus[i] = GetFacePoint (face.GetVertex (i),
+																	 Edge (face.GetVertex (i),
+																				 face.GetVertex ((i + 1) % 3)),
+																	 faceid, patch.p[i],
+																	 patch.eplus[i],
+																	 patch.eminus[(i + 1) % 3]);
+		patch.fminus[i] = GetFacePoint (face.GetVertex (i),
+																		Edge (face.GetVertex (i),
+																					face.GetVertex ((i + 2) % 3)),
+																		faceid, patch.p[i],
+																		patch.eminus[i],
+																		patch.eplus[(i + 2) % 3]);
+	}
+
+
+	for (auto t = 0; t < face.GetNumTexCoords (); t++)
+	{
+		patch.texcoords.push_back (Patch<3>::texcoord_t ());
+		for (auto i = 0; i < 3; i++)
+			 patch.texcoords.back ().p[i] = glm::vec2 (face.GetTexCoord (i, t));
+	}
+
+	return patch;
 }
 
 bool Mesh::IsBorder (const glm::vec3 &vertex) const
@@ -441,5 +531,19 @@ unsigned int Mesh::GetNumQuadPatches (void) const
 
 const QuadPatch &Mesh::GetQuadPatch (unsigned int q) const
 {
+	if (q >= quadpatches.size ())
+		 throw std::runtime_error ("invalid quad patch");
 	return quadpatches[q];
+}
+
+unsigned int Mesh::GetNumTrianglePatches (void) const
+{
+	return trianglepatches.size ();
+}
+
+const TrianglePatch &Mesh::GetTrianglePatch (unsigned int t) const
+{
+	if (t >= trianglepatches.size ())
+		 throw std::runtime_error ("invalid quad patch");
+	return trianglepatches[t];
 }

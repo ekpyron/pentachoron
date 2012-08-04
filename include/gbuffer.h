@@ -64,7 +64,8 @@ private:
 	 gl::Program sraaprog;
 	 gl::Sampler depthsampler;
 
-	 gl::Program tessprogram;
+	 gl::Program quadtessprog;
+	 gl::Program triangletessprog;
 
 	 gl::Buffer counter;
 };

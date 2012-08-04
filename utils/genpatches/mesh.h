@@ -35,6 +35,9 @@ public:
 	 unsigned int GetNumQuadPatches (void) const;
 	 const QuadPatch &GetQuadPatch (unsigned int q) const;
 
+	 unsigned int GetNumTrianglePatches (void) const;
+	 const TrianglePatch &GetTrianglePatch (unsigned int q) const;
+
 	 const Face &GetFace (unsigned int i) const;
 
 	 const std::set<Edge> &GetEdges (void) const;

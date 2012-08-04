@@ -7,10 +7,13 @@ models:
     simplewall:    "simplewall.yaml"
     simpleceiling: "simpleceiling.yaml"
     brokenwall: "brokenwall.yaml"
+    hemisphere: "hemisphere.yaml"
 boxmin: [ -30, -3, -30 ]
 boxmax: [ 30, 3, 30 ]
 ---
 nodes:
+    - translation: [ 0.0, 5.0, 0.0 ]
+      models:      [ hemisphere ]
     - translation: [ 0.0, -2.9, 0.0 ]
       nodes:
         - translation: [ 0.0, 0.0, 0.0 ]

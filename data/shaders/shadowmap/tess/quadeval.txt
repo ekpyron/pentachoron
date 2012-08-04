@@ -107,7 +107,6 @@ void main ()
 
 	vec2 texcoord = InterpolateTexcoords ();
 
-
 	vec3 pos;
 
 	pos = InterpolatePosition ();
@@ -123,10 +122,9 @@ void main ()
 	else if (heightmap_enabled)
 	{
 		float height;
-		vec3 tangent, bitangent, normal;
-		tangent = InterpolateTangent ();
-		bitangent = InterpolateBitangent ();
-		normal = normalize (cross (tangent, bitangent));
+		vec3 tangent = InterpolateTangent ();
+		vec3 bitangent = InterpolateBitangent ();
+		vec3 normal = normalize (cross (tangent, bitangent));
 		height = texture (heightmap, texcoord).x;
 		pos += displacement * height * normal;
 	}

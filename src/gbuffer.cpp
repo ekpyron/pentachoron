@@ -30,14 +30,31 @@ GBuffer::~GBuffer (void)
 
 bool GBuffer::Init (void)
 {
-	if (!LoadProgram (tessprogram, MakePath ("shaders", "bin",
-																					 "gbuffer_tess.bin"),
-										{}, { std::make_pair (GL_TESS_CONTROL_SHADER,
-																					MakePath ("shaders", "gbuffer",
-																										"tess", "control.txt")),
+	if (!LoadProgram (quadtessprog, MakePath ("shaders", "bin",
+																					 "gbuffer_quadtess.bin"),
+										{ {"#version 420 core\n#define NUM_VERTICES 20\n"} },
+										{ std::make_pair (GL_TESS_CONTROL_SHADER,
+																			MakePath ("shaders", "gbuffer",
+																								"tess", "control.txt")),
 												 std::make_pair (GL_TESS_EVALUATION_SHADER,
 																				 MakePath ("shaders", "gbuffer",
-																									 "tess", "evaluation.txt")),
+																									 "tess", "quadeval.txt")),
+												 std::make_pair (GL_VERTEX_SHADER,
+																				 MakePath ("shaders", "gbuffer",
+																									 "tess", "vshader.txt")),
+												 std::make_pair (GL_FRAGMENT_SHADER,
+																				 MakePath ("shaders", "gbuffer",
+																									 "tess", "fshader.txt")) }))
+		 return false;
+	if (!LoadProgram (triangletessprog, MakePath ("shaders", "bin",
+																					 "gbuffer_triangletess.bin"),
+										{ {"#version 420 core\n#define NUM_VERTICES 15\n"} },
+										{ std::make_pair (GL_TESS_CONTROL_SHADER,
+																			MakePath ("shaders", "gbuffer",
+																								"tess", "control.txt")),
+												 std::make_pair (GL_TESS_EVALUATION_SHADER,
+																				 MakePath ("shaders", "gbuffer",
+																									 "tess", "triangleeval.txt")),
 												 std::make_pair (GL_VERTEX_SHADER,
 																				 MakePath ("shaders", "gbuffer",
 																									 "tess", "vshader.txt")),
@@ -135,9 +152,12 @@ bool GBuffer::Init (void)
 	program["viewport"] = glm::uvec2 (width, height);
 	program["farClipPlane"] = r->camera.GetFarClipPlane ();
 	program["nearClipPlane"] = r->camera.GetNearClipPlane ();
-	tessprogram["viewport"] = glm::uvec2 (width, height);
-	tessprogram["farClipPlane"] = r->camera.GetFarClipPlane ();
-	tessprogram["nearClipPlane"] = r->camera.GetNearClipPlane ();
+	quadtessprog["viewport"] = glm::uvec2 (width, height);
+	quadtessprog["farClipPlane"] = r->camera.GetFarClipPlane ();
+	quadtessprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
+	triangletessprog["viewport"] = glm::uvec2 (width, height);
+	triangletessprog["farClipPlane"] = r->camera.GetFarClipPlane ();
+	triangletessprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
 	transparencyprog["viewport"] = glm::uvec2 (width, height);
 	transparencyprog["farClipPlane"] = r->camera.GetFarClipPlane ();
 	transparencyprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
@@ -202,7 +222,8 @@ GLuint GBuffer::GetHeight (void)
 void GBuffer::SetProjMatrix (const glm::mat4 &projmat)
 {
 	program["projmat"] = projmat;
-	tessprogram["projmat"] = projmat;	
+	quadtessprog["projmat"] = projmat;	
+	triangletessprog["projmat"] = projmat;	
 	transparencyprog["projmat"] = projmat;
 	sraaprog["projmat"] = projmat;	
 }
@@ -231,10 +252,13 @@ void GBuffer::Render (Geometry &geometry)
 	geometry.Render (Geometry::Pass::GBuffer,
 									 program, r->camera.GetViewMatrix ());
 
-	tessprogram.Use ();
+	quadtessprog.Use ();
+	geometry.Render (Geometry::Pass::GBufferQuadTess,
+									 quadtessprog, r->camera.GetViewMatrix ());
 
-	geometry.Render (Geometry::Pass::GBufferTess,
-									 tessprogram, r->camera.GetViewMatrix ());
+	triangletessprog.Use ();
+	geometry.Render (Geometry::Pass::GBufferTriangleTess,
+									 triangletessprog, r->camera.GetViewMatrix ());
 
 	transparencyprog.Use ();
 

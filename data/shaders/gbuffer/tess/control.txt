@@ -1,6 +1,4 @@
-#version 420 core
-
-layout(vertices = 20) out;
+layout(vertices = NUM_VERTICES) out;
 in vec3 vPosition[];
 in vec2 vTexcoord[];
 out vec3 tPosition[];

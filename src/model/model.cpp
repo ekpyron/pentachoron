@@ -26,7 +26,7 @@ Model::Model (void)
 }
 
 Model::Model (Model &&model) : meshes (std::move (model.meshes)),
-															 quadpatches (std::move (model.quadpatches)),
+															 patches (std::move (model.patches)),
 															 transparent (std::move (model.transparent)),
 															 materials (std::move (model.materials)),
 															 queries (std::move (model.queries))
@@ -47,7 +47,7 @@ Model::~Model (void)
 Model &Model::operator= (Model &&model)
 {
 	meshes = std::move (model.meshes);
-	quadpatches = std::move (model.quadpatches);
+	patches = std::move (model.patches);
 	transparent = std::move (model.transparent);
 	materials = std::move (model.materials);
 	bbox.min = model.bbox.min;
@@ -105,34 +105,29 @@ bool Model::Load (const std::string &filename)
 
 		if (mesh.IsTransparent ())
 		{
-			switch (mesh.GetPatchType ())
+			if (mesh.IsTessellated ())
 			{
-			case 0:
-				transparent.emplace_back (std::move (mesh));
-				num_meshes++;
-				break;
-			default:
 				(*logstream) << "Mesh " << filename
 										 << " has an invalid type." << std::endl;
-				break;
+				return false;
+			}
+			else
+			{
+				transparent.emplace_back (std::move (mesh));
+				num_meshes++;
 			}
 		}
 		else
 		{
-			switch (mesh.GetPatchType ())
+			if (mesh.IsTessellated ())
 			{
-			case 0:
+				patches.emplace_back (std::move (mesh));
+				num_meshes++;
+			}
+			else
+			{
 				meshes.emplace_back (std::move (mesh));
 				num_meshes++;
-				break;
-			case GL_QUADS:
-				quadpatches.emplace_back (std::move (mesh));
-				num_meshes++;
-				break;
-			default:
-				(*logstream) << "Mesh " << filename
-										 << " has an invalid type." << std::endl;
-				break;
 			}
 		}
 	}
@@ -200,7 +195,8 @@ void Model::Render (GLuint pass, const gl::Program &program)
 	passtype = pass & Geometry::Pass::Mask;
 
 	bool shadowpass = (passtype == Geometry::Pass::ShadowMap)
-		 || (passtype == Geometry::Pass::ShadowMapTess);
+		 || (passtype == Geometry::Pass::ShadowMapTriangleTess)
+		 || (passtype == Geometry::Pass::ShadowMapQuadTess);
 
 	std::map<GLuint, gl::Query>::iterator query;
 	switch (passtype)
@@ -258,17 +254,30 @@ void Model::Render (GLuint pass, const gl::Program &program)
 	{
 		switch (passtype)
 		{
-		case Geometry::Pass::GBufferTess:
-			for (Mesh &mesh : quadpatches)
+		case Geometry::Pass::GBufferTriangleTess:
+			for (Mesh &mesh : patches)
 			{
-				mesh.Render (program, false);
+				mesh.Render (program, false, false);
 			}
 			break;
-		case Geometry::Pass::ShadowMapTess:
-			for (Mesh &mesh : quadpatches)
+		case Geometry::Pass::GBufferQuadTess:
+			for (Mesh &mesh : patches)
+			{
+				mesh.Render (program, false, true);
+			}
+			break;
+		case Geometry::Pass::ShadowMapTriangleTess:
+			for (Mesh &mesh : patches)
 			{
 				if (mesh.CastsShadow ())
-					 mesh.Render (program, false);
+					 mesh.Render (program, false, false);
+			}
+			break;
+		case Geometry::Pass::ShadowMapQuadTess:
+			for (Mesh &mesh : patches)
+			{
+				if (mesh.CastsShadow ())
+					 mesh.Render (program, false, true);
 			}
 			break;
 		case Geometry::Pass::GBufferTransparency:

@@ -35,6 +35,9 @@ void AddToList (const vertex_t &v, std::vector<vertex_t> &data,
 
 void Mesh::Export (const std::string &filename)
 {
+	if (GetNumQuadPatches () + GetNumTrianglePatches () == 0)
+		 throw std::runtime_error ("No patches to export");
+
 	std::ofstream file (filename, std::ios_base::out
 											|std::ios_base::binary
 											|std::ios_base::trunc);
@@ -42,7 +45,50 @@ void Mesh::Export (const std::string &filename)
 		 throw std::runtime_error ("cannot open output file");
 
 	std::vector<vertex_t> data;
-	std::vector<unsigned int> indices;
+	std::vector<unsigned int> quadindices;
+	std::vector<unsigned int> triangleindices;
+
+	for (TrianglePatch &patch : trianglepatches)
+	{
+		for (auto i = 0; i < 3; i++)
+		{
+			{
+				vertex_t v;
+				v.position = patch.p[i];
+				for (auto c = 0; c < patch.texcoords.size (); c++)
+					 v.texcoords.push_back (patch.texcoords[c].p[i]);
+				AddToList (v, data, triangleindices);
+			}
+			{
+				vertex_t v;
+				v.position = patch.eminus[i];
+				for (auto c = 0; c < patch.texcoords.size (); c++)
+					 v.texcoords.push_back (patch.texcoords[c].eminus[i]);
+				AddToList (v, data, triangleindices);
+			}
+			{
+				vertex_t v;
+				v.position = patch.eplus[i];
+				for (auto c = 0; c < patch.texcoords.size (); c++)
+					 v.texcoords.push_back (patch.texcoords[c].eplus[i]);
+				AddToList (v, data, triangleindices);
+			}
+			{
+				vertex_t v;
+				v.position = patch.fminus[i];
+				for (auto c = 0; c < patch.texcoords.size (); c++)
+					 v.texcoords.push_back (patch.texcoords[c].fminus[i]);
+				AddToList (v, data, triangleindices);
+			}
+			{
+				vertex_t v;
+				v.position = patch.fplus[i];
+				for (auto c = 0; c < patch.texcoords.size (); c++)
+					 v.texcoords.push_back (patch.texcoords[c].fplus[i]);
+				AddToList (v, data, triangleindices);
+			}
+		}
+	}
 
 	for (QuadPatch &patch : quadpatches)
 	{
@@ -51,7 +97,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.p[0];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].p[0]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -59,7 +105,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.eminus[0];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].eminus[0]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -67,7 +113,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.eplus[3];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].eplus[3]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -75,7 +121,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.p[3];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].p[3]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -83,7 +129,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.eplus[0];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].eplus[0]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -91,7 +137,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.fminus[0];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].fminus[0]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -99,7 +145,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.fplus[0];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].fplus[0]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -107,7 +153,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.fminus[3];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].fminus[3]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -115,7 +161,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.fplus[3];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].fplus[3]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -123,7 +169,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.eminus[3];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].eminus[3]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -131,7 +177,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.eminus[1];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].eminus[1]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -139,7 +185,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.fminus[1];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].fminus[1]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -147,7 +193,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.fplus[1];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].fplus[1]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -155,7 +201,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.fminus[2];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].fminus[2]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -163,7 +209,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.fplus[2];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].fplus[2]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -171,7 +217,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.eplus[2];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].eplus[2]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -179,7 +225,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.p[1];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].p[1]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -187,7 +233,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.eplus[1];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].eplus[1]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -195,7 +241,7 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.eminus[2];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].eminus[2]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 
 		{
@@ -203,13 +249,11 @@ void Mesh::Export (const std::string &filename)
 			v.position = patch.p[2];
 			for (auto i = 0; i < patch.texcoords.size (); i++)
 				 v.texcoords.push_back (patch.texcoords[i].p[2]);
-			AddToList (v, data, indices);
+			AddToList (v, data, quadindices);
 		}
 	}
 
-#define PCHM_FLAGS_TRIANGLES     0x0001
-#define PCHM_FLAGS_QUADS         0x0002
-#define PCHM_FLAGS_PATCHES       0x0004
+#define PCHM_FLAGS_GREGORY_PATCHES       0x0001
 
 #define PCHM_VERSION 0x0000
 
@@ -220,7 +264,8 @@ void Mesh::Export (const std::string &filename)
 		 uint16_t flags;
 		 uint16_t num_texcoords;
 		 uint32_t vertexcount;
-		 uint32_t facecount;
+		 uint32_t trianglecount;
+		 uint32_t quadcount;
 	} header_t;
 
 	header_t header;
@@ -230,9 +275,10 @@ void Mesh::Export (const std::string &filename)
 	};
 	header.version = PCHM_VERSION;
 	memcpy (header.magic, magic, 4);
-	header.flags = PCHM_FLAGS_QUADS|PCHM_FLAGS_PATCHES;
+	header.flags = PCHM_FLAGS_GREGORY_PATCHES;
 	header.vertexcount = data.size ();
-	header.facecount = quadpatches.size ();
+	header.trianglecount = trianglepatches.size ();
+	header.quadcount = quadpatches.size ();
 	header.num_texcoords = data.begin ()->texcoords.size ();
 
 	file.write ((char*) &header, sizeof (header_t));
@@ -247,7 +293,11 @@ void Mesh::Export (const std::string &filename)
 			file.write ((char*) &v.texcoords[i].x, sizeof (glm::vec2));
 		}
 	}
-	for (unsigned int &idx : indices)
+	for (unsigned int &idx : triangleindices)
+	{
+		file.write ((char*) &idx, sizeof (unsigned int));
+	}
+	for (unsigned int &idx : quadindices)
 	{
 		file.write ((char*) &idx, sizeof (unsigned int));
 	}

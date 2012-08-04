@@ -37,7 +37,7 @@ public:
 private:
 	 std::vector<Material> materials;
 	 std::vector<Mesh> meshes;
-	 std::vector<Mesh> quadpatches;
+	 std::vector<Mesh> patches;
 	 std::vector<Mesh> transparent;
 	 friend class Material;
 	 friend class Mesh;

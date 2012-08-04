@@ -33,8 +33,8 @@ public:
 	 Mesh &operator= (Mesh &&mesh);
 	 Mesh &operator= (const Mesh&) = delete;
 	 void Render (const gl::Program &program,
-								bool depthonly = false) const;
-	 GLuint GetPatchType (void) const;
+								bool depthonly = false,
+								bool quads = true) const;
 	 bool Load (const std::string &filename,
 							const Material *mat,
 							glm::vec3 &min,
@@ -42,6 +42,7 @@ public:
 							bool cast_shadows);
 	 bool CastsShadow (void) const;
 	 bool IsTransparent (void) const;
+	 bool IsTessellated (void) const;
 	 static GLuint culled;
 private:
 
@@ -49,6 +50,10 @@ private:
 											 unsigned int num_texcoords,
 											 glm::vec3 &min,
 											 glm::vec3 &max);
+	 bool LoadTrianglePatches (std::ifstream &file,
+														 unsigned int num_texcoords,
+														 glm::vec3 &min,
+														 glm::vec3 &max);
 	 bool LoadQuadPatches (std::ifstream &file,
 												 unsigned int num_texcoords,
 												 glm::vec3 &min,
@@ -63,15 +68,17 @@ private:
 			float radius;
 	 } bsphere;
 
-	 GLuint patches;
+	 bool patches;
 
 	 Model &parent;
 
 	 gl::VertexArray vertexarray, depthonlyarray;
-	 GLuint facecount;
+	 GLuint trianglecount;
+	 GLuint quadcount;
 	 GLuint vertexcount;
 	 std::vector<gl::Buffer> buffers;
-	 gl::Buffer indices;
+	 gl::Buffer triangleindices;
+	 gl::Buffer quadindices;
 };
 
 #endif /* !defined MESH_H */

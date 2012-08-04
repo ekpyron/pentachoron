@@ -20,9 +20,7 @@
 #include <cerrno>
 #include <cstring>
 
-#define PCHM_FLAGS_TRIANGLES     0x0001
-#define PCHM_FLAGS_QUADS         0x0002
-#define PCHM_FLAGS_PATCHES       0x0004
+#define PCHM_FLAGS_GREGORY_PATCHES       0x0001
 
 #define PCHM_VERSION 0x0000
 
@@ -33,7 +31,8 @@ typedef struct header
 	 uint16_t flags;
 	 uint16_t num_texcoords;
 	 uint32_t vertexcount;
-	 uint32_t facecount;
+	 uint32_t trianglecount;
+	 uint32_t quadcount;
 } header_t;
 
 bool export_mesh (const char *filename, Mesh *mesh)
@@ -72,18 +71,23 @@ bool export_mesh (const char *filename, Mesh *mesh)
 
 	header.version = PCHM_VERSION;
 	memcpy (header.magic, magic, 4);
-	if (mesh->edges == 3)
-		 header.flags = PCHM_FLAGS_TRIANGLES;
-	else if (mesh->edges == 4)
-		 header.flags = PCHM_FLAGS_QUADS;
-	else
+	if (mesh->edges != 3 && mesh->edges != 4)
 	{
 		fl_message_title ("Invalid primitive type.");
 		fl_alert ("Only quad and triangle meshes can be exported.");
 		return false;
 	}
 	header.vertexcount = mesh->vertices.size () / 3;
-	header.facecount = mesh->indices.size () / mesh->edges;
+	if (mesh->edges == 3)
+	{
+		header.trianglecount = mesh->indices.size () / 3;
+		header.quadcount = 0;
+	}
+	else
+	{
+		header.trianglecount = 0;
+		header.quadcount = mesh->indices.size () / 4;
+	}
 	header.num_texcoords = 1;
 
 	file.write ((char*) &header, sizeof (header_t));

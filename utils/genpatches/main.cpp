@@ -28,38 +28,8 @@ Mesh mesh;
 
 GLuint current_patch = 0;
 
-void DrawScene (void)
+void DrawPatch (const QuadPatch &patch)
 {
-	glPointSize (10.0f);
-	glLineWidth (2.0f);
-	glBegin (GL_POINTS);
-	for (auto i = 0; i < mesh.GetNumFaces (); i++)
-	{
-		const Face &f = mesh.GetFace (i);
-		for (auto c = 0; c < f.GetNumVertices (); c++)
-		{
-			if (mesh.IsBorder (f.GetVertex (c)))
-				 glColor3ub (128, 128, 128);
-			else
-				 glColor3ub (255, 255, 255);
-			glVertex3fv (&f.GetVertex (c).x);
-		}
-	}
-	glEnd ();
-	glBegin (GL_LINES);
-	for (const Edge &edge : mesh.GetEdges ())
-	{
-			if (mesh.IsBorder (edge))
-				 glColor3ub (128, 128, 128);
-			else
-				 glColor3ub (255, 255, 255);
-			glVertex3fv (&edge.GetFirst ().x);
-			glVertex3fv (&edge.GetSecond ().x);
-	}
-	glEnd ();
-
-	const QuadPatch &patch = mesh.GetQuadPatch (current_patch);
-
 	glColor3ub (255, 0, 0);
 	glBegin (GL_POINTS);
 	glVertex3fv (&patch.p[0].x);
@@ -105,6 +75,90 @@ void DrawScene (void)
 	glEnd ();
 }
 
+void DrawPatch (const TrianglePatch &patch)
+{
+	glColor3ub (255, 0, 0);
+	glBegin (GL_POINTS);
+	glVertex3fv (&patch.p[0].x);
+	glVertex3fv (&patch.p[1].x);
+	glVertex3fv (&patch.p[2].x);
+	for (int i = 0; i < 3; i++)
+	{
+		glColor3ub (255, 255, 0);
+		glVertex3fv (&patch.eplus[i].x);
+		glColor3ub (0, 255, 255);
+		glVertex3fv (&patch.eminus[i].x);
+		glColor3ub (255, 0, 255);
+		glVertex3fv (&patch.fplus[i].x);
+		glVertex3fv (&patch.fminus[i].x);
+	}
+	glEnd ();
+	glColor3ub (255, 0, 0);
+	glBegin (GL_LINE_STRIP);
+	glVertex3fv (&patch.p[0].x);
+	glVertex3fv (&patch.eplus[0].x);
+	glVertex3fv (&patch.eminus[1].x);
+	glVertex3fv (&patch.p[1].x);
+	glVertex3fv (&patch.eplus[1].x);
+	glVertex3fv (&patch.eminus[2].x);
+	glVertex3fv (&patch.p[2].x);
+	glVertex3fv (&patch.eplus[2].x);
+	glVertex3fv (&patch.eminus[0].x);
+	glVertex3fv (&patch.p[0].x);
+	glEnd ();
+	glColor3ub (255, 0, 255);
+	glBegin (GL_LINES);
+	for (int i = 0; i < 3; i++)
+	{
+		glVertex3fv (&patch.eminus[i].x);
+		glVertex3fv (&patch.fminus[i].x);
+		glVertex3fv (&patch.eplus[i].x);
+		glVertex3fv (&patch.fplus[i].x);
+	}
+	glEnd ();
+}
+
+void DrawScene (void)
+{
+	glPointSize (10.0f);
+	glLineWidth (2.0f);
+	glBegin (GL_POINTS);
+	for (auto i = 0; i < mesh.GetNumFaces (); i++)
+	{
+		const Face &f = mesh.GetFace (i);
+		for (auto c = 0; c < f.GetNumVertices (); c++)
+		{
+			if (mesh.IsBorder (f.GetVertex (c)))
+				 glColor3ub (128, 128, 128);
+			else
+				 glColor3ub (255, 255, 255);
+			glVertex3fv (&f.GetVertex (c).x);
+		}
+	}
+	glEnd ();
+	glBegin (GL_LINES);
+	for (const Edge &edge : mesh.GetEdges ())
+	{
+			if (mesh.IsBorder (edge))
+				 glColor3ub (128, 128, 128);
+			else
+				 glColor3ub (255, 255, 255);
+			glVertex3fv (&edge.GetFirst ().x);
+			glVertex3fv (&edge.GetSecond ().x);
+	}
+	glEnd ();
+
+	if (current_patch < mesh.GetNumQuadPatches ())
+	{
+		DrawPatch (mesh.GetQuadPatch (current_patch));
+	}
+	else
+	{
+		DrawPatch (mesh.GetTrianglePatch (current_patch
+																			- mesh.GetNumQuadPatches ()));
+	}
+}
+
 void keyfn (int key, int action)
 {
 	if (action == GLFW_RELEASE)
@@ -113,7 +167,8 @@ void keyfn (int key, int action)
 		{
 		case GLFW_KEY_TAB:
 			current_patch++;
-			if (current_patch >= mesh.GetNumQuadPatches ())
+			if (mesh.GetNumQuadPatches () + mesh.GetNumTrianglePatches ()
+					<= current_patch)
 				 current_patch = 0;
 			break;
 		}

@@ -42,14 +42,31 @@ bool ShadowMap::Init (void)
 																				 MakePath ("shaders", "shadowmap",
 																									 "fshader.txt")) }))
 		 return false;
-	if (!LoadProgram (tessprogram, MakePath ("shaders", "bin",
-																					 "shadowmap_tess.bin"),
-										{}, {	std::make_pair (GL_TESS_CONTROL_SHADER,
-																					MakePath ("shaders", "shadowmap",
-																										"tess", "control.txt")),
+	if (!LoadProgram (quadtessprog, MakePath ("shaders", "bin",
+																					 "shadowmap_quadtess.bin"),
+										{ { "#version 420 core\n#define NUM_VERTICES 20\n" } },
+										{	std::make_pair (GL_TESS_CONTROL_SHADER,
+																			MakePath ("shaders", "shadowmap",
+																								"tess", "control.txt")),
 												 std::make_pair (GL_TESS_EVALUATION_SHADER,
 																				 MakePath ("shaders", "shadowmap",
-																									 "tess", "evaluation.txt")),
+																									 "tess", "quadeval.txt")),
+												 std::make_pair (GL_VERTEX_SHADER,
+																				 MakePath ("shaders", "shadowmap",
+																									 "tess", "vshader.txt")),
+												 std::make_pair (GL_FRAGMENT_SHADER,
+																				 MakePath ("shaders", "shadowmap",
+																									 "tess", "fshader.txt")) }))
+		 return false;
+	if (!LoadProgram (triangletessprog, MakePath ("shaders", "bin",
+																					 "shadowmap_triangletess.bin"),
+										{ { "#version 420 core\n#define NUM_VERTICES 15\n" } },
+										{	std::make_pair (GL_TESS_CONTROL_SHADER,
+																			MakePath ("shaders", "shadowmap",
+																								"tess", "control.txt")),
+												 std::make_pair (GL_TESS_EVALUATION_SHADER,
+																				 MakePath ("shaders", "shadowmap",
+																									 "tess", "triangleeval.txt")),
 												 std::make_pair (GL_VERTEX_SHADER,
 																				 MakePath ("shaders", "shadowmap",
 																									 "tess", "vshader.txt")),
@@ -110,8 +127,10 @@ bool ShadowMap::Init (void)
 	vblurfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
 	projmat = gl::SmartUniform<glm::mat4> (program["projmat"], glm::mat4(1));
-	tessprojmat = gl::SmartUniform<glm::mat4> (tessprogram["projmat"],
-																						 glm::mat4(1));
+	quadtessprojmat = gl::SmartUniform<glm::mat4>
+		 (quadtessprog["projmat"], glm::mat4(1));
+	triangletessprojmat = gl::SmartUniform<glm::mat4>
+		 (triangletessprog["projmat"], glm::mat4(1));
 
 	return true;
 }
@@ -149,7 +168,8 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 																	 * 180.0f / float (PCH_PI),
 																	 (float) width / (float) height,
 																	 3.0f, 500.0f));
-		tessprojmat.Set (projmat.Get ());
+		quadtessprojmat.Set (projmat.Get ());
+		triangletessprojmat.Set (projmat.Get ());
 	}
 	else
 	{
@@ -207,7 +227,8 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 		projmat.Set (glm::ortho (mins.x, maxes.x,
 														 mins.y, maxes.y,
 														 -maxes.z, -mins.z));
-		tessprojmat.Set (projmat.Get ());
+		quadtessprojmat.Set (projmat.Get ());
+		triangletessprojmat.Set (projmat.Get ());
 	}
 	r->culling.SetProjMatrix (projmat.Get ());
 
@@ -227,9 +248,14 @@ void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 	geometry.Render (Geometry::Pass::ShadowMap + shadowid * 0x00010000,
 									 program, vmat);
 
-	tessprogram.Use ();
-	geometry.Render (Geometry::Pass::ShadowMapTess + shadowid * 0x00010000,
-									 tessprogram, vmat);
+	quadtessprog.Use ();
+	geometry.Render (Geometry::Pass::ShadowMapQuadTess + shadowid * 0x00010000,
+									 quadtessprog, vmat);
+
+	triangletessprog.Use ();
+	geometry.Render (Geometry::Pass::ShadowMapTriangleTess
+									 + shadowid * 0x00010000,
+									 triangletessprog, vmat);
 
 	gl::DepthMask (GL_FALSE);
 

@@ -1491,6 +1491,15 @@ void Interface::Frame (float tf)
 	if (glfwGetKey (GLFW_KEY_LALT))
 		 timefactor *= 20.0f;
 
+	if (glfwGetKey (GLFW_KEY_RSHIFT))
+		 timefactor *= 0.2f;
+
+	if (glfwGetKey (GLFW_KEY_RCTRL))
+		 timefactor *= 0.1f;
+
+	if (glfwGetKey (GLFW_KEY_RALT))
+		 timefactor *= 0.05f;
+
 	if (glfwGetTime () - last_time >= 1.0)
 	{
 		fps = frames;

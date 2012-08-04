@@ -1,0 +1,159 @@
+#version 420 core
+
+layout (triangles, equal_spacing, cw) in;
+
+in vec3 tPosition[];
+in vec2 tTexcoord[];
+
+out vec2 fTexcoord;
+out vec3 fTangent;
+out vec3 fBitangent;
+out vec3 fNormal;
+
+uniform mat4 projmat;
+uniform mat4 mvmat;
+
+const mat4 B = mat4 (-1,  3, -3, 1,
+      	       	      3, -6,  3, 0,
+		     -3,  3,  0, 0,
+		      1,  0,  0, 0);
+
+layout(binding = 4) uniform sampler2D heightmap;
+uniform bool heightmap_enabled;
+
+layout(binding = 5) uniform sampler2D displacementmap;
+uniform bool displacementmap_enabled;
+
+uniform float displacement;
+
+vec3 F0, F1, F2;
+vec3 E0, E1, E2;
+
+float u = gl_TessCoord.x;
+float v = gl_TessCoord.y;
+float w = gl_TessCoord.z;
+
+vec3 DerivativeU (void)
+{
+	vec3 pos;
+
+	pos += 3 * u * u * tPosition[0];
+
+	pos += 3 * v * (2 * u + v) * E0;
+	pos += 3 * w * (2 * u + w) * E2;
+
+	pos += 12 * v * w * (u * F0 + v * F1 + w * F2);
+
+	return pos;
+}
+
+vec3 DerivativeV (void)
+{
+	vec3 pos;
+
+	pos += 3 * v * v * tPosition[5];
+
+	pos += 3 * u * (u + 2 * v) * E0;
+	pos += 3 * w * (w + 2 * v) * E1;
+
+	pos += 12 * u * w * (u * F0 + v * F1 + w * F2);
+
+	return pos;
+}
+
+vec3 DerivativeW (void)
+{
+	vec3 pos;
+
+	pos += 3 * w * w * tPosition[10];
+
+	pos += 3 * v * (v + 2 * w) * E1;
+	pos += 3 * u * (u + 2 * w) * E2;
+	pos += 12 * u * v * (u * F0 + v * F1 + w * F2);
+
+	return pos;
+}
+
+vec3 InterpolateBitangent (void)
+{
+	return normalize (DerivativeW () - DerivativeU ());
+}
+
+vec3 InterpolateTangent (void)
+{
+	return normalize (DerivativeV () - DerivativeU ());
+}
+
+vec2 InterpolateTexcoords (void)
+{
+	vec2 uv;
+	uv += u * tTexcoord[0];
+	uv += v * tTexcoord[5];
+	uv += w * tTexcoord[10];
+	return vec2 (uv.x, 1 - uv.y);
+}
+
+vec3 InterpolatePosition (void)
+{
+	vec3 pos;
+	pos += u * u * u * tPosition[0];
+	pos += v * v * v * tPosition[5];
+	pos += w * w * w * tPosition[10];
+	pos += 3 * u * v * (u + v) * (u * tPosition[2] + v * tPosition[6]);
+	pos += 3 * v * w * (v + w) * (v * tPosition[7] + w * tPosition[11]);
+	pos += 3 * w * u * (w + u) * (w * tPosition[12] + u * tPosition[1]);
+	pos += 12 * u * v * w * (u * F0 + v * F1 + w * F2);
+	return pos;
+}
+
+void InterpolateCommon (void)
+{
+	F0 = w * tPosition[3] + v * tPosition[4];
+	if (v + w != 0)
+	   F0 /= v + w;
+
+	F1 = u * tPosition[8] + w * tPosition[9];
+	if (w + u != 0)
+	   F1 /= w + u;
+
+	F2 = v * tPosition[13] + u * tPosition[14];
+	if (u + v != 0)
+	   F2 /= u + v;
+
+	E0 = u * tPosition[2] + v * tPosition[6];
+	E1 = v * tPosition[7] + w * tPosition[11];
+	E2 = w * tPosition[12] + u * tPosition[1];
+}
+
+void main ()
+{
+	InterpolateCommon ();
+
+	fTexcoord = InterpolateTexcoords ();
+
+	fTangent = InterpolateTangent ();
+	fBitangent = InterpolateBitangent ();
+	fNormal = normalize (cross (fTangent, fBitangent));
+
+	vec3 pos;
+
+	pos = InterpolatePosition ();
+
+	if (displacement > 0.01f) {
+
+	if (displacementmap_enabled)
+	{
+		vec3 dir = texture (displacementmap, fTexcoord).zyx - 0.5f;
+		dir *= displacement;
+		pos += dir;
+	}
+	else if (heightmap_enabled)
+	{
+		float height;
+		height = texture (heightmap, fTexcoord).x;
+		pos += displacement * height * fNormal;
+	}
+	}
+
+	gl_Position = projmat * mvmat * vec4 (pos, 1.0);
+}
