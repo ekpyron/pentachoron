@@ -20,6 +20,7 @@
 #include "model/model.h"
 #include "geometry.h"
 #include "renderer.h"
+#include <pchm.h>
 
 Mesh::Mesh (Model &model) : trianglecount (0), quadcount (0),
 														patches (false), vertexcount (0),
@@ -102,108 +103,70 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 	shadows = s;
 	material = mat;
 
-#define PCHM_FLAGS_GREGORY_PATCHES       0x0001
-
-#define PCHM_VERSION 0x0000
-	typedef struct header
+	pchm::model model;
+	if (!model.Load (filename))
 	{
-		 char magic[4];
-		 uint16_t version;
-		 uint16_t flags;
-		 uint16_t num_texcoords;
-		 uint32_t vertexcount;
-		 uint32_t trianglecount;
-		 uint32_t quadcount;
-	} header_t;
-
-	header_t header;
-
-	std::ifstream file (filename, std::ios_base::in|std::ios_base::binary);
-
-	if (!file.is_open ())
-	{
-		(*logstream) << "Cannot open " << filename << std::endl;
+		(*logstream) << "Cannot load " << filename << "." << std::endl;
 		return false;
 	}
 
-	file.read (reinterpret_cast<char*> (&header), sizeof (header_t));
-	if (file.gcount () != sizeof (header_t))
+
+	patches = model.Patches ();
+
+	vertexcount = model.GetNumVertices ();
+	trianglecount = model.GetNumTriangles ();
+	quadcount = model.GetNumQuads ();
+
+	const glm::vec3 *vertices = model.GetPositions ();
+
+	// calculate the center of the bounding sphere
+	// and calculate the bounding box
 	{
-		(*logstream) << "Cannot read the pchm header of "
+		float factor = 1.0f / float (vertexcount);
+		bsphere.center = glm::vec3 (0, 0, 0);
+		for (auto i = 0; i < vertexcount; i++)
+		{
+			glm::vec3 vertex = vertices[i];
+			bsphere.center += factor * vertex;
+			if (vertex.x < min.x)
+				 min.x = vertex.x;
+			if (vertex.y < min.y)
+				 min.y = vertex.y;
+			if (vertex.z < min.z)
+				 min.z = vertex.z;
+			if (vertex.x > max.x)
+				 max.x = vertex.x;
+			if (vertex.y > max.y)
+				 max.y = vertex.y;
+			if (vertex.z > max.z)
+				 max.z = vertex.z;
+		}
+	}
+
+	// calculate the radius of the bounding sphere
+	{
+		bsphere.radius = 0;
+		for (auto i = 0; i < vertexcount; i++)
+		{
+			glm::vec3 vertex = vertices[i];
+			float distance = glm::distance (bsphere.center, vertex);
+			if (distance > bsphere.radius)
+				 bsphere.radius = distance;
+		}
+	}
+
+	if (model.GetNumTexcoords () != 1)
+	{
+		(*logstream) << "Invalid number of texture coordinates in "
 								 << filename << std::endl;
 		return false;
 	}
 
-	const char magic[4] = { 'P', 'C', 'H', 'M' };
-	if (memcmp (header.magic, magic, 4))
-	{
-		(*logstream) << filename << " is no pchm model." << std::endl;
-		return false;
-	}
-	if (header.version != PCHM_VERSION)
-	{
-		(*logstream) << filename << " has a invalid pchm version." << std::endl;
-		return false;
-	}
-	patches = header.flags & PCHM_FLAGS_GREGORY_PATCHES;
-
-	vertexcount = header.vertexcount;
-	trianglecount = header.trianglecount;
-	quadcount = header.quadcount;
-
 	if (patches)
 	{
-		std::vector<glm::vec3> vertices;
-		std::vector<glm::vec2> texcoords;
-		vertices.resize (vertexcount);
-		texcoords.resize (vertexcount);
-		file.read (reinterpret_cast<char*> (&vertices[0]),
-							 vertexcount * sizeof (glm::vec3));
-		if (file.gcount () != vertexcount * sizeof (glm::vec3))
-		{
-			(*logstream) << "Failed to load vertices." << std::endl;
-			return false;
-		}
-		
-		// calculate the center of the bounding sphere
-		// and calculate the bounding box
-		{
-			float factor = 1.0f / float (vertexcount);
-			bsphere.center = glm::vec3 (0, 0, 0);
-			for (auto i = 0; i < vertexcount; i++)
-			{
-				glm::vec3 vertex = vertices[i];
-				bsphere.center += factor * vertex;
-				if (vertex.x < min.x)
-					 min.x = vertex.x;
-				if (vertex.y < min.y)
-					 min.y = vertex.y;
-				if (vertex.z < min.z)
-					 min.z = vertex.z;
-				if (vertex.x > max.x)
-					 max.x = vertex.x;
-				if (vertex.y > max.y)
-					 max.y = vertex.y;
-				if (vertex.z > max.z)
-					 max.z = vertex.z;
-			}
-		}
-
-		// calculate the radius of the bounding sphere
-		{
-			bsphere.radius = 0;
-			for (auto i = 0; i < vertexcount; i++)
-			{
-				glm::vec3 vertex = vertices[i];
-				float distance = glm::distance (bsphere.center, vertex);
-				if (distance > bsphere.radius)
-					 bsphere.radius = distance;
-			}
-		}
-
 		buffers.emplace_back ();
 		buffers.back ().Data (vertexcount * sizeof (glm::vec3),
-													&vertices[0], GL_STATIC_DRAW);
+													vertices, GL_STATIC_DRAW);
 		
 		depthonlyarray.VertexAttribOffset(buffers[0], 0, 3, GL_FLOAT,
 																			GL_FALSE, 0, 0);
@@ -213,60 +176,55 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 																		GL_FALSE, 0, 0);
 		vertexarray.EnableVertexAttrib (0);
 		
-		if (header.num_texcoords > 1)
-		{
-			(*logstream) << "Multiple texture coordinates unsupported." << std::endl;
-			return false;
-		}
-		
-		if (header.num_texcoords)
-		{
-			file.read (reinterpret_cast<char*> (&texcoords[0]),
-								 vertexcount * sizeof (glm::vec2));
-			if (file.gcount () != vertexcount * sizeof (glm::vec2))
-			{
-				(*logstream) << "Failed to load texture coordinates." << std::endl;
-				return false;
-			}
-		}
-		
-		if (header.num_texcoords)
-		{
-			buffers.emplace_back ();
-			buffers.back ().Data (vertexcount * sizeof (glm::vec2),
-														&texcoords[0], GL_STATIC_DRAW);
-			vertexarray.VertexAttribOffset (buffers.back (), 1, 2, GL_FLOAT,
-																			GL_FALSE, 0, 0);
-			vertexarray.EnableVertexAttrib (1);
-		}
+		buffers.emplace_back ();
+		buffers.back ().Data (vertexcount * sizeof (glm::vec2),
+													model.GetTexcoords (0), GL_STATIC_DRAW);
+		vertexarray.VertexAttribOffset (buffers.back (), 1, 2, GL_FLOAT,
+																		GL_FALSE, 0, 0);
+		vertexarray.EnableVertexAttrib (1);
 
-		if (header.trianglecount)
-		{
-				if (!LoadTrianglePatches (file, header.num_texcoords, min, max))
-				{
-					(*logstream) << "Unable to load " << filename << std::endl;
-					return false;
-				}
-		}
-
-		if (header.quadcount)
-		{
-			if (!LoadQuadPatches (file, header.num_texcoords, min, max))
-			{
-				(*logstream) << "Unable to load " << filename << std::endl;
-				return false;
-			}
-		}
+		if (trianglecount)
+			 triangleindices.Data (trianglecount * sizeof (GLuint) * 15,
+														 model.GetTriangleIndices (), GL_STATIC_DRAW);
+		if (quadcount)
+			 quadindices.Data (quadcount * sizeof (GLuint) * 20,
+												 model.GetQuadIndices (), GL_STATIC_DRAW);
 	}
 	else
 	{
 		if (trianglecount)
 		{
-			if (!LoadTriangles (file, header.num_texcoords, min, max))
+			buffers.emplace_back ();
+			buffers.back ().Data (vertexcount * sizeof (glm::vec3),
+														vertices, GL_STATIC_DRAW);
+
+			buffers.emplace_back ();
+			buffers.back ().Data (vertexcount * sizeof (glm::vec3),
+														model.GetNormals (), GL_STATIC_DRAW);
+			buffers.emplace_back ();
+			buffers.back ().Data (vertexcount * sizeof (glm::vec3),
+														model.GetTangents (), GL_STATIC_DRAW);
+
+			depthonlyarray.VertexAttribOffset(buffers[0], 0, 3, GL_FLOAT,
+																				GL_FALSE, 0, 0);
+			depthonlyarray.EnableVertexAttrib (0);
+	
+			for (auto i = 0; i < 3; i++)
 			{
-				(*logstream) << "Unable to load " << filename << std::endl;
-				return false;
+				vertexarray.VertexAttribOffset (buffers[i], i, 3, GL_FLOAT,
+																				GL_FALSE, 0, 0);
+				vertexarray.EnableVertexAttrib (i);
 			}
+
+			buffers.emplace_back ();
+			buffers.back ().Data (vertexcount * sizeof (glm::vec2),
+														model.GetTexcoords (0), GL_STATIC_DRAW);
+			vertexarray.VertexAttribOffset (buffers.back (), 3, 2, GL_FLOAT,
+																			GL_FALSE, 0, 0);
+			vertexarray.EnableVertexAttrib (3);
+
+			triangleindices.Data (trianglecount * sizeof (GLuint) * 3,
+														model.GetTriangleIndices (), GL_STATIC_DRAW);
 		}
 		if (quadcount)
 		{
@@ -274,50 +232,6 @@ bool Mesh::Load (const std::string &filename, const Material *mat,
 			return false;
 		}
 	}
-}
-
-bool Mesh::LoadTrianglePatches (std::ifstream &file, GLuint num_texcoords,
-																glm::vec3 &min, glm::vec3 &max)
-{
-	std::vector<GLuint> indexarray;
-
-	indexarray.resize (trianglecount * 15);
-
-	file.read (reinterpret_cast<char*> (&indexarray[0]),
-						 trianglecount * 15 * sizeof (GLuint));
-	if (file.gcount () != trianglecount * 15 * sizeof (GLuint))
-	{
-		(*logstream) << "Failed to load indices." << std::endl;
-		return false;
-	}
-
-	triangleindices.Data (trianglecount * sizeof (GLuint) * 15,
-												&indexarray[0], GL_STATIC_DRAW);
-
-	GL_CHECK_ERROR;
-	return true;
-}
-
-
-bool Mesh::LoadQuadPatches (std::ifstream &file, GLuint num_texcoords,
-														glm::vec3 &min, glm::vec3 &max)
-{
-	std::vector<GLuint> indexarray;
-
-	indexarray.resize (quadcount * 20);
-
-	file.read (reinterpret_cast<char*> (&indexarray[0]),
-						 quadcount * 20 * sizeof (GLuint));
-	if (file.gcount () != quadcount * 20 * sizeof (GLuint))
-	{
-		(*logstream) << "Failed to load indices." << std::endl;
-		return false;
-	}
-
-	quadindices.Data (quadcount * sizeof (GLuint) * 20,
-										&indexarray[0], GL_STATIC_DRAW);
-
-	GL_CHECK_ERROR;
 	return true;
 }
 
