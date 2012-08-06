@@ -17,8 +17,7 @@
 #set(CMAKE_EXE_LINKER_FLAGS "-static")
 #endif ()
 
-#include_directories (${ASSIMP_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS}
-#		     ${FLTK_INCLUDE_DIR})
+include_directories (internal .)
 file (GLOB LIBPCHM_SOURCES *.cpp)
 
 add_library (pchm STATIC ${LIBPCHM_SOURCES})

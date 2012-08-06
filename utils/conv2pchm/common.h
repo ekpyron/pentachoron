@@ -36,10 +36,10 @@
 #include <vector>
 #include <iostream>
 #include <GL/glu.h>
-#include <assimp.hpp>
-#include <aiScene.h>
-#include <aiPostProcess.h>
-#include <DefaultLogger.h>
+#include <Importer.hpp>
+#include <scene.h>
+#include <postprocess.h>
+#include <DefaultLogger.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>

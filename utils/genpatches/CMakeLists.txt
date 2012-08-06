@@ -7,23 +7,19 @@
 # notice and this notice are preserved.  This file is offered as-is,
 # without any warranty.
 #
-find_package (OpenGL)
 find_package (PkgConfig)
-find_package (GLEW REQUIRED)
-pkg_check_modules (GLFW libglfw)
 pkg_check_modules (ASSIMP assimp)
 
 if (WIN32)
 set(CMAKE_EXE_LINKER_FLAGS "-static")
 endif ()
 
-include_directories (${GLFW_INCLUDE_DIRS} ${ASSIMP_INCLUDE_DIRS}
-		     ${GLEW_INCLUDE_PATH})
+include_directories (${ASSIMP_INCLUDE_DIRS}
+		     ${CMAKE_SOURCE_DIR}/libs/libpchm)
 file (GLOB GENPATCHES_SOURCES *.cpp)
 
 add_executable (genpatches ${GENPATCHES_SOURCES})
-target_link_libraries (genpatches ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES}
-		       ${ASSIMP_LIBRARIES} ${GLEW_LIBRARY})
+target_link_libraries (genpatches ${ASSIMP_LIBRARIES} pchm)
 
 set_property (TARGET genpatches PROPERTY
 	     COMPILE_FLAGS -std=c++0x)

@@ -197,10 +197,10 @@ int main (int argc, char *argv[])
 {
 	Assimp::DefaultLogger::create ("", Assimp::Logger::VERBOSE);
 	Assimp::DefaultLogger::get ()->attachStream (&logstream,
-																							 Assimp::Logger::DEBUGGING
-																							 |Assimp::Logger::INFO
-																							 |Assimp::Logger::ERR
-																							 |Assimp::Logger::WARN);
+																							 Assimp::Logger::Debugging
+																							 |Assimp::Logger::Info
+																							 |Assimp::Logger::Err
+																							 |Assimp::Logger::Warn);
 
 	if (argc > 1)
 	{

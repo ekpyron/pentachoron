@@ -14,166 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with Pentachoron.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "pchm.h"
 #include <iostream>
 #include <sstream>
-#include "mesh.h"
+#include <Importer.hpp>
+#include <scene.h>
+#include <postprocess.h>
+#include <stdexcept>
 
-#include <glm/gtc/quaternion.hpp>
-#include <GL/glew.h>
-#include <GL/glfw.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
-
-Mesh mesh;
-
-GLuint current_patch = 0;
-
-void DrawPatch (const QuadPatch &patch)
-{
-	glColor3ub (255, 0, 0);
-	glBegin (GL_POINTS);
-	glVertex3fv (&patch.p[0].x);
-	glVertex3fv (&patch.p[1].x);
-	glVertex3fv (&patch.p[2].x);
-	glVertex3fv (&patch.p[3].x);
-	for (int i = 0; i < 4; i++)
-	{
-		glColor3ub (255, 255, 0);
-		glVertex3fv (&patch.eplus[i].x);
-		glColor3ub (0, 255, 255);
-		glVertex3fv (&patch.eminus[i].x);
-		glColor3ub (255, 0, 255);
-		glVertex3fv (&patch.fplus[i].x);
-		glVertex3fv (&patch.fminus[i].x);
-	}
-	glEnd ();
-	glColor3ub (255, 0, 0);
-	glBegin (GL_LINE_STRIP);
-	glVertex3fv (&patch.p[0].x);
-	glVertex3fv (&patch.eplus[0].x);
-	glVertex3fv (&patch.eminus[1].x);
-	glVertex3fv (&patch.p[1].x);
-	glVertex3fv (&patch.eplus[1].x);
-	glVertex3fv (&patch.eminus[2].x);
-	glVertex3fv (&patch.p[2].x);
-	glVertex3fv (&patch.eplus[2].x);
-	glVertex3fv (&patch.eminus[3].x);
-	glVertex3fv (&patch.p[3].x);
-	glVertex3fv (&patch.eplus[3].x);
-	glVertex3fv (&patch.eminus[0].x);
-	glVertex3fv (&patch.p[0].x);
-	glEnd ();
-	glColor3ub (255, 0, 255);
-	glBegin (GL_LINES);
-	for (int i = 0; i < 4; i++)
-	{
-		glVertex3fv (&patch.eminus[i].x);
-		glVertex3fv (&patch.fminus[i].x);
-		glVertex3fv (&patch.eplus[i].x);
-		glVertex3fv (&patch.fplus[i].x);
-	}
-	glEnd ();
-}
-
-void DrawPatch (const TrianglePatch &patch)
-{
-	glColor3ub (255, 0, 0);
-	glBegin (GL_POINTS);
-	glVertex3fv (&patch.p[0].x);
-	glVertex3fv (&patch.p[1].x);
-	glVertex3fv (&patch.p[2].x);
-	for (int i = 0; i < 3; i++)
-	{
-		glColor3ub (255, 255, 0);
-		glVertex3fv (&patch.eplus[i].x);
-		glColor3ub (0, 255, 255);
-		glVertex3fv (&patch.eminus[i].x);
-		glColor3ub (255, 0, 255);
-		glVertex3fv (&patch.fplus[i].x);
-		glVertex3fv (&patch.fminus[i].x);
-	}
-	glEnd ();
-	glColor3ub (255, 0, 0);
-	glBegin (GL_LINE_STRIP);
-	glVertex3fv (&patch.p[0].x);
-	glVertex3fv (&patch.eplus[0].x);
-	glVertex3fv (&patch.eminus[1].x);
-	glVertex3fv (&patch.p[1].x);
-	glVertex3fv (&patch.eplus[1].x);
-	glVertex3fv (&patch.eminus[2].x);
-	glVertex3fv (&patch.p[2].x);
-	glVertex3fv (&patch.eplus[2].x);
-	glVertex3fv (&patch.eminus[0].x);
-	glVertex3fv (&patch.p[0].x);
-	glEnd ();
-	glColor3ub (255, 0, 255);
-	glBegin (GL_LINES);
-	for (int i = 0; i < 3; i++)
-	{
-		glVertex3fv (&patch.eminus[i].x);
-		glVertex3fv (&patch.fminus[i].x);
-		glVertex3fv (&patch.eplus[i].x);
-		glVertex3fv (&patch.fplus[i].x);
-	}
-	glEnd ();
-}
-
-void DrawScene (void)
-{
-	glPointSize (10.0f);
-	glLineWidth (2.0f);
-	glBegin (GL_POINTS);
-	for (auto i = 0; i < mesh.GetNumFaces (); i++)
-	{
-		const Face &f = mesh.GetFace (i);
-		for (auto c = 0; c < f.GetNumVertices (); c++)
-		{
-			if (mesh.IsBorder (f.GetVertex (c)))
-				 glColor3ub (128, 128, 128);
-			else
-				 glColor3ub (255, 255, 255);
-			glVertex3fv (&f.GetVertex (c).x);
-		}
-	}
-	glEnd ();
-	glBegin (GL_LINES);
-	for (const Edge &edge : mesh.GetEdges ())
-	{
-			if (mesh.IsBorder (edge))
-				 glColor3ub (128, 128, 128);
-			else
-				 glColor3ub (255, 255, 255);
-			glVertex3fv (&edge.GetFirst ().x);
-			glVertex3fv (&edge.GetSecond ().x);
-	}
-	glEnd ();
-
-	if (current_patch < mesh.GetNumQuadPatches ())
-	{
-		DrawPatch (mesh.GetQuadPatch (current_patch));
-	}
-	else
-	{
-		DrawPatch (mesh.GetTrianglePatch (current_patch
-																			- mesh.GetNumQuadPatches ()));
-	}
-}
-
-void keyfn (int key, int action)
-{
-	if (action == GLFW_RELEASE)
-	{
-		switch (key)
-		{
-		case GLFW_KEY_TAB:
-			current_patch++;
-			if (mesh.GetNumQuadPatches () + mesh.GetNumTrianglePatches ()
-					<= current_patch)
-				 current_patch = 0;
-			break;
-		}
-	}
-}
+pchm::model model;
 
 int main (int argc, char *argv[])
 {
@@ -197,73 +46,71 @@ int main (int argc, char *argv[])
 		}
 	}
 
-	mesh.Import (argv[1], meshid);
+	Assimp::Importer importer;
 
-	mesh.GeneratePatches ();
+	const aiScene *scene;
 
-	mesh.Export (argv[3]);
+	scene = importer.ReadFile (argv[1],
+														 aiProcess_JoinIdenticalVertices
+														 | aiProcess_GenUVCoords
+														 | aiProcess_SortByPType
+														 | aiProcess_TransformUVCoords
+														 | aiProcess_OptimizeMeshes
+														 | aiProcess_OptimizeGraph);
+	if (!scene)
+		 throw std::runtime_error ("cannot load the model file");
 
-	glfwInit ();
+	if (meshid >= scene->mNumMeshes)
+		 throw std::runtime_error ("invalid mesh id");
 
-	glfwOpenWindow (0, 0, 0, 0, 0, 0, 24, 8, GLFW_WINDOW);
+	aiMesh *mesh = scene->mMeshes[meshid];
 
-	glewInit ();
+	std::vector<unsigned int> triangleindices;
+	std::vector<unsigned int> quadindices;
 
-	glm::vec3 center (0, 0, 0);
-	float angley = 0, anglex = 0;
-	glfwSetKeyCallback (keyfn);
-	while (glfwGetWindowParam (GLFW_OPENED) && !glfwGetKey (GLFW_KEY_ESC))
+	for (auto i = 0; i < mesh->mNumFaces; i++)
 	{
-		int w, h;
-		float f = 1.0f;
-		glfwGetWindowSize (&w, &h);
-
-		glViewport (0, 0, w, h);
-		glMatrixMode (GL_PROJECTION);
-
-		glLoadIdentity ();
-		gluPerspective (60.0f, float (w) / float (h), 0.1f, 100.0f);
-
-		glMatrixMode (GL_MODELVIEW);
-
-		glLoadIdentity ();
-		glm::vec3 dir (0, 0, 1);
-		glm::vec3 up (0, 1, 0);
-		glm::quat rotation;
-		rotation = glm::rotate (rotation, angley, glm::vec3 (0, 1, 0));
-		rotation = glm::rotate (rotation, anglex, glm::vec3 (1, 0, 0));
-		dir = rotation * dir;
-		up = rotation * up;
-		glm::vec3 eye = center - 1.0f * dir;
-		if (glfwGetKey (GLFW_KEY_LSHIFT))
-			 f *= 2.0f;
-		if (glfwGetKey (GLFW_KEY_LCTRL))
-			 f *= 5.0f;
-		if (glfwGetKey ('D'))
-			 angley += -0.2f * f;
-		if (glfwGetKey ('A'))
-			 angley += 0.2f * f;
-		if (glfwGetKey ('Q'))
-			 anglex += 0.2f * f;
-		if (glfwGetKey ('E'))
-			 anglex += -0.2f * f;
-		if (glfwGetKey ('W'))
-			 center += dir * 0.01f * f;
-		if (glfwGetKey ('S'))
-			 center -= dir * 0.01f * f;
-
-		gluLookAt (eye.x, eye.y, eye.z, center.x, center.y, center.z,
-							 up.x, up.y, up.z);
-
-		glClearColor (0, 0, 0, 0);
-		glClear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-		glEnable (GL_DEPTH_TEST);
-		glDepthFunc (GL_LEQUAL);
-
-		DrawScene ();
-
-		glfwSwapBuffers ();
+		if (mesh->mFaces[i].mNumIndices == 3)
+		{
+			for (auto c = 0; c < 3; c++)
+				 triangleindices.push_back (mesh->mFaces[i].mIndices[c]);
+		}
+		else if (mesh->mFaces[i].mNumIndices == 4)
+		{
+			for (auto c = 0; c < 4; c++)
+				 quadindices.push_back (mesh->mFaces[i].mIndices[c]);
+		}
+		else
+		{
+			throw std::runtime_error ("invalid primitive type");
+		}
 	}
 
+	model.Define (mesh->mNumVertices, triangleindices.size () / 3,
+								quadindices.size () / 4);
+
+	model.SetTriangles (triangleindices.data ());
+	model.SetQuads (quadindices.data ());
+
+	model.SetPositions (reinterpret_cast<glm::vec3*> (mesh->mVertices));
+	for (auto i = 0; i < mesh->GetNumUVChannels (); i++)
+	{
+		std::vector<glm::vec2> texcoords;
+		for (auto c = 0; c < mesh->mNumVertices; c++)
+		{
+			texcoords.push_back (glm::vec2 (mesh->mTextureCoords[i][c].x,
+																			mesh->mTextureCoords[i][c].y));
+		}
+		model.AddTexcoords (texcoords.data ());
+	}
+
+	model.GeneratePatches ();
+
+	if (!model.Save (argv[3]))
+	{
+		std::cerr << "Could not save to " << argv[3] << "." << std::endl;
+		return -1;
+	}
+
+	return 0;
 }

@@ -21,14 +21,14 @@
 #include "face.h"
 #include "edge.h"
 #include "patch.h"
+#include "pchm.h"
 
 class Mesh
 {
 public:
 	 Mesh (void);
 	 ~Mesh (void);
-	 void Import (const std::string &filename, unsigned int meshid);
-	 void Export (const std::string &filename);
+	 void Import (const pchm::model &m);
 	 unsigned int GetNumFaces (void) const;
 	 void GeneratePatches (void);
 

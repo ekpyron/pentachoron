@@ -219,9 +219,51 @@ bool model::Save (const std::string &filename) const
 	return Save (file);
 }
 
-bool model::Save (std::ostream &file) const
+bool model::Save (std::ostream &out) const
 {
-	return false;
+	const char magic[4] = { 'P', 'C', 'H', 'M' };
+	header_t header;
+	header.version = PCHM_VERSION;
+	memcpy (header.magic, magic, 4);
+	header.vertexcount = positions.size ();
+	header.flags = patches ? PCHM_FLAGS_GREGORY_PATCHES : 0;
+	if (patches)
+	{
+		header.trianglecount = triangleindices.size () / 15;
+		header.quadcount = quadindices.size () / 20;
+	}
+	else
+	{
+		header.trianglecount = triangleindices.size () / 3;
+		header.quadcount = quadindices.size () / 4;
+	}
+	header.num_texcoords = texcoords.size ();
+
+	out.write (reinterpret_cast<char*> (&header), sizeof (header_t));
+	out.write (reinterpret_cast<const char*> (positions.data ()),
+						 header.vertexcount * sizeof (glm::vec3));
+	if (!patches)
+	{
+		out.write (reinterpret_cast<const char*> (normals.data ()),
+							 header.vertexcount * sizeof (glm::vec3));
+		out.write (reinterpret_cast<const char*> (tangents.data ()),
+							 header.vertexcount * sizeof (glm::vec3));
+	}
+
+	for (uint16_t i = 0; i < header.num_texcoords; i++)
+	{
+		out.write (reinterpret_cast<const char*> (texcoords[i].data ()),
+							 header.vertexcount * sizeof (glm::vec2));
+	}
+
+	out.write (reinterpret_cast<const char*> (triangleindices.data ()),
+						 triangleindices.size () * sizeof (unsigned int));
+	out.write (reinterpret_cast<const char*> (quadindices.data ()),
+						 quadindices.size () * sizeof (unsigned int));
+	if (out.fail ())
+		return false;
+
+	return true;
 }
 
 void model::Define (unsigned int vertices, unsigned int triangles,

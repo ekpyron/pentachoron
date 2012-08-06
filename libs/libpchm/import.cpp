@@ -17,57 +17,46 @@
 #include "common.h"
 #include "mesh.h"
 #include <cstring>
-#include <assimp.hpp>
-#include <aiScene.h>
-#include <aiPostProcess.h>
 #include <stdexcept>
 
-void Mesh::Import (const std::string &filename, unsigned int meshid)
+void Mesh::Import (const pchm::model &m)
 {
-	Assimp::Importer importer;
+	const glm::vec3 *positions = m.GetPositions ();
 
-	const aiScene *scene;
-
-	scene = importer.ReadFile (filename,
-														 aiProcess_JoinIdenticalVertices
-														 | aiProcess_GenUVCoords
-														 | aiProcess_SortByPType
-														 | aiProcess_TransformUVCoords
-														 | aiProcess_OptimizeMeshes
-														 | aiProcess_OptimizeGraph);
-	if (!scene)
-		 throw std::runtime_error ("cannot load the model file");
-
-	if (meshid >= scene->mNumMeshes)
-		 throw std::runtime_error ("invalid mesh id");
-
-	aiMesh *mesh = scene->mMeshes[meshid];
-
-	for (auto i = 0; i < mesh->mNumFaces; i++)
+	for (unsigned int i = 0; i < m.GetNumTriangles (); i++)
 	{
-		if((mesh->mFaces[i].mNumIndices != 3)
-			 && (mesh->mFaces[i].mNumIndices != 4))
-		{
-			throw std::runtime_error ("invalid primitive type");
-		}
-		std::vector<glm::vec3> vertices;
-		for (auto c = 0; c < mesh->mFaces[i].mNumIndices; c++)
-		{
-			const aiVector3D &v = mesh->mVertices[mesh->mFaces[i].mIndices[c]];
-			vertices.push_back (glm::vec3 (v.x, v.y, v.z));
-		}
-		faces.push_back (Face (vertices));
+		std::vector<glm::vec3> v;
+		const unsigned int *idx = &m.GetTriangleIndices ()[i * 3];
+		for (auto c = 0; c < 3; c++)
+			 v.push_back (positions[idx[c]]);
+		faces.push_back (Face (v));
 
-		for (auto t = 0; t < mesh->GetNumUVChannels (); t++)
+		for (auto tid = 0; tid < m.GetNumTexcoords (); tid++)
 		{
-			std::vector<glm::vec3> texcoords;
-			for (auto c = 0; c < mesh->mFaces[i].mNumIndices; c++)
-			{
-				const aiVector3D &v
-					 = mesh->mTextureCoords[t][mesh->mFaces[i].mIndices[c]];
-				texcoords.push_back (glm::vec3 (v.x, v.y, v.z));
-			}
-			faces.back ().AddTexCoords (texcoords);
+			const glm::vec2 *texcoords = m.GetTexcoords (tid);
+			std::vector<glm::vec3> t;
+			for (auto c = 0; c < 3; c++)
+				 t.push_back (glm::vec3 (texcoords[idx[c]].x,
+																 texcoords[idx[c]].y, 0.0f));
+			faces.back ().AddTexCoords (t);
+		}
+	}
+	for (unsigned int i = 0; i < m.GetNumQuads (); i++)
+	{
+		std::vector<glm::vec3> v;
+		const unsigned int *idx = &m.GetQuadIndices ()[i * 4];
+		for (auto c = 0; c < 4; c++)
+			 v.push_back (positions[idx[c]]);
+		faces.push_back (Face (v));
+
+		for (auto tid = 0; tid < m.GetNumTexcoords (); tid++)
+		{
+			const glm::vec2 *texcoords = m.GetTexcoords (tid);
+			std::vector<glm::vec3> t;
+			for (auto c = 0; c < 4; c++)
+				 t.push_back (glm::vec3 (texcoords[idx[c]].x,
+																 texcoords[idx[c]].y, 0.0f));
+			faces.back ().AddTexCoords (t);
 		}
 	}
 

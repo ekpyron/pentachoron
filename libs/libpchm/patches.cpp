@@ -1,4 +1,4 @@
-/*  
+/*
  * This file is part of Pentachoron.
  *
  * Pentachoron is free software: you can redistribute it and/or modify
@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with Pentachoron.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "pchm.h"
 #include "mesh.h"
-#include <fstream>
 #include <stdexcept>
-#include <cstring>
-#include <iterator>
+
+namespace pchm {
 
 typedef struct vertex
 {
@@ -33,23 +33,30 @@ void AddToList (const vertex_t &v, std::vector<vertex_t> &data,
 	indices.push_back (data.size () - 1);
 }
 
-void Mesh::Export (const std::string &filename)
+void model::GeneratePatches (void)
 {
-	if (GetNumQuadPatches () + GetNumTrianglePatches () == 0)
-		 throw std::runtime_error ("No patches to export");
+	normals.clear ();
+	tangents.clear ();
 
-	std::ofstream file (filename, std::ios_base::out
-											|std::ios_base::binary
-											|std::ios_base::trunc);
-	if (!file.is_open ())
-		 throw std::runtime_error ("cannot open output file");
+	Mesh mesh;
+	mesh.Import (*this);
+
+	mesh.GeneratePatches ();
+
+	patches = true;
+
+	positions.clear ();
+	normals.clear ();
+	tangents.clear ();
+	texcoords.clear ();
+	triangleindices.clear ();
+	quadindices.clear ();
 
 	std::vector<vertex_t> data;
-	std::vector<unsigned int> quadindices;
-	std::vector<unsigned int> triangleindices;
 
-	for (TrianglePatch &patch : trianglepatches)
+	for (auto p = 0; p < mesh.GetNumTrianglePatches (); p++)
 	{
+		const TrianglePatch &patch = mesh.GetTrianglePatch (p);
 		for (auto i = 0; i < 3; i++)
 		{
 			{
@@ -89,9 +96,9 @@ void Mesh::Export (const std::string &filename)
 			}
 		}
 	}
-
-	for (QuadPatch &patch : quadpatches)
+	for (auto p = 0; p < mesh.GetNumQuadPatches (); p++)
 	{
+		const QuadPatch &patch = mesh.GetQuadPatch (p);
 		{
 			vertex_t v;
 			v.position = patch.p[0];
@@ -253,52 +260,17 @@ void Mesh::Export (const std::string &filename)
 		}
 	}
 
-#define PCHM_FLAGS_GREGORY_PATCHES       0x0001
-
-#define PCHM_VERSION 0x0000
-
-	typedef struct header
-	{
-		 char magic[4];
-		 uint16_t version;
-		 uint16_t flags;
-		 uint16_t num_texcoords;
-		 uint32_t vertexcount;
-		 uint32_t trianglecount;
-		 uint32_t quadcount;
-	} header_t;
-
-	header_t header;
-
-	const char magic[4] = {
-		'P', 'C', 'H', 'M'
-	};
-	header.version = PCHM_VERSION;
-	memcpy (header.magic, magic, 4);
-	header.flags = PCHM_FLAGS_GREGORY_PATCHES;
-	header.vertexcount = data.size ();
-	header.trianglecount = trianglepatches.size ();
-	header.quadcount = quadpatches.size ();
-	header.num_texcoords = data.begin ()->texcoords.size ();
-
-	file.write ((char*) &header, sizeof (header_t));
+	texcoords.resize (data.begin ()->texcoords.size ());
 	for (const vertex_t &v : data)
-		 file.write ((char*) &v.position.x, sizeof (glm::vec3));
-	for (auto i = 0; i < header.num_texcoords; i++)
 	{
-		for (const vertex_t &v : data)
+		positions.push_back (v.position);
+		for (auto i = 0; i < data.begin ()->texcoords.size (); i++)
 		{
 			if (i >= v.texcoords.size ())
 				 throw std::runtime_error ("invalid number of texture coordinates");
-			file.write ((char*) &v.texcoords[i].x, sizeof (glm::vec2));
+			texcoords[i].push_back (v.texcoords[i]);
 		}
 	}
-	for (unsigned int &idx : triangleindices)
-	{
-		file.write ((char*) &idx, sizeof (unsigned int));
-	}
-	for (unsigned int &idx : quadindices)
-	{
-		file.write ((char*) &idx, sizeof (unsigned int));
-	}
 }
+
+} /* namespace pchm */

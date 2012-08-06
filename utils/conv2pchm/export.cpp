@@ -19,25 +19,39 @@
 #include <fstream>
 #include <cerrno>
 #include <cstring>
-
-#define PCHM_FLAGS_GREGORY_PATCHES       0x0001
-
-#define PCHM_VERSION 0x0000
-
-typedef struct header
-{
-	 char magic[4];
-	 uint16_t version;
-	 uint16_t flags;
-	 uint16_t num_texcoords;
-	 uint32_t vertexcount;
-	 uint32_t trianglecount;
-	 uint32_t quadcount;
-} header_t;
+#include <pchm.h>
 
 bool export_mesh (const char *filename, Mesh *mesh)
 {
 	mesh->Sanitize ();
+
+	if (mesh->edges != 3 && mesh->edges != 4)
+	{
+		fl_message_title ("Invalid primitive type.");
+		fl_alert ("Only quad and triangle meshes can be exported.");
+		return false;
+	}
+
+	pchm::model model;
+
+	if (mesh->edges == 3)
+	{
+		 model.Define (mesh->vertices.size () / 3,
+									 mesh->indices.size () / 3, 0);
+		 model.SetTriangles (mesh->indices.data ());
+	}
+	else
+	{
+		 model.Define (mesh->vertices.size () / 3,
+									 0, mesh->indices.size () / 4);
+		 model.SetQuads (mesh->indices.data ());
+	}
+
+
+	model.SetPositions (reinterpret_cast<glm::vec3*> (mesh->vertices.data ()));
+	model.SetNormals (reinterpret_cast<glm::vec3*> (mesh->normals.data ()));
+	model.SetTangents (reinterpret_cast<glm::vec3*> (mesh->tangents.data ()));
+	model.AddTexcoords (reinterpret_cast<glm::vec2*> (mesh->texcoords.data ()));
 
 	{
 		std::ifstream testfile (filename, std::ios_base::in);
@@ -63,48 +77,9 @@ bool export_mesh (const char *filename, Mesh *mesh)
 		return false;
 	}
 
-	const char magic[4] = {
-		'P', 'C', 'H', 'M'
-	};
-
-	header_t header;
-
-	header.version = PCHM_VERSION;
-	memcpy (header.magic, magic, 4);
-	if (mesh->edges != 3 && mesh->edges != 4)
+	if (!model.Save (file))
 	{
-		fl_message_title ("Invalid primitive type.");
-		fl_alert ("Only quad and triangle meshes can be exported.");
-		return false;
-	}
-	header.vertexcount = mesh->vertices.size () / 3;
-	if (mesh->edges == 3)
-	{
-		header.trianglecount = mesh->indices.size () / 3;
-		header.quadcount = 0;
-	}
-	else
-	{
-		header.trianglecount = 0;
-		header.quadcount = mesh->indices.size () / 4;
-	}
-	header.num_texcoords = 1;
-
-	file.write ((char*) &header, sizeof (header_t));
-
-	
-	file.write ((char*) &mesh->vertices[0],
-							mesh->vertices.size () * sizeof (GLfloat));
-	file.write ((char*) &mesh->normals[0],
-							mesh->normals.size () * sizeof (GLfloat));
-	file.write ((char*) &mesh->tangents[0],
-							mesh->tangents.size () * sizeof (GLfloat));
-	file.write ((char*) &mesh->texcoords[0],
-							mesh->texcoords.size () * sizeof (GLfloat));
-	file.write ((char*) &mesh->indices[0],
-							mesh->indices.size () * sizeof (GLuint));
-	if (file.bad ())
-	{
+		std::cerr << "FALSE" << std::endl;
 		fl_message_title ("Cannot export the mesh");
 		fl_alert ("Could not write to \"%s\": %s.", filename, strerror (errno));
 		return false;
