@@ -99,10 +99,10 @@ int main (int argc, char *argv[])
 			return -1;
 		}
 		glfwOpenWindowHint (GLFW_OPENGL_VERSION_MAJOR, 4);
-		glfwOpenWindowHint (GLFW_OPENGL_VERSION_MINOR, 2);
+		glfwOpenWindowHint (GLFW_OPENGL_VERSION_MINOR, 3);
 		glfwOpenWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-//		glfwOpenWindowHint (GLFW_OPENGL_PROFILE,
-//												GLFW_OPENGL_CORE_PROFILE);
+		glfwOpenWindowHint (GLFW_OPENGL_PROFILE,
+												GLFW_OPENGL_CORE_PROFILE);
 
 		if (glfwOpenWindow (config["window"]["width"].as<int> (800),
 												config["window"]["height"].as<int> (600),
