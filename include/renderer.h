@@ -24,7 +24,6 @@
 #include "windowgrid.h"
 #include "camera.h"
 #include "shadowmap.h"
-#include "interface.h"
 #include "composition.h"
 #include "light.h"
 #include "parameter.h"
@@ -40,8 +39,6 @@ public:
 	 bool Init (void);
 	 void Resize (int w, int h);
 	 void Frame (void);
-	 void OnKeyDown (int key);
-	 void OnKeyUp (int key);
 
 	 GLuint GetAntialiasing (void);
 	 void SetAntialiasing (GLuint value);
@@ -87,8 +84,6 @@ private:
 
 	 std::vector<Light> lights;
 	 gl::Buffer lightbuffer;
-
-	 Interface interface;
 };
 
 extern std::unique_ptr<Renderer> r;

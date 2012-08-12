@@ -11,6 +11,7 @@ find_package (Freetype REQUIRED)
 find_package (GLFW REQUIRED)
 find_package (OGLP REQUIRED)
 find_package (ZLIB)
+find_package (AntTweakBar REQUIRED)
 if (WIN32)
 find_package (OpenGL)
 endif ()
@@ -24,13 +25,15 @@ endif ()
 
 include_directories (${CMAKE_SOURCE_DIR}/include/ ${GLFW_INCLUDE_DIRS}
 		     ${FREETYPE_INCLUDE_DIRS} ${OGLP_INCLUDE_DIR}
-		     ${YAMLCPP_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/libs/libpchm)
+		     ${YAMLCPP_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/libs/libpchm
+		     ${ANTTWEAKBAR_INCLUDE_DIR})
 file (GLOB PENTACHORON_SOURCES *.cpp model/*.cpp font/*.cpp)
 
 add_executable (pentachoron ${PENTACHORON_SOURCES})
 target_link_libraries (pentachoron ${GLFW_LIBRARIES} ${FREETYPE_LIBRARIES}
 		       ${OGLP_LIBRARY} ${YAMLCPP_LIBRARY}
-		       ${OPENGL_LIBRARIES} ${ZLIB_LIBRARIES} pchm)
+		       ${OPENGL_LIBRARIES} ${ZLIB_LIBRARIES} pchm
+		       ${ANTTWEAKBAR_LIBRARY})
 
 set_property (TARGET pentachoron PROPERTY
 	     COMPILE_FLAGS -std=c++0x)

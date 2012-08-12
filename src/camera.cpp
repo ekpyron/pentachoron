@@ -114,8 +114,7 @@ glm::vec4 Camera::GetProjInfo (void) const
 
 void Camera::MoveForward (float distance)
 {
-	center += glm::rotate (glm::quat (), horizontal_angle, glm::vec3 (0, 1, 0))
-		 * glm::vec3 (0, 0, 1) * distance;
+	center += GetDirection () * distance;
 }
 
 void Camera::MoveUp (float distance)

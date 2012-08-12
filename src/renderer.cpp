@@ -37,12 +37,7 @@ bool Renderer::Init (void)
 	gl::CullFace (GL_BACK);
 	gl::Enable (GL_CULL_FACE);
 
-	(*logstream) << glfwGetTime () << " Initialize Interface..." << std::endl;
-
 	gl::Hint (GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
-
-	if (!interface.Init ())
-		 return false;
 
 	(*logstream) << glfwGetTime ()  << " Initialize Window Grid..." << std::endl;
 	if (!windowgrid.Init ())
@@ -59,8 +54,6 @@ bool Renderer::Init (void)
 	(*logstream) << glfwGetTime () << " Initialize Shadow Map..." << std::endl;
 	if (!shadowmap.Init ())
 		 return false;
-
-	interface.AddShadow ();
 
 	if (config["random_lights"].as<bool> (false))
 	{
@@ -111,8 +104,6 @@ bool Renderer::Init (void)
 	{
 		lightbuffer.Data (sizeof (glm::vec4),	NULL, GL_STATIC_DRAW);
 	}
-
-	interface.AddShadow ();
 
 	{
 		std::vector<YAML::Node> parameterlist;
@@ -203,16 +194,6 @@ bool Renderer::Init (void)
 void Renderer::Resize (int w, int h)
 {
 	camera.Resize (w, h);
-}
-
-void Renderer::OnKeyUp (int key)
-{
-	interface.OnKeyUp (key);
-}
-
-void Renderer::OnKeyDown (int key)
-{
-	interface.OnKeyDown (key);
 }
 
 void Renderer::SetAntialiasing (GLuint value)
@@ -337,7 +318,7 @@ void Renderer::Frame (void)
 	culling.Frame ();
 
 	gbuffer.Render (geometry);
-
+	
 	{
 		Shadow sunshadow;
 		sunshadow.direction = -glm::vec4 (composition.sun.direction.Get (),
@@ -353,8 +334,6 @@ void Renderer::Frame (void)
 	composition.Frame (timefactor);
 
 	postprocess.Frame ();
-
-	interface.Frame (timefactor);
 
 	GL_CHECK_ERROR;
 }

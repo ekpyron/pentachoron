@@ -18,47 +18,7 @@
 #define INTERFACE_H
 
 #include <common.h>
-#include "font/all.h"
 
-class Interface
-{
-public:
-	 Interface (void);
-	 ~Interface (void);
-	 bool Init (void);
-	 void Frame (float timefactor);
-	 void OnKeyUp (int key);
-	 void OnKeyDown (int key);
-
-	 void AddLight (void);
-	 void AddShadow (void);
-private:
-	 gl::Freetype freetype;
-	 gl::Font font;
-
-	 GLuint showInterface;
-	 unsigned int menu, submenu;
-
-	 typedef struct MenuEntry {
-			std::string name;
-			std::function<void(void)> info;
-			std::function<void(int)> handler;
-			bool repeating;
-	 } MenuEntry;
-	 
-	 typedef struct Menu {
-			std::string title;
-			std::function<void(void)> info;
-			std::vector<MenuEntry> entries;
-	 } Menu;
-
-	 std::vector<Menu> menus;
-
-	 int active_light;
-	 int active_shadow;
-	 int active_parameter;
-
-	 float timefactor;
-};
+void CreateMenus (void);
 
 #endif /* !defined INTERFACE_H */
