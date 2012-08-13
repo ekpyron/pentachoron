@@ -278,15 +278,8 @@ void GBuffer::Render (Geometry &geometry)
 	geometry.Render (Geometry::Pass::GBufferTransparency,
 									 transparencyprog, r->camera.GetViewMatrix ());
 
-	GLuint *ptr = (GLuint*) counter.MapRange (0, sizeof (GLuint) * 64,
-																						GL_MAP_WRITE_BIT
-																						| GL_MAP_INVALIDATE_BUFFER_BIT
-																						| GL_MAP_UNSYNCHRONIZED_BIT);
-	for (auto i = 0; i < 64; i++)
-	{
-		 ptr[i] = 0;
-	}
-	counter.Unmap ();
+	GLuint data = 0;
+	counter.ClearData (GL_R32UI, GL_RED, GL_UNSIGNED_INT, &data);
 
 	sraaprog.Use ();
 
