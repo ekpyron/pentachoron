@@ -134,20 +134,19 @@ bool GBuffer::Init (void)
 	r->memory += width * height * (4 * 4 * 8 + 4);
 #endif
 
-	transparencyfb.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-														depthbuffer, 0);
+	transparencyfb.Parameter (GL_FRAMEBUFFER_DEFAULT_WIDTH, width);
+	transparencyfb.Parameter (GL_FRAMEBUFFER_DEFAULT_HEIGHT, height);
+	transparencyfb.Parameter (GL_FRAMEBUFFER_DEFAULT_LAYERS, 0);
+	transparencyfb.Parameter (GL_FRAMEBUFFER_DEFAULT_SAMPLES, 0);
+	transparencyfb.Parameter (GL_FRAMEBUFFER_DEFAULT_FIXED_SAMPLE_LOCATIONS, 0);
 	transparencyfb.DrawBuffers ({ });
 
 	transparencyclearfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 																 fragidx, 0);
 	transparencyclearfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
 
-	const GLuint counters[64]
-		 = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	counter.Data (sizeof (GLuint) * 64, counters, GL_DYNAMIC_DRAW);
+	counter.Data (sizeof (GLuint) * 64, NULL, GL_DYNAMIC_DRAW);
+	counter.ClearData (GL_R32UI, GL_RED, GL_UNSIGNED_INT, NULL);
 
 	program["viewport"] = glm::uvec2 (width, height);
 	program["farClipPlane"] = r->camera.GetFarClipPlane ();
@@ -278,8 +277,7 @@ void GBuffer::Render (Geometry &geometry)
 	geometry.Render (Geometry::Pass::GBufferTransparency,
 									 transparencyprog, r->camera.GetViewMatrix ());
 
-	GLuint data = 0;
-	counter.ClearData (GL_R32UI, GL_RED, GL_UNSIGNED_INT, &data);
+	counter.ClearData (GL_R32UI, GL_RED, GL_UNSIGNED_INT, NULL);
 
 	sraaprog.Use ();
 

@@ -186,6 +186,9 @@ bool Renderer::Init (void)
 	if (!postprocess.Init ())
 		 return false;
 
+	gl::ReleaseShaderCompiler ();
+	GL_CHECK_ERROR;
+
 	(*logstream) << glfwGetTime () << " Initialization complete." << std::endl;
 
 	return true;
