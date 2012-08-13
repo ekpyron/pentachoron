@@ -96,14 +96,25 @@ unsigned int fps = 0;
 void UpdateCamera (void)
 {
 	static unsigned int frames = 0;
-	static double last_time = 0;
+	static double last_time = -1, last_fps_time = -1;
 	double timefactor;
 
-	if (!last_time)
+	if (last_time < 0)
 		 last_time = glfwGetTime ();
 
 	timefactor = glfwGetTime () - last_time;
 	last_time += timefactor;
+
+	if (last_fps_time < 0)
+		 last_fps_time = glfwGetTime ();
+
+	if (glfwGetTime () - last_fps_time >= 1.0)
+	{
+		fps = frames;
+		last_fps_time = glfwGetTime ();
+		frames = 0;
+	}
+	frames++;
 
 	if (glfwGetKey (GLFW_KEY_LSHIFT))
 		 timefactor *= 5.0f;
@@ -122,14 +133,6 @@ void UpdateCamera (void)
 
 	if (glfwGetKey (GLFW_KEY_RALT))
 		 timefactor *= 0.05f;
-
-	if (glfwGetTime () - last_time >= 1.0)
-	{
-		fps = frames;
-		last_time = glfwGetTime ();
-		frames = 0;
-	}
-	frames++;
 
 	if (glfwGetKey ('A'))
 	{
