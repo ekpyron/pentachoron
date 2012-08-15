@@ -15,16 +15,18 @@ pkg_check_modules (GLEW glew)
 
 if (WIN32)
 set(CMAKE_EXE_LINKER_FLAGS "-static")
+find_package (ZLIB REQUIRED)
 endif ()
 
 include_directories (${CMAKE_SOURCE_DIR}/libs/libpchm
 		     ${ASSIMP_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS}
-		     ${FLTK_INCLUDE_DIR} )
+		     ${FLTK_INCLUDE_DIR})
 file (GLOB CONV2PCHM_SOURCES *.cpp)
 
 add_executable (conv2pchm ${CONV2PCHM_SOURCES})
 target_link_libraries (conv2pchm ${OPENGL_LIBRARIES} ${ASSIMP_LIBRARIES}
-		      		 ${GLEW_LIBRARIES} ${FLTK_LIBRARIES} pchm)
+		      		 ${GLEW_LIBRARIES} ${FLTK_LIBRARIES} pchm
+		      		 ${ZLIB_LIBRARIES})
 
 set_property (TARGET conv2pchm PROPERTY
 	     COMPILE_FLAGS -std=c++0x)

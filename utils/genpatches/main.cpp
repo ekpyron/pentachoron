@@ -15,6 +15,7 @@
  * along with Pentachoron.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "pchm.h"
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <Importer.hpp>

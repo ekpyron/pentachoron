@@ -12,6 +12,7 @@ pkg_check_modules (ASSIMP assimp)
 
 if (WIN32)
 set(CMAKE_EXE_LINKER_FLAGS "-static")
+find_package (ZLIB REQUIRED)
 endif ()
 
 include_directories (${ASSIMP_INCLUDE_DIRS}
@@ -19,7 +20,8 @@ include_directories (${ASSIMP_INCLUDE_DIRS}
 file (GLOB GENPATCHES_SOURCES *.cpp)
 
 add_executable (genpatches ${GENPATCHES_SOURCES})
-target_link_libraries (genpatches ${ASSIMP_LIBRARIES} pchm)
+target_link_libraries (genpatches ${ASSIMP_LIBRARIES} pchm
+                       ${ZLIB_LIBRARIES})
 
 set_property (TARGET genpatches PROPERTY
 	     COMPILE_FLAGS -std=c++0x)
