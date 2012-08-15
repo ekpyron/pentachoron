@@ -134,11 +134,8 @@ bool GBuffer::Init (void)
 	r->memory += width * height * (4 * 4 * 8 + 4);
 #endif
 
-	transparencyfb.Parameter (GL_FRAMEBUFFER_DEFAULT_WIDTH, width);
-	transparencyfb.Parameter (GL_FRAMEBUFFER_DEFAULT_HEIGHT, height);
-	transparencyfb.Parameter (GL_FRAMEBUFFER_DEFAULT_LAYERS, 0);
-	transparencyfb.Parameter (GL_FRAMEBUFFER_DEFAULT_SAMPLES, 0);
-	transparencyfb.Parameter (GL_FRAMEBUFFER_DEFAULT_FIXED_SAMPLE_LOCATIONS, 0);
+	transparencyfb.Texture2D (GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+												 depthbuffer, 0);
 	transparencyfb.DrawBuffers ({ });
 
 	transparencyclearfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
