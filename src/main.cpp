@@ -168,6 +168,15 @@ void UpdateCamera (void)
 	}
 }
 
+#ifdef DEBUG
+void GLAPIENTRY debug_callback (GLenum source, GLenum type, GLuint id,
+																GLenum severity, GLsizei length,
+																const GLchar *message, GLvoid *userParam)
+{
+	logstream->write (message, length);
+	(*logstream) << std::endl;
+}
+#endif /* DEBUG */
 
 int main (int argc, char *argv[])
 {
@@ -245,8 +254,15 @@ int main (int argc, char *argv[])
 
 		gl::Init (glfwGetProcAddress);
 
+#ifdef DEBUG
+		gl::DebugMessageCallback (debug_callback, NULL);
+#endif
+
 		r = std::unique_ptr<Renderer> (new Renderer ());
 
+#ifdef DEBUG
+			gl::Enable (GL_DEBUG_OUTPUT);
+#endif
 		if (!r->Init ())
 		{
 			r.reset ();
@@ -254,6 +270,9 @@ int main (int argc, char *argv[])
 			glfwTerminate ();
 			return -1;
 		}
+#ifdef DEBUG
+			gl::Disable (GL_DEBUG_OUTPUT);
+#endif
 
 		CreateMenus ();
 
@@ -272,8 +291,14 @@ int main (int argc, char *argv[])
 		running = true;
 		while (running && glfwGetWindowParam (GLFW_OPENED) == GL_TRUE)
 		{
+#ifdef DEBUG
+			gl::Enable (GL_DEBUG_OUTPUT);
+#endif
 			UpdateCamera ();
 			r->Frame ();
+#ifdef DEBUG
+			gl::Disable (GL_DEBUG_OUTPUT);
+#endif
 			gl::BindSampler (0, 0);
 			gl::BlendEquation (GL_FUNC_ADD);
 			TwDraw ();
