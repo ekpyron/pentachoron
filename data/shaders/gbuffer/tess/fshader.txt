@@ -52,17 +52,17 @@ void main (void)
 	else
 		specular.xyz = color.xyz;
 
-	if (normalmap_enabled)
+/*	if (normalmap_enabled)
 	{
 		vec3 n;
 		mat3x3 tangentmat;
 		tangentmat = mat3x3 (fTangent, fBitangent, fNormal);
 
-		n.xy = texture2D (normalmap, fTexcoord * 16).xy * 2.0 - 1.0;
+		n.xy = texture2D (normalmap, fTexcoord).xy * 2.0 - 1.0;
 		n.z = sqrt (1.0 - n.x * n.x - n.y * n.y);
 		normal.xyz = (normalmat * tangentmat * n) * 0.5 + 0.5;
 	}
-	else
+	else */
 	{
 		normal.xyz = normalmat * fNormal * 0.5 + 0.5;
 	}
