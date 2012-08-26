@@ -173,6 +173,70 @@ void GLAPIENTRY debug_callback (GLenum source, GLenum type, GLuint id,
 																GLenum severity, GLsizei length,
 																const GLchar *message, GLvoid *userParam)
 {
+	(*logstream) << "GL ";
+	switch (type)
+	{
+	case GL_DEBUG_TYPE_ERROR:
+		(*logstream) << "ERROR";
+		break;
+	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+		(*logstream) << "DEPRECATED BEHAVIOR";
+		break;
+	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+		(*logstream) << "UNDEFINED BEHAVIOR";
+		break;
+	case GL_DEBUG_TYPE_PORTABILITY:
+		(*logstream) << "PORTABILITY";
+		break;
+	case GL_DEBUG_TYPE_PERFORMANCE:
+		(*logstream) << "PERFORMANCE";
+		break;
+	case GL_DEBUG_TYPE_OTHER:
+		(*logstream) << "OTHER";
+		break;
+	case GL_DEBUG_TYPE_MARKER:
+		(*logstream) << "MARKER";
+		break;
+	}
+	(*logstream) << " ";
+	switch (source)
+	{
+	case GL_DEBUG_SOURCE_API:
+		(*logstream) << "[API]";
+		break;
+	case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+		(*logstream) << "[WINDOW SYSTEM]";
+		break;
+	case GL_DEBUG_SOURCE_SHADER_COMPILER:
+		(*logstream) << "[SHADER COMPILER]";
+		break;
+	case GL_DEBUG_SOURCE_THIRD_PARTY:
+		(*logstream) << "[THIRD PARTY]";
+		break;
+	case GL_DEBUG_SOURCE_APPLICATION:
+		(*logstream) << "[APPLICATION]";
+		break;
+	case GL_DEBUG_SOURCE_OTHER:
+		(*logstream) << "[OTHER]";
+		break;
+	}
+	(*logstream) << " ";
+	switch (severity)
+	{
+	case GL_DEBUG_SEVERITY_HIGH:
+		(*logstream) << "{HIGH}";
+		break;
+	case GL_DEBUG_SEVERITY_MEDIUM:
+		(*logstream) << "{MEDIUM}";
+		break;
+	case GL_DEBUG_SEVERITY_LOW:
+		(*logstream) << "{LOW}";
+		break;
+	case GL_DEBUG_SEVERITY_NOTIFICATION:
+		(*logstream) << "{NOTIFICATION}";
+		break;
+	}
+	(*logstream) << " (" << id << "): ";
 	logstream->write (message, length);
 	(*logstream) << std::endl;
 }
@@ -233,6 +297,9 @@ int main (int argc, char *argv[])
 		glfwOpenWindowHint (GLFW_OPENGL_VERSION_MAJOR, 4);
 		glfwOpenWindowHint (GLFW_OPENGL_VERSION_MINOR, 3);
 		glfwOpenWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#ifdef DEBUG
+		glfwOpenWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+#endif
 		glfwOpenWindowHint (GLFW_OPENGL_PROFILE,
 												GLFW_OPENGL_CORE_PROFILE);
 

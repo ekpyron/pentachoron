@@ -297,5 +297,8 @@ bool LoadProgram (gl::Program &program, const std::string &filename,
 
 	SaveProgramBinary (program, filename, hash);
 
+	gl::ObjectLabel (GL_PROGRAM, program.get (),
+									 filename.size (), filename.data ());
+
 	return true;
 }
