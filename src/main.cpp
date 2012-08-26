@@ -239,6 +239,7 @@ int main (int argc, char *argv[])
 		}
 		glfwSetWindowTitle ("Pentachoron");
 		glfwEnable (GLFW_KEY_REPEAT);
+		glfwEnable (GLFW_MOUSE_CURSOR);
 
 		TwInit (TW_OPENGL_CORE, NULL);
 

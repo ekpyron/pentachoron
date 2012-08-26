@@ -565,7 +565,7 @@ void CreateMenus (void)
 			paramnameType = TwDefineEnum ("paramname", &paramNames[0],
 																		paramNames.size ());
 			TwAddVarRW (bar, "active", paramnameType,
-									&active_light, "label='active parameter set'"); 
+									&active_parameter, "label='active parameter set'"); 
 		}
 		TwAddSeparator (bar, NULL, NULL);
 
