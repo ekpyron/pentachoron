@@ -53,8 +53,7 @@ vec4 compute_pixel (in struct PixelData data, out bool issky)
 	}
 	issky = false;	
 
-	struct Parameter param;
-	ReadParameter (param, int (data.specular.w * 255.0f));
+	struct Parameter param = parameters [int (data.specular.w * 255.0f)];
 
 	pos = getpos (vec3 (invviewport * gl_FragCoord.xy, data.depth));
 	normal = normalize (data.normal.xyz * 2 - 1);

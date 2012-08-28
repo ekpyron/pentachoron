@@ -26,18 +26,6 @@ struct Parameter {
 	float reflect_fresnel_k;
 };
 
-void ReadParameter (out struct Parameter param, in int offset)
-{
-	vec4 tmp;
-	int base = offset * SIZEOF_PARAMETER;
-	tmp = texelFetch (parametertex, base);
-	param.model = floatBitsToUint (tmp.x);
-	param.param1 = tmp.y;
-	param.param2 = tmp.z;
-	param.specular_fresnel_n = tmp.w;
-	tmp = texelFetch (parametertex, base + 1);
-	param.specular_fresnel_k = tmp.x;
-	param.reflect_factor = tmp.y;
-	param.reflect_fresnel_n = tmp.z;
-	param.reflect_fresnel_k = tmp.w;
-}
+layout (std430, binding = 0) buffer ParameterBuffer {
+       struct Parameter parameters[];
+};
