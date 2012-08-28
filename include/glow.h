@@ -88,6 +88,7 @@ private:
 		* Height of the glow map.
 		*/
 	 GLuint height;
+
 	 struct
 	 {
 			gl::Framebuffer fb;
@@ -108,12 +109,6 @@ private:
 		* The exponent to adjust the pixel value written to the glow map.
 		*/
 	 GLfloat exponent;
-	 /** Blend framebuffer.
-		* The framebuffer object for blending the glow map into the screen
-		* texture.
-		*/
-	 gl::Sampler sampler;
-	 gl::Sampler sampler2;
 
 	 gl::Buffer buffer;
 	 gl::Texture buffertex;

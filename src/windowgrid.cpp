@@ -44,11 +44,6 @@ bool WindowGrid::Init (void)
 	vao.VertexAttribOffset (arraybuffer, 0, 2, GL_BYTE, GL_FALSE, 0, 0);
 	vao.EnableVertexAttrib (0);
 
-	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
 	return true;
 }
 

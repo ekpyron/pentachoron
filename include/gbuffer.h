@@ -62,7 +62,6 @@ private:
 	 gl::Program program;
 	 gl::Program transparencyprog;
 	 gl::Program sraaprog;
-	 gl::Sampler depthsampler;
 
 	 gl::Program quadtessprog;
 	 gl::Program triangletessprog;

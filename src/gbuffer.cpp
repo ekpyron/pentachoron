@@ -95,11 +95,6 @@ bool GBuffer::Init (void)
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
-	depthsampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	depthsampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	depthsampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	depthsampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
 	depthbuffer.Image2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height,
 												0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	colorbuffer.Image2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height,

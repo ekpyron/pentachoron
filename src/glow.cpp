@@ -62,16 +62,6 @@ bool Glow::Init (gl::Texture &screenmap, gl::Texture &gm,
 	hblur.prog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
 	vblur.prog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
 
-	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	sampler2.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	sampler2.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	sampler2.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	sampler2.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
 	map.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F, width, height,
 							 0, GL_RGBA, GL_FLOAT, NULL);
 	map2.Image2D (GL_TEXTURE_2D, 0, GL_RGBA16F, width, height,
@@ -162,6 +152,13 @@ const gl::Texture &Glow::GetMap (void)
 
 void Glow::Apply (void)
 {
+	const gl::Sampler &mipmapsampler
+		 = r->GetSampler (GL_LINEAR_MIPMAP_LINEAR,
+											GL_LINEAR, GL_CLAMP_TO_EDGE,
+											GL_CLAMP_TO_EDGE);
+	const gl::Sampler &sampler = r->GetSampler (GL_LINEAR, GL_LINEAR,
+																							GL_CLAMP_TO_EDGE,
+																							GL_CLAMP_TO_EDGE);
 	if (GetSize () == 0)
 		 return;
 
@@ -172,14 +169,14 @@ void Glow::Apply (void)
 	gl::Viewport (0, 0, width, height);
 
 	glowmap->Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-	sampler.Bind (0);
+	mipmapsampler.Bind (0);
 	r->windowgrid.Render ();
 
 	vblur.fb.Bind (GL_FRAMEBUFFER);
 	vblur.pipeline.Bind ();
 
 	map.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-	sampler2.Bind (0);
+	sampler.Bind (0);
 
 	r->windowgrid.Render ();
 
@@ -192,7 +189,7 @@ void Glow::Apply (void)
 	gl::BlendFunc (GL_ONE, GL_ONE);
 	gl::BlendEquation (GL_FUNC_ADD);
 	map2.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-	sampler2.Bind (0);
+	sampler.Bind (0);
 	r->windowgrid.Render ();
 	gl::Disable (GL_BLEND);
 

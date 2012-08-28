@@ -79,7 +79,6 @@ private:
 
 	 std::vector<Model> models;
 
-	 gl::Sampler sampler;
 	 std::map<std::string, Material*> materials;
 
 	 GLuint pass;

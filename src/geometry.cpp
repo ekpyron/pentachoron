@@ -78,11 +78,6 @@ bool Geometry::Init (void)
 																									 "fshader.txt")) }))
 		 return false;
 
-	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_REPEAT);
-	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_REPEAT);
-
 	std::ifstream file (MakePath ("scene.yaml"), std::ifstream::in);
 	std::map<std::string, GLuint> names;
 	if (!file.is_open ())
@@ -257,6 +252,9 @@ void Geometry::Render (GLuint p,
 											 const gl::Program &prog,
 											 const glm::mat4 &viewmat)
 {
+	const gl::Sampler &sampler = r->GetSampler (GL_LINEAR_MIPMAP_LINEAR,
+																							GL_LINEAR, GL_REPEAT,
+																							GL_REPEAT);
 	program = &prog;
 	switch (p & Pass::Mask)
 	{

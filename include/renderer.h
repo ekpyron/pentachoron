@@ -72,8 +72,28 @@ public:
 
 	 std::vector<Shadow> shadows;
 
+	 const gl::Sampler &GetSampler (GLint minfilter = GL_LINEAR_MIPMAP_LINEAR,
+																	GLint magfilter = GL_LINEAR,
+																	GLint wrap_s = GL_REPEAT,
+																	GLint wrap_t = GL_REPEAT);
+
 private:
 	 GLuint antialiasing;
+
+	 class SamplerParams
+	 {
+	 public:
+			SamplerParams (GLint minfilter, GLint magfilter,
+										 GLint wrap_s, GLint wrap_t);
+			bool operator< (const SamplerParams &params) const;
+	 private:
+			GLint minfilter;
+			GLint magfilter;
+			GLint wrap_s;
+			GLint wrap_t;
+	 };
+
+	 std::map<SamplerParams, gl::Sampler> samplers;
 
 	 gl::Program opacityprogram;
 

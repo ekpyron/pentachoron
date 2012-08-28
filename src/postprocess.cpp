@@ -199,11 +199,6 @@ bool PostProcess::Init (void)
 		 r->memory += mem;
 #endif
 
-	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
 	framebuffer.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 												 luminance, 0);
 	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
@@ -408,6 +403,13 @@ float PostProcess::GetAvgLumLod (void)
 
 void PostProcess::Frame (void)
 {
+	const gl::Sampler &sampler = r->GetSampler (GL_LINEAR, GL_LINEAR,
+																							GL_CLAMP_TO_EDGE,
+																							GL_CLAMP_TO_EDGE);
+	const gl::Sampler &mipmapsampler
+		 = r->GetSampler (GL_LINEAR_MIPMAP_LINEAR,
+											GL_LINEAR, GL_CLAMP_TO_EDGE,
+											GL_CLAMP_TO_EDGE);
 	glm::uvec2 viewport;
 	GLuint program;
 	const char *tonemapNames[] = {
@@ -422,7 +424,7 @@ void PostProcess::Frame (void)
 	framebuffer.Bind (GL_FRAMEBUFFER);
 	pipelines.back ().Bind ();
 	r->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-	r->windowgrid.sampler.Bind (0);
+	sampler.Bind (0);
 	r->windowgrid.Render ();
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	luminance.GenerateMipmap (GL_TEXTURE_2D);
@@ -433,48 +435,48 @@ void PostProcess::Frame (void)
 	switch (rendermode)
 	{
 	case 0:
-		r->windowgrid.sampler.Bind (0);
+		sampler.Bind (0);
 		r->composition.GetScreen ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		if (r->GetAntialiasing ())
 		{
-			r->windowgrid.sampler.Bind (1);
+			sampler.Bind (1);
 			r->gbuffer.msdepthtexture.Bind (GL_TEXTURE1,
 																						 GL_TEXTURE_2D_MULTISAMPLE);
-			r->windowgrid.sampler.Bind (2);
+			sampler.Bind (2);
 			r->gbuffer.depthbuffer.Bind (GL_TEXTURE2, GL_TEXTURE_2D);
 		}
-		sampler.Bind (3);
+		mipmapsampler.Bind (3);
 		luminance.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
 		program = 0;
 		break;
 	case 1:
-		r->windowgrid.sampler.Bind (0);
+		sampler.Bind (0);
 		r->gbuffer.colorbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 2;
 		break;
 	case 2:
-		r->windowgrid.sampler.Bind (0);
+		sampler.Bind (0);
 		r->gbuffer.normalbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 1;
 		break;
 	case 3:
-		r->windowgrid.sampler.Bind (0);
+		sampler.Bind (0);
 		r->gbuffer.specularbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 2;
 		break;
 	case 4:
-		r->windowgrid.sampler.Bind (0);
+		sampler.Bind (0);
 		r->gbuffer.depthbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 5;
 		break;
 	case 5:
-		r->windowgrid.sampler.Bind (0);
+		sampler.Bind (0);
 		r->composition.GetGlow ().GetMap ().Bind (GL_TEXTURE0,
 																										 GL_TEXTURE_2D);
 		program = 4;
 		break;
 	case 6:
-		r->windowgrid.sampler.Bind (0);
+		sampler.Bind (0);
 		r->shadowmap.GetMap ().Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		program = 2;
 		break;

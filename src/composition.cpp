@@ -241,7 +241,6 @@ bool Composition::Init (void)
 	glow.SetSize (0);
 
 	GeneratePerezCoefficients ();
-
 	return true;
 }
 
@@ -502,6 +501,9 @@ void Composition::SetSkyLuminosity (GLfloat l)
 
 void Composition::Frame (float timefactor)
 {
+	const gl::Sampler &sampler = r->GetSampler (GL_LINEAR, GL_LINEAR,
+																							GL_CLAMP_TO_EDGE,
+																							GL_CLAMP_TO_EDGE);
 /*
 	info.eye = glm::vec4 (r->camera.GetEye (), 0.0);
 	info.center = glm::vec4 (r->camera.GetCenter (), 0.0);
@@ -524,13 +526,13 @@ void Composition::Frame (float timefactor)
 									r->gbuffer.GetHeight () >> 5);
 		minmaxdepthpipeline.Bind ();
 
-		r->windowgrid.sampler.Bind (0);
+		sampler.Bind (0);
 		r->gbuffer.depthbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 
-		r->windowgrid.sampler.Bind (1);
+		sampler.Bind (1);
 		r->gbuffer.fragidx.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 
-		r->windowgrid.sampler.Bind (2);
+		sampler.Bind (2);
 		r->gbuffer.fraglisttex.Bind (GL_TEXTURE2, GL_TEXTURE_BUFFER);
 
 		gl::BlendFunc (GL_SRC_COLOR, GL_DST_COLOR);
@@ -587,34 +589,34 @@ void Composition::Frame (float timefactor)
 	gl::Viewport (0, 0, r->gbuffer.GetWidth (),
 								r->gbuffer.GetHeight ());
 
-	r->windowgrid.sampler.Bind (0);
+	sampler.Bind (0);
 	r->gbuffer.colorbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 
-	r->windowgrid.sampler.Bind (1);
+	sampler.Bind (1);
 	r->gbuffer.depthbuffer.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 
-	r->windowgrid.sampler.Bind (2);
+	sampler.Bind (2);
 	r->gbuffer.normalbuffer.Bind (GL_TEXTURE2, GL_TEXTURE_2D);
 
-	r->windowgrid.sampler.Bind (3);
+	sampler.Bind (3);
 	r->gbuffer.specularbuffer.Bind (GL_TEXTURE3, GL_TEXTURE_2D);
 
-	r->windowgrid.sampler.Bind (4);
+	sampler.Bind (4);
 	r->shadowmap.GetMap ().Bind (GL_TEXTURE4, GL_TEXTURE_2D);
 
-	r->windowgrid.sampler.Bind (5);
+	sampler.Bind (5);
 	r->gbuffer.fragidx.Bind (GL_TEXTURE5, GL_TEXTURE_2D);
 
-	r->windowgrid.sampler.Bind (6);
+	sampler.Bind (6);
 	r->gbuffer.fraglisttex.Bind (GL_TEXTURE6, GL_TEXTURE_BUFFER);
 
-	r->windowgrid.sampler.Bind (7);
+	sampler.Bind (7);
 	lightbuffertex.Bind (GL_TEXTURE7, GL_TEXTURE_BUFFER);
 
-	r->windowgrid.sampler.Bind (8);
+	sampler.Bind (8);
 	lighttex.Bind (GL_TEXTURE8, GL_TEXTURE_2D);
 
-	r->windowgrid.sampler.Bind (9);
+	sampler.Bind (9);
 	r->GetParameterTexture ().Bind (GL_TEXTURE9, GL_TEXTURE_BUFFER);
 
 	r->windowgrid.Render ();

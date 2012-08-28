@@ -295,6 +295,52 @@ void Renderer::UpdateLight (GLuint light)
 											 sizeof (lights[light]), &lights[light]);
 }
 
+Renderer::SamplerParams::SamplerParams (GLint _minfilter,
+																				GLint _magfilter,
+																				GLint _wrap_s,
+																				GLint _wrap_t)
+	: minfilter (_minfilter), magfilter (_magfilter),
+		wrap_s (_wrap_s), wrap_t (_wrap_t)
+{
+}
+
+bool Renderer::SamplerParams::operator< (const SamplerParams &params) const
+{
+	if (minfilter < params.minfilter)
+		 return true;
+	if (params.minfilter < minfilter)
+		 return false;
+	if (magfilter < params.magfilter)
+		 return true;
+	if (params.magfilter < magfilter)
+		 return false;
+	if (wrap_s < params.wrap_s)
+		 return true;
+	if (params.wrap_s < wrap_s)
+		 return false;
+	return wrap_t < params.wrap_t;
+}
+
+const gl::Sampler &Renderer::GetSampler (GLint minfilter, GLint magfilter,
+																				 GLint wrap_s, GLint wrap_t)
+{
+	SamplerParams params (minfilter, magfilter, wrap_s, wrap_t);
+	auto it = samplers.find (params);
+	if (it == samplers.end ())
+	{
+		auto it = samplers.insert (std::make_pair (params, gl::Sampler ()));
+		it.first->second.Parameter (GL_TEXTURE_MIN_FILTER, minfilter);
+		it.first->second.Parameter (GL_TEXTURE_MAG_FILTER, magfilter);
+		it.first->second.Parameter (GL_TEXTURE_WRAP_S, wrap_s);
+		it.first->second.Parameter (GL_TEXTURE_WRAP_T, wrap_t);
+		return it.first->second;
+	}
+	else
+	{
+		return it->second;
+	}
+}
+
 gl::Buffer &Renderer::GetLightBuffer (void)
 {
 	return lightbuffer;

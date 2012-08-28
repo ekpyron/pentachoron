@@ -99,11 +99,6 @@ bool ShadowMap::Init (void)
 	hblurprog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
 	vblurprog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
 
-	sampler.Parameter (GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	sampler.Parameter (GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	sampler.Parameter (GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	sampler.Parameter (GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
 	shadowmap.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
 										 0, GL_RG, GL_FLOAT, NULL);
 	tmpstore.Image2D (GL_TEXTURE_2D, 0, GL_RG32F, width, height,
@@ -159,6 +154,9 @@ void ShadowMap::Clear (void)
 void ShadowMap::Render (GLuint shadowid, Geometry &geometry,
 												const Shadow &shadow)
 {
+	const gl::Sampler &sampler = r->GetSampler (GL_LINEAR, GL_LINEAR,
+																							GL_CLAMP_TO_EDGE,
+																							GL_CLAMP_TO_EDGE);
 	vmat = glm::lookAt (glm::vec3 (shadow.position),
 											glm::vec3 (shadow.position + shadow.direction),
 											glm::vec3 (1, 0, 0));

@@ -92,7 +92,6 @@ private:
 	 gl::Program triangletessprog;
 	 gl::Program vblurprog;
 	 gl::Program hblurprog;
-	 gl::Sampler sampler;
 	 gl::ProgramPipeline vblurpipeline;
 	 gl::ProgramPipeline hblurpipeline;
 	 /** Depthbuffer.

@@ -57,7 +57,6 @@ private:
 	 std::vector<gl::ProgramPipeline> pipelines;
 	 gl::Framebuffer framebuffer;
 	 gl::Texture luminance;
-	 gl::Sampler sampler;
 	 GLuint rendermode;
 	 gl::Buffer tonemappingBuffer;
 	 gl::SmartUniform<GLuint> antialiasing;

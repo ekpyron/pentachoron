@@ -27,7 +27,6 @@ public:
 	 bool Init (void);
 	 void Render (void);
 	 gl::Program vprogram;
-	 gl::Sampler sampler;
 private:
 	 gl::Buffer arraybuffer;
 	 gl::VertexArray vao;
