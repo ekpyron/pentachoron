@@ -53,7 +53,7 @@ public:
 	 GLuint GetNumParameters (void);
 	 Parameter &GetParameters (GLuint params);
 	 void UpdateParameters (GLuint params);
-	 gl::Texture &GetParameterTexture (void);
+	 const gl::Buffer &GetParameterBuffer (void) const;
 	 const std::string &GetParameterName (GLuint param);
 
 #ifdef DEBUG
@@ -100,7 +100,6 @@ private:
 	 std::vector<Parameter> parameters;
 	 std::vector<std::string> parameter_names;
 	 gl::Buffer parameterbuffer;
-	 gl::Texture parametertexture;
 
 	 std::vector<Light> lights;
 	 gl::Buffer lightbuffer;

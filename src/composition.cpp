@@ -31,12 +31,9 @@ bool Composition::Init (void)
 {
 	{
 		std::stringstream stream;
-		stream << "#version 420 core" << std::endl;
+		stream << "#version 430 core" << std::endl;
 		stream << "#define MAX_DEPTH_LAYERS "
 					 << config["max_depth_layers"].as<GLuint> (4) << std::endl;
-		stream << "#define SIZEOF_PARAMETER "
-					 << sizeof (Parameter) / sizeof (glm::vec4)
-					 << std::endl;
 		stream << "#define SIZEOF_LIGHT "
 					 << sizeof (Light) / sizeof (glm::vec4)
 					 << std::endl;
@@ -616,8 +613,7 @@ void Composition::Frame (float timefactor)
 	sampler.Bind (8);
 	lighttex.Bind (GL_TEXTURE8, GL_TEXTURE_2D);
 
-	sampler.Bind (9);
-	r->GetParameterTexture ().Bind (GL_TEXTURE9, GL_TEXTURE_BUFFER);
+	r->GetParameterBuffer ().BindBase (GL_SHADER_STORAGE_BUFFER, 0);
 
 	r->windowgrid.Render ();
 

@@ -175,7 +175,6 @@ bool Renderer::Init (void)
 	}
 	parameterbuffer.Data (sizeof (Parameter) * parameters.size (),
 												&parameters[0], GL_STATIC_DRAW);
-	parametertexture.Buffer (GL_RGBA32F, parameterbuffer);
 
 	(*logstream) << glfwGetTime () << " Initialize Composition..." << std::endl;
 	if (!composition.Init ())
@@ -223,9 +222,9 @@ void Renderer::UpdateParameters (GLuint param)
 													 sizeof (Parameter), &parameters[param]);
 }
 
-gl::Texture &Renderer::GetParameterTexture (void)
+const gl::Buffer &Renderer::GetParameterBuffer (void) const
 {
-	return parametertexture;
+	return parameterbuffer;
 }
 
 GLuint Renderer::GetNumParameters (void)
