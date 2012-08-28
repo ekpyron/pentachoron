@@ -34,9 +34,6 @@ bool Composition::Init (void)
 		stream << "#version 430 core" << std::endl;
 		stream << "#define MAX_DEPTH_LAYERS "
 					 << config["max_depth_layers"].as<GLuint> (4) << std::endl;
-		stream << "#define SIZEOF_LIGHT "
-					 << sizeof (Light) / sizeof (glm::vec4)
-					 << std::endl;
 		stream << "#define NUM_TILES_X "
 					 << (r->gbuffer.GetWidth () >> 5)
 					 << std::endl;
@@ -60,10 +57,7 @@ bool Composition::Init (void)
 
 	{
 		std::stringstream stream;
-		stream << "#version 420 core" << std::endl;
-		stream << "#define SIZEOF_LIGHT "
-					 << sizeof (Light) / sizeof (glm::vec4)
-					 << std::endl;
+		stream << "#version 430 core" << std::endl;
 		stream << "#define NUM_TILES_X "
 					 << (r->gbuffer.GetWidth () >> 5)
 					 << std::endl;
@@ -221,8 +215,6 @@ bool Composition::Init (void)
 	minmaxdepthfb.Texture2D (GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
 													 maxdepthtex, 0);
 	minmaxdepthfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 });
-
-	lightbuffertex.Buffer (GL_RGBA32F, r->GetLightBuffer ());
 
 	clearfb.Texture2D (GL_COLOR_ATTACHMENT0,
 										 GL_TEXTURE_2D,
@@ -512,6 +504,8 @@ void Composition::Frame (float timefactor)
 	shadowmat.Set (r->shadowmap.GetMat ());
 	eye.Set (r->camera.GetEye ());
 
+	r->GetLightBuffer ().BindBase (GL_SHADER_STORAGE_BUFFER, 0);
+
 	if (GetTileBased ())
 	{
 		clearfb.Bind (GL_FRAMEBUFFER);
@@ -567,11 +561,12 @@ void Composition::Frame (float timefactor)
 
 		lightcullprog["vmatinv"] = glm::inverse (r->camera.GetViewMatrix ());
 		lightcullprog["projinfo"] = r->camera.GetProjInfo ();
+		lightcullprog["num_lights"] = r->GetNumLights ();
 
 		numlights.BindBase (GL_ATOMIC_COUNTER_BUFFER, 0);
 		mindepthtex.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
 		maxdepthtex.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
-		lightbuffertex.Bind (GL_TEXTURE2, GL_TEXTURE_BUFFER);
+		r->GetLightBuffer ().BindBase (GL_SHADER_STORAGE_BUFFER, 0);
 		lighttex.BindImage (0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R16UI);
 		r->windowgrid.Render ();
 	}
@@ -582,6 +577,8 @@ void Composition::Frame (float timefactor)
 
 	fprogram["vmatinv"] = glm::inverse (r->camera.GetViewMatrix ());
 	fprogram["projinfo"] = r->camera.GetProjInfo ();
+
+	fprogram["num_lights"] = r->GetNumLights ();
 
 	gl::Viewport (0, 0, r->gbuffer.GetWidth (),
 								r->gbuffer.GetHeight ());
@@ -608,12 +605,9 @@ void Composition::Frame (float timefactor)
 	r->gbuffer.fraglisttex.Bind (GL_TEXTURE6, GL_TEXTURE_BUFFER);
 
 	sampler.Bind (7);
-	lightbuffertex.Bind (GL_TEXTURE7, GL_TEXTURE_BUFFER);
+	lighttex.Bind (GL_TEXTURE7, GL_TEXTURE_2D);
 
-	sampler.Bind (8);
-	lighttex.Bind (GL_TEXTURE8, GL_TEXTURE_2D);
-
-	r->GetParameterBuffer ().BindBase (GL_SHADER_STORAGE_BUFFER, 0);
+	r->GetParameterBuffer ().BindBase (GL_SHADER_STORAGE_BUFFER, 1);
 
 	r->windowgrid.Render ();
 

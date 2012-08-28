@@ -14,19 +14,40 @@
  * You should have received a copy of the GNU General Public License
  * along with pentachoron.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* #version 420 core [ specified externally ] */
+/* #version 430 core [ specified externally ] */
 /*
  * external definitions: 
- * SIZEOF_LIGHT
  * NUM_TILES_X
  * NUM_TILES_Y
  */
 
 uniform vec2 invviewport;
 
+
+struct Light {
+       vec4 pos;
+       vec4 color;
+       vec4 dir;
+       vec4 spot, spot2;
+       vec4 specular;
+       vec4 attenuation;
+       vec4 frustum_l;
+       vec4 frustum_r;
+       vec4 frustum_b;
+       vec4 frustum_t;
+       vec4 frustum_n;
+       vec4 frustum_f;
+};
+
+layout (binding = 0, std430) buffer LightBuffer {
+       struct Light lights[];
+};
+
+uniform uint num_lights;
+
+
 layout (binding = 0) uniform sampler2D mindepthtex;
 layout (binding = 1) uniform sampler2D maxdepthtex;
-layout (binding = 2) uniform samplerBuffer lightbuffertex;
 layout (location = 0) out float dummy;
 
 layout (binding = 0) uniform atomic_uint counter[NUM_TILES_X * NUM_TILES_Y];
@@ -55,13 +76,9 @@ vec3 getpos (vec3 pin)
 
 void main (void)
 {
-	int offset;
 	int tile;
 	ivec2 coord;
-	uint num_lights;
 	int lightidx;
-
-	num_lights = textureSize (lightbuffertex) / SIZEOF_LIGHT;
 
 	lightidx = ((int(gl_FragCoord.y)&0x1F)<<5)
 		   + (int (gl_FragCoord.x)&0x1F);
@@ -69,15 +86,13 @@ void main (void)
 	if (lightidx >= num_lights)
 		discard;
 
-	offset = lightidx * SIZEOF_LIGHT + 7;
-
 	vec4 planes[6];
-	planes[0] = texelFetch (lightbuffertex, offset);
-	planes[1] = texelFetch (lightbuffertex, offset + 1);
-	planes[2] = texelFetch (lightbuffertex, offset + 2);
-	planes[3] = texelFetch (lightbuffertex, offset + 3);
-	planes[4] = texelFetch (lightbuffertex, offset + 4);
-	planes[5] = texelFetch (lightbuffertex, offset + 5);
+	planes[0] = lights[lightidx].frustum_l;
+	planes[1] = lights[lightidx].frustum_r;
+	planes[2] = lights[lightidx].frustum_b;
+	planes[3] = lights[lightidx].frustum_t;
+	planes[4] = lights[lightidx].frustum_n;
+	planes[5] = lights[lightidx].frustum_f;
 
 
 	coord.x = int (gl_FragCoord.x) >> 5;

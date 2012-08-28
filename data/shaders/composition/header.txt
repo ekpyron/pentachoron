@@ -18,7 +18,6 @@
 /*
  * external definitions: 
  * MAX_DEPTH_LAYERS
- * SIZEOF_LIGHT
  * NUM_TILES_X
  * NUM_TILES_Y
  */
@@ -33,8 +32,7 @@ layout(binding = 3) uniform sampler2D specularbuffer;
 layout(binding = 4) uniform sampler2D shadowmap;
 layout(binding = 5) uniform isampler2D fragidx;
 layout(binding = 6) uniform usamplerBuffer fraglist;
-layout(binding = 7) uniform samplerBuffer lightbuffertex;
-layout(binding = 8) uniform usampler2D lighttex;
+layout(binding = 7) uniform usampler2D lighttex;
 
 layout (binding = 0) uniform atomic_uint counter[NUM_TILES_X * NUM_TILES_Y];
 

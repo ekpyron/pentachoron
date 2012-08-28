@@ -22,9 +22,20 @@ struct Light {
        vec4 spot, spot2;
        vec4 specular;
        vec4 attenuation;
+       vec4 frustum_l;
+       vec4 frustum_r;
+       vec4 frustum_b;
+       vec4 frustum_t;
+       vec4 frustum_n;
+       vec4 frustum_f;
+};
+
+layout (binding = 0, std430) buffer LightBuffer {
+       struct Light lights[];
 };
 
 uniform bool tile_based;
+uniform uint num_lights;
 
 uint GetNumLights (void)
 {
@@ -36,7 +47,7 @@ uint GetNumLights (void)
 	}
 	else
 	{
-		return textureSize (lightbuffertex) / SIZEOF_LIGHT;
+		return num_lights;
 	}
 }
 
@@ -51,20 +62,12 @@ void ReadLight (out struct Light light, in uint id)
 		p.y = int (gl_FragCoord.y) & (~0x1F);
 		p.x += int (id) & 0x1F;
 		p.y += int (id) >> 5;
-		offset = int (texelFetch (lighttex, p, 0).r)
-		       	 * SIZEOF_LIGHT;
+		offset = int (texelFetch (lighttex, p, 0).r);
 	}
 	else
 	{
-		offset = int (id) * SIZEOF_LIGHT;
+		offset = int (id);
 	}
 
-	light.pos = texelFetch (lightbuffertex, offset);
-	light.color = texelFetch (lightbuffertex, offset + 1);
-	light.dir = texelFetch (lightbuffertex, offset + 2);
-	light.spot = texelFetch (lightbuffertex, offset + 3);
-	light.spot2 = texelFetch (lightbuffertex, offset + 4);
-	light.specular = texelFetch (lightbuffertex, offset + 5);
-	light.attenuation = texelFetch (lightbuffertex,
-			    	        offset + 6);
+	light = lights[offset];
 }

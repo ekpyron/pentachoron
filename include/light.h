@@ -59,7 +59,4 @@ typedef struct _Light
 	 void CalculateFrustum (void);
 } Light;
 
-static_assert (sizeof (Light) % sizeof (glm::vec4) == 0,
-							 "Light is not aligned correctly.");
-
 #endif /* !defined LIGHT_H */
