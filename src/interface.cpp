@@ -264,6 +264,17 @@ void CreateMenus (void)
 									*(glm::vec3*)v
 										 = r->GetLight (active_light).specular.color;
 								}, NULL, "label='specular color' visible=false");
+
+		if (r->GetNumLights () >= 1)
+		{
+			TwDefine ("lights/position visible=true");
+			TwDefine ("lights/direction visible=true");
+			TwDefine ("lights/color visible=true");
+			TwDefine ("lights/spot visible=true");
+			TwDefine ("lights/attenuation visible=true");
+			TwDefine ("lights/specular visible=true");
+			TwDefine ("lights/remove visible=true");
+		}
 	}
 	{
 		TwBar *bar = TwNewBar ("sky");

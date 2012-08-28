@@ -23,7 +23,6 @@
 
 uniform vec2 invviewport;
 
-
 struct Light {
        vec4 pos;
        vec4 color;
@@ -31,15 +30,10 @@ struct Light {
        vec4 spot, spot2;
        vec4 specular;
        vec4 attenuation;
-       vec4 frustum_l;
-       vec4 frustum_r;
-       vec4 frustum_b;
-       vec4 frustum_t;
-       vec4 frustum_n;
-       vec4 frustum_f;
+       vec4 frustum[6];
 };
 
-layout (binding = 0, std430) buffer LightBuffer {
+readonly layout (binding = 0, std430) buffer LightBuffer {
        struct Light lights[];
 };
 
@@ -86,15 +80,6 @@ void main (void)
 	if (lightidx >= num_lights)
 		discard;
 
-	vec4 planes[6];
-	planes[0] = lights[lightidx].frustum_l;
-	planes[1] = lights[lightidx].frustum_r;
-	planes[2] = lights[lightidx].frustum_b;
-	planes[3] = lights[lightidx].frustum_t;
-	planes[4] = lights[lightidx].frustum_n;
-	planes[5] = lights[lightidx].frustum_f;
-
-
 	coord.x = int (gl_FragCoord.x) >> 5;
 	coord.y = int (gl_FragCoord.y) >> 5;
 
@@ -121,7 +106,7 @@ void main (void)
 	float dist;
 	for (int i = 0; i < 6; i++)
 	{
-		vec4 plane = planes[i];
+		const vec4 plane = lights[lightidx].frustum[i];
 
 		if (dot (plane.xyz, boxmin) + plane.w > 0)
 		    continue;

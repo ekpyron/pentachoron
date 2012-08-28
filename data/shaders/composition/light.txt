@@ -22,15 +22,10 @@ struct Light {
        vec4 spot, spot2;
        vec4 specular;
        vec4 attenuation;
-       vec4 frustum_l;
-       vec4 frustum_r;
-       vec4 frustum_b;
-       vec4 frustum_t;
-       vec4 frustum_n;
-       vec4 frustum_f;
+       vec4 frustum[6];
 };
 
-layout (binding = 0, std430) buffer LightBuffer {
+readonly layout (binding = 0, std430) buffer LightBuffer {
        struct Light lights[];
 };
 
