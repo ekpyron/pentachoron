@@ -505,6 +505,7 @@ void Composition::Frame (float timefactor)
 	eye.Set (r->camera.GetEye ());
 
 	r->GetLightBuffer ().BindBase (GL_SHADER_STORAGE_BUFFER, 0);
+	r->gbuffer.fraglist.BindBase (GL_SHADER_STORAGE_BUFFER, 4);
 
 	if (GetTileBased ())
 	{
@@ -522,9 +523,6 @@ void Composition::Frame (float timefactor)
 
 		sampler.Bind (1);
 		r->gbuffer.fragidx.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
-
-		sampler.Bind (2);
-		r->gbuffer.fraglisttex.Bind (GL_TEXTURE2, GL_TEXTURE_BUFFER);
 
 		gl::BlendFunc (GL_SRC_COLOR, GL_DST_COLOR);
 		gl::BlendEquationi (0, GL_MIN);
@@ -602,10 +600,7 @@ void Composition::Frame (float timefactor)
 	r->gbuffer.fragidx.Bind (GL_TEXTURE5, GL_TEXTURE_2D);
 
 	sampler.Bind (6);
-	r->gbuffer.fraglisttex.Bind (GL_TEXTURE6, GL_TEXTURE_BUFFER);
-
-	sampler.Bind (7);
-	lighttex.Bind (GL_TEXTURE7, GL_TEXTURE_2D);
+	lighttex.Bind (GL_TEXTURE6, GL_TEXTURE_2D);
 
 	r->GetParameterBuffer ().BindBase (GL_SHADER_STORAGE_BUFFER, 1);
 

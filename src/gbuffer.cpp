@@ -123,7 +123,6 @@ bool GBuffer::Init (void)
 									 0, GL_RED_INTEGER, GL_INT, NULL);
 	// TODO: make this size configurable
 	fraglist.Data (width * height * 4 * 4 * 8 , NULL, GL_DYNAMIC_COPY);
-	fraglisttex.Buffer (GL_R32UI, fraglist);
 
 #ifdef DEBUG
 	r->memory += width * height * (4 * 4 * 8 + 4);
@@ -263,8 +262,8 @@ void GBuffer::Render (Geometry &geometry)
 	transparencyfb.Bind (GL_FRAMEBUFFER);
 	gl::Viewport (0, 0, width, height);
 
-	fraglisttex.BindImage (0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);
-	fragidx.BindImage (1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32I);
+	fraglist.BindBase (GL_SHADER_STORAGE_BUFFER, 4);
+	fragidx.BindImage (0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32I);
 	counter.BindBase (GL_ATOMIC_COUNTER_BUFFER, 0);
 	geometry.Render (Geometry::Pass::GBufferTransparency,
 									 transparencyprog, r->camera.GetViewMatrix ());

@@ -14,13 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with pentachoron.  If not, see <http://www.gnu.org/licenses/>.
  */
-#version 420 core
+#version 430 core
 
 uniform vec2 invviewport;
 
 layout(binding = 0) uniform sampler2D depthbuffer;
 layout(binding = 1) uniform isampler2D fragidx;
-layout(binding = 2) uniform usamplerBuffer fraglist;
+
+struct Fragment {
+       uint color;
+       uint specular;
+       uint normal;
+       float depth;
+       int next;
+};
+
+readonly layout (std430, binding = 4) buffer FragmentList {
+       struct Fragment fragments[];
+};
 
 uniform uvec2 offset;
 
@@ -38,10 +49,10 @@ void main (void)
 	int idx = texture (fragidx, coord).r;
 	while (idx != -1)
 	{
-		depth = uintBitsToFloat (texelFetch (fraglist, idx * 5 + 3).r);
+		depth = fragments[idx].depth;
 		mind = min (mind, depth);
 		maxd = max (maxd, depth);
-		idx = int (texelFetch (fraglist, idx * 5 + 4).r);
+		idx = fragments[idx].next;
 	}
 
 	if (mindepth == 1.0)

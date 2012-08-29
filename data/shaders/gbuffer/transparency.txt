@@ -14,11 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#version 420 core
+#version 430 core
+
+struct Fragment {
+       uint color;
+       uint specular;
+       uint normal;
+       float depth;
+       int next;
+};
+
+writeonly layout (std430, binding = 4) buffer FragmentList {
+       struct Fragment fragments[];
+};
 
 // image definitions
-layout(binding = 0, size1x32) writeonly uniform uimageBuffer fraglist;
-layout(binding = 1, size1x32) uniform uimage2D fragidx;
+layout(binding = 0, size1x32) uniform uimage2D fragidx;
 
 // atomic counters
 layout (binding = 0) uniform atomic_uint counter[64];
@@ -51,7 +62,6 @@ layout (early_fragment_tests) in;
 void main (void)
 {
 	vec4 color, specular, normal;
-	uint depth;
 	ivec2 p = ivec2 (gl_FragCoord.xy);
 
 	// fetch diffuse color
@@ -107,13 +117,10 @@ void main (void)
 	// replace the starting index
 	uint next = imageAtomicExchange (fragidx, p, idx);
 
-	// convert depth to an integer
-	depth = floatBitsToUint (gl_FragCoord.z);
-
 	// store data to linear buffer
-	imageStore (fraglist, idx * 5 + 0, uvec4 (packUnorm4x8 (color)));
-	imageStore (fraglist, idx * 5 + 1, uvec4 (packUnorm4x8 (specular)));
-	imageStore (fraglist, idx * 5 + 2, uvec4 (packUnorm4x8 (normal)));
-	imageStore (fraglist, idx * 5 + 3, uvec4 (depth));
-	imageStore (fraglist, idx * 5 + 4, uvec4 (next));
+	fragments[idx].color = packUnorm4x8 (color);
+	fragments[idx].specular = packUnorm4x8 (specular);
+	fragments[idx].normal = packUnorm4x8 (normal);
+	fragments[idx].depth = gl_FragCoord.z;
+	fragments[idx].next = int (next);
 }

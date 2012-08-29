@@ -17,6 +17,18 @@
 
 const vec3 luminance_factor = vec3 (0.2126, 0.7152, 0.0722);
 
+struct Fragment {
+       uint color;
+       uint specular;
+       uint normal;
+       float depth;
+       int next;
+};
+
+readonly layout (binding = 4, std430) buffer FragmentList {
+       struct Fragment fragments[];
+};
+
 struct PixelData {
        vec4 color;
        vec4 specular;
@@ -144,6 +156,18 @@ vec4 compute_pixel (in struct PixelData data, out bool issky)
 	return pixel;
 }
 
+void UnpackFragment (out PixelData data, in uint idx)
+{
+	// TODO: find out why a tmp variable is needed here. Driver bug?
+	uint tmp = fragments[idx].color;
+	data.color = unpackUnorm4x8 (tmp);
+	tmp = fragments[idx].specular;
+	data.specular = unpackUnorm4x8 (tmp);
+	tmp = fragments[idx].normal;
+	data.normal = unpackUnorm4x8 (tmp);
+	data.depth = fragments[idx].depth;
+}
+
 void main (void)
 {
 	struct PixelData data;
@@ -156,31 +180,27 @@ void main (void)
 
 	while (idx != -1)
 	{
-		float d = uintBitsToFloat (texelFetch (fraglist,
-		      	  		  	       idx * 5 + 3).r);
+		float d = fragments[idx].depth;
 		if (num < MAX_DEPTH_LAYERS)
 		{
 		   num++;
 		}
-		else if (uintBitsToFloat (texelFetch
-		     		(fraglist, int (indices[num - 1] * 5 + 3)).r)
-				<= d)
+		else if (fragments[indices[num-1]].depth <= d)
 		{
-			idx = int (texelFetch (fraglist, 5 * idx + 4).r);
+			idx = fragments[indices[idx]].next;
 			continue;
 		}
 
 		uint i = num - 1;
 		while (i > 0)
 		{
-			if (d >= uintBitsToFloat (texelFetch
-		      	     	 (fraglist, int (indices[i - 1] * 5 + 3)).r))
-				 break;
+			if (d >= fragments[indices[i - 1]].depth)
+			   break;
 			indices[i] = indices[i - 1];
 			i--;
 		}
 		indices[i] = idx;
-		idx = int (texelFetch (fraglist, idx * 5 + 4).r);
+		idx = fragments[idx].next;
 	}
 
 	bool issky;
@@ -195,14 +215,7 @@ void main (void)
 	{
 		vec4 tmp;
 		idx = int (indices[num - i - 1]);
-		data.color = unpackUnorm4x8 (texelFetch (fraglist,
-			     		    		 idx * 5 + 0).r);
-		data.specular = unpackUnorm4x8 (texelFetch (fraglist,
-			     		    		    idx * 5 + 1).r);
-		data.normal = unpackUnorm4x8 (texelFetch (fraglist,
-			     		    		  idx * 5 + 2).r);
-		data.depth = uintBitsToFloat (texelFetch (fraglist,
-			     		    		  idx * 5 + 3).r);
+		UnpackFragment (data, idx);
 		bool ignored;
 		tmp = compute_pixel (data, ignored);
 		pixel = mix (tmp, pixel, tmp.w);

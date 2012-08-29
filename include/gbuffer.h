@@ -46,7 +46,6 @@ public:
 
 	 void SetAntialiasing (GLuint samples);
 	 void SetProjMatrix (const glm::mat4 &projmat);
-	 gl::Texture fraglisttex;
 	 gl::Buffer fraglist;
 	 gl::Texture fragidx;
 
