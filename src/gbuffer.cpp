@@ -30,6 +30,11 @@ GBuffer::~GBuffer (void)
 
 bool GBuffer::Init (void)
 {
+	width = config["gbuffer"]["width"].as<GLuint> ();
+	height = config["gbuffer"]["height"].as<GLuint> ();
+	width = (width + 31) & (~0x1F);
+	height = (height + 31) & (~0x1F);
+
 	if (!LoadProgram (quadtessprog, MakePath ("shaders", "bin",
 																					 "gbuffer_quadtess.bin"),
 										{ {"#version 420 core\n#define NUM_VERTICES 20\n"} },
@@ -78,20 +83,22 @@ bool GBuffer::Init (void)
 																				 MakePath ("shaders", "gbuffer",
 																									 "sraa.txt")) }))
 		 return false;
-	if (!LoadProgram (transparencyprog,
-										MakePath ("shaders", "bin", "gbuffer_transparency.bin"),
-										{}, {	std::make_pair (GL_VERTEX_SHADER,
-																					MakePath ("shaders", "gbuffer",
-																										"vshader.txt")),
-												 std::make_pair (GL_FRAGMENT_SHADER,
-																				 MakePath ("shaders", "gbuffer",
-																									 "transparency.txt")) }))
-		 return false;
-
-	width = config["gbuffer"]["width"].as<GLuint> ();
-	height = config["gbuffer"]["height"].as<GLuint> ();
-	width = (width + 31) & (~0x1F);
-	height = (height + 31) & (~0x1F);
+	{
+		std::ostringstream stream;
+		stream << "#version 430 core" << std::endl
+					 << "#define GBUFFER_WIDTH " << width << std::endl
+					 << "#define GBUFFER_HEIGHT " << height << std::endl;
+		if (!LoadProgram (transparencyprog,
+											MakePath ("shaders", "bin", "gbuffer_transparency.bin"),
+											{ "", stream.str () },
+											{	std::make_pair (GL_VERTEX_SHADER,
+																				MakePath ("shaders", "gbuffer",
+																									"vshader.txt")),
+													 std::make_pair (GL_FRAGMENT_SHADER,
+																					 MakePath ("shaders", "gbuffer",
+																										 "transparency.txt")) }))
+			 return false;
+	}
 
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 
@@ -119,8 +126,7 @@ bool GBuffer::Init (void)
 	framebuffer.DrawBuffers ({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
 				 GL_COLOR_ATTACHMENT2 });
 
-	fragidx.Image2D (GL_TEXTURE_2D, 0, GL_R32I, width, height,
-									 0, GL_RED_INTEGER, GL_INT, NULL);
+	fragidx.Data (width * height * sizeof (GLint), NULL, GL_DYNAMIC_DRAW);
 	// TODO: make this size configurable
 	fraglist.Data (width * height * 4 * 4 * 8 , NULL, GL_DYNAMIC_COPY);
 
@@ -132,26 +138,17 @@ bool GBuffer::Init (void)
 												 depthbuffer, 0);
 	transparencyfb.DrawBuffers ({ });
 
-	transparencyclearfb.Texture2D (GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-																 fragidx, 0);
-	transparencyclearfb.DrawBuffers ({ GL_COLOR_ATTACHMENT0 });
-
 	counter.Data (sizeof (GLuint) * 64, NULL, GL_DYNAMIC_DRAW);
 	counter.ClearData (GL_R32UI, GL_RED, GL_UNSIGNED_INT, NULL);
 
-	program["viewport"] = glm::uvec2 (width, height);
 	program["farClipPlane"] = r->camera.GetFarClipPlane ();
 	program["nearClipPlane"] = r->camera.GetNearClipPlane ();
-	quadtessprog["viewport"] = glm::uvec2 (width, height);
 	quadtessprog["farClipPlane"] = r->camera.GetFarClipPlane ();
 	quadtessprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
-	triangletessprog["viewport"] = glm::uvec2 (width, height);
 	triangletessprog["farClipPlane"] = r->camera.GetFarClipPlane ();
 	triangletessprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
-	transparencyprog["viewport"] = glm::uvec2 (width, height);
 	transparencyprog["farClipPlane"] = r->camera.GetFarClipPlane ();
 	transparencyprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
-	sraaprog["viewport"] = glm::uvec2 (width, height);
 	sraaprog["farClipPlane"] = r->camera.GetFarClipPlane ();
 	sraaprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
 
@@ -254,16 +251,16 @@ void GBuffer::Render (Geometry &geometry)
 
 	gl::DepthMask (GL_FALSE);
 
-	transparencyclearfb.Bind (GL_FRAMEBUFFER);
-
-	gl::ClearBufferuiv (GL_COLOR, 0, (const GLuint[]) { (GLuint) -1, (GLuint) -1,
-				 (GLuint) -1, (GLuint) -1 });
-	
 	transparencyfb.Bind (GL_FRAMEBUFFER);
 	gl::Viewport (0, 0, width, height);
 
+	{
+		GLint tmp = -1;
+		fragidx.ClearData (GL_R32I, GL_RED_INTEGER, GL_INT, &tmp);
+	}
+
+	fragidx.BindBase (GL_SHADER_STORAGE_BUFFER, 3);
 	fraglist.BindBase (GL_SHADER_STORAGE_BUFFER, 4);
-	fragidx.BindImage (0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32I);
 	counter.BindBase (GL_ATOMIC_COUNTER_BUFFER, 0);
 	geometry.Render (Geometry::Pass::GBufferTransparency,
 									 transparencyprog, r->camera.GetViewMatrix ());

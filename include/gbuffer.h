@@ -47,7 +47,7 @@ public:
 	 void SetAntialiasing (GLuint samples);
 	 void SetProjMatrix (const glm::mat4 &projmat);
 	 gl::Buffer fraglist;
-	 gl::Texture fragidx;
+	 gl::Buffer fragidx;
 
 private:
 	 GLuint width, height;
@@ -56,7 +56,6 @@ private:
 	 gl::Framebuffer framebuffer;
 	 gl::Framebuffer multisamplefb;
 	 gl::Framebuffer transparencyfb;
-	 gl::Framebuffer transparencyclearfb;
 
 	 gl::Program program;
 	 gl::Program transparencyprog;

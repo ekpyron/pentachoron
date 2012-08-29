@@ -28,7 +28,6 @@ uniform bool diffuse_enabled;
 uniform bool normalmap_enabled;
 uniform bool specularmap_enabled;
 uniform bool parametermap_enabled;
-uniform uvec2 viewport;
 
 layout (early_fragment_tests) in;
 

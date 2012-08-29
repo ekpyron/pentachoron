@@ -25,6 +25,10 @@ struct Fragment {
        int next;
 };
 
+readonly layout (std430, binding = 3) buffer FragmentIndex {
+       int fragindices[];
+};
+
 readonly layout (binding = 4, std430) buffer FragmentList {
        struct Fragment fragments[];
 };
@@ -174,7 +178,8 @@ void main (void)
 	vec4 pixel;
 	vec2 coord = invviewport * gl_FragCoord.xy;
 
-	int idx = texture (fragidx, coord).r;
+	int idx = fragindices[int (gl_FragCoord.y) * GBUFFER_WIDTH
+	                      + int (gl_FragCoord.x)];
 	uint num = 0;
 	uint indices[MAX_DEPTH_LAYERS];
 

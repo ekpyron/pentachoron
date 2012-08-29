@@ -14,12 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with pentachoron.  If not, see <http://www.gnu.org/licenses/>.
  */
-#version 430 core
+/* #version 430 core [specified externally] */
+/*
+ * external definitions:
+ * GBUFFER_WIDTH
+ * GBUFFER_HEIGHT
+ */
 
 uniform vec2 invviewport;
 
 layout(binding = 0) uniform sampler2D depthbuffer;
-layout(binding = 1) uniform isampler2D fragidx;
+
+readonly layout (std430, binding = 3) buffer FragmentIndex {
+       int fragindices[];
+};
 
 struct Fragment {
        uint color;
@@ -42,11 +50,14 @@ void main (void)
 {
 	vec2 coord;
 	float mind, maxd, depth;
+
 	coord = invviewport * (32 * ivec2 (gl_FragCoord.xy) + offset);
 	depth = texture (depthbuffer, coord).r;
 	mind = depth;
 	maxd = depth;
-	int idx = texture (fragidx, coord).r;
+	int idx = fragindices[(int (gl_FragCoord.y) + offset.y)
+	    	  	      * GBUFFER_WIDTH
+	    	              + int (gl_FragCoord.x) + offset.x];
 	while (idx != -1)
 	{
 		depth = fragments[idx].depth;

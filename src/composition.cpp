@@ -40,6 +40,10 @@ bool Composition::Init (void)
 		stream << "#define NUM_TILES_Y "
 					 << (r->gbuffer.GetHeight () >> 5)
 					 << std::endl;
+		stream << "#define GBUFFER_WIDTH "
+					 << r->gbuffer.GetWidth () << std::endl
+					 << "#define GBUFFER_HEIGHT "
+					 << r->gbuffer.GetHeight () << std::endl;
 		std::vector<std::string> sources;
 		const char *sourcefiles [] = {
 			"header.txt", "light.txt", "parameter.txt", "specular.txt",
@@ -56,7 +60,7 @@ bool Composition::Init (void)
 	}
 
 	{
-		std::stringstream stream;
+		std::ostringstream stream;
 		stream << "#version 430 core" << std::endl;
 		stream << "#define NUM_TILES_X "
 					 << (r->gbuffer.GetWidth () >> 5)
@@ -70,12 +74,19 @@ bool Composition::Init (void)
 												MakePath ("shaders", "lightculling.txt") }))
 			 return false;
 	}
-
-	if (!LoadProgram (minmaxdepthprog, MakePath ("shaders", "bin",
-																							 "minmaxdepth.bin"),
-										GL_FRAGMENT_SHADER, std::string (), {
-											MakePath ("shaders", "minmaxdepth.txt") }))
-		 return false;
+	{
+		std::ostringstream stream;
+		stream << "#version 430 core" << std::endl
+					 << "#define GBUFFER_WIDTH "
+					 << r->gbuffer.GetWidth () << std::endl
+					 << "#define GBUFFER_HEIGHT "
+					 << r->gbuffer.GetHeight () << std::endl;
+		if (!LoadProgram (minmaxdepthprog, MakePath ("shaders", "bin",
+																								 "minmaxdepth.bin"),
+											GL_FRAGMENT_SHADER, stream.str (), {
+												MakePath ("shaders", "minmaxdepth.txt") }))
+			 return false;
+	}
 
 	tile_based = gl::SmartUniform<bool>
 		 (fprogram["tile_based"], true);
@@ -499,6 +510,7 @@ void Composition::Frame (float timefactor)
 	eye.Set (r->camera.GetEye ());
 
 	r->GetLightBuffer ().BindBase (GL_SHADER_STORAGE_BUFFER, 0);
+	r->gbuffer.fragidx.BindBase (GL_SHADER_STORAGE_BUFFER, 3);
 	r->gbuffer.fraglist.BindBase (GL_SHADER_STORAGE_BUFFER, 4);
 
 	if (GetTileBased ())
@@ -514,9 +526,6 @@ void Composition::Frame (float timefactor)
 
 		sampler.Bind (0);
 		r->gbuffer.depthbuffer.Bind (GL_TEXTURE0, GL_TEXTURE_2D);
-
-		sampler.Bind (1);
-		r->gbuffer.fragidx.Bind (GL_TEXTURE1, GL_TEXTURE_2D);
 
 		gl::BlendFunc (GL_SRC_COLOR, GL_DST_COLOR);
 		gl::BlendEquationi (0, GL_MIN);
@@ -591,10 +600,7 @@ void Composition::Frame (float timefactor)
 	r->shadowmap.GetMap ().Bind (GL_TEXTURE4, GL_TEXTURE_2D);
 
 	sampler.Bind (5);
-	r->gbuffer.fragidx.Bind (GL_TEXTURE5, GL_TEXTURE_2D);
-
-	sampler.Bind (6);
-	lighttex.Bind (GL_TEXTURE6, GL_TEXTURE_2D);
+	lighttex.Bind (GL_TEXTURE5, GL_TEXTURE_2D);
 
 	r->GetParameterBuffer ().BindBase (GL_SHADER_STORAGE_BUFFER, 1);
 

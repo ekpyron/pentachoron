@@ -14,7 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
-#version 430 core
+/* #version 430 core [specified externally] */
+/*
+ * external definitions:
+ * GBUFFER_WIDTH
+ * GBUFFER_HEIGHT
+ */
 
 struct Fragment {
        uint color;
@@ -28,8 +33,9 @@ writeonly layout (std430, binding = 4) buffer FragmentList {
        struct Fragment fragments[];
 };
 
-// image definitions
-layout(binding = 0, size1x32) uniform uimage2D fragidx;
+layout (std430, binding = 3) buffer FragmentIndex {
+       int fragindices[];
+};
 
 // atomic counters
 layout (binding = 0) uniform atomic_uint counter[64];
@@ -45,7 +51,6 @@ uniform bool diffuse_enabled;
 uniform bool normalmap_enabled;
 uniform bool specularmap_enabled;
 uniform bool parametermap_enabled;
-uniform uvec2 viewport;
 
 // texture coordinates
 in vec2 uv;
@@ -115,12 +120,13 @@ void main (void)
 	idx += counterid;
 
 	// replace the starting index
-	uint next = imageAtomicExchange (fragidx, p, idx);
+	int next = atomicExchange (fragindices[p.y * GBUFFER_WIDTH
+	    	   		  	       + p.x], idx);
 
 	// store data to linear buffer
 	fragments[idx].color = packUnorm4x8 (color);
 	fragments[idx].specular = packUnorm4x8 (specular);
 	fragments[idx].normal = packUnorm4x8 (normal);
 	fragments[idx].depth = gl_FragCoord.z;
-	fragments[idx].next = int (next);
+	fragments[idx].next = next;
 }
