@@ -42,7 +42,6 @@ uniform uint num_lights;
 
 layout (binding = 0) uniform sampler2D mindepthtex;
 layout (binding = 1) uniform sampler2D maxdepthtex;
-layout (location = 0) out float dummy;
 
 layout (binding = 0) uniform atomic_uint counter[NUM_TILES_X * NUM_TILES_Y];
 

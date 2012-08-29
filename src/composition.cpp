@@ -178,16 +178,10 @@ bool Composition::Init (void)
 									* (r->gbuffer.GetHeight () >> 5),
 									NULL,	GL_DYNAMIC_DRAW);
 
-	dummy.Image2D (GL_TEXTURE_2D, 0, GL_R8, r->gbuffer.GetWidth (),
-								 r->gbuffer.GetHeight (), 0, GL_RED,
-								 GL_UNSIGNED_BYTE, NULL);
-#ifdef DEBUG
-	r->memory += r->gbuffer.GetWidth () * r->gbuffer.GetHeight ();
-#endif
-
-	lightcullfb.Texture2D (GL_COLOR_ATTACHMENT0,
-												 GL_TEXTURE_2D,
-												 dummy, 0);
+	lightcullfb.Parameter (GL_FRAMEBUFFER_DEFAULT_WIDTH,
+												 r->gbuffer.GetWidth ());
+	lightcullfb.Parameter (GL_FRAMEBUFFER_DEFAULT_HEIGHT,
+												 r->gbuffer.GetHeight ());
 	lightcullfb.DrawBuffers ({ });
 
 	mindepthtex.Image2D (GL_TEXTURE_2D, 0, GL_R32F,
