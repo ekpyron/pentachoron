@@ -31,6 +31,11 @@ public:
 	 /** Destructor.
 		*/
 	 ~Camera (void);
+   /** Initialization.
+		* Initialize the camera.
+		* \returns Whether the initialization was successful.
+		*/
+	 bool Init (void);
 	 /** Per-frame subroutine.
 		* All per-frame camera operations are done here.
 		* \param timefactor Fraction of seconds since the last frame.
@@ -120,7 +125,15 @@ public:
 		* \param distance Distance to move the camera.
 		*/
 	 void MoveUp (float distance);
+	 /** Get uniform buffer.
+		* Obtain an uniform buffer containing camera information.
+		*/
+	 const gl::Buffer &GetBuffer (void) const;
 private:
+	 /** Generate uniform buffer.
+		* Generates a uniform buffer containing camera information.
+		*/
+	 void GenerateBuffer (void);
 	 /** Viewport dimension.
 		* Stores the dimensions of the viewport.
 		*/
@@ -153,6 +166,10 @@ private:
 		* Stores the vertical camera rotation.
 		*/
 	 float up_angle;
+	 /** Buffer.
+		* Uniform buffer storing camera infomation.
+		*/
+	 gl::Buffer buffer;
 };
 
 #endif /* !defined CAMERA_H */

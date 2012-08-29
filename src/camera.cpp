@@ -17,6 +17,19 @@
 #include "camera.h"
 #include "renderer.h"
 
+typedef struct bufferdata {
+	 glm::mat4x4 projmat;
+	 glm::mat4x4 vmat;
+	 glm::mat4x4 vmatinv;
+	 glm::vec4 projinfo;
+	 glm::uvec2 viewport;
+	 glm::vec2 invviewport;
+	 glm::vec4 center;
+	 glm::vec4 eye;
+	 float farClipPlane;
+	 float nearClipPlane;
+} bufferdata_t;
+
 Camera::Camera (void)
 	: center (0, 0, 0), horizontal_angle (0), viewport (glm::ivec2 (0, 0)),
 		nearClipPlane (0.1f), farClipPlane (100.0f), up_angle (0)
@@ -26,6 +39,13 @@ Camera::Camera (void)
 
 Camera::~Camera (void)
 {
+}
+
+bool Camera::Init (void)
+{
+	buffer.Data (sizeof (bufferdata_t), NULL, GL_DYNAMIC_DRAW);
+	GenerateBuffer ();
+	return true;
 }
 
 void Camera::Frame (float timefactor)
@@ -43,7 +63,8 @@ void Camera::Resize (int w, int h)
 
 	projmat = glm::perspective (45.0f, float (viewport.x) / float (viewport.y),
 															nearClipPlane, farClipPlane);
-	r->gbuffer.SetProjMatrix (projmat);
+
+	GenerateBuffer ();
 }
 
 glm::vec3 Camera::GetEye (void) const
@@ -94,6 +115,7 @@ float Camera::GetFarClipPlane (void) const
 void Camera::RotateY (float angle)
 {
 	horizontal_angle += angle;
+	GenerateBuffer ();
 }
 
 glm::vec3 Camera::GetDirection (void) const
@@ -115,14 +137,48 @@ glm::vec4 Camera::GetProjInfo (void) const
 void Camera::MoveForward (float distance)
 {
 	center += GetDirection () * distance;
+	GenerateBuffer ();
 }
 
 void Camera::MoveUp (float distance)
 {
 	center += distance * glm::vec3 (0, 1, 0);
+	GenerateBuffer ();
 }
 
 void Camera::RotateUp (float angle)
 {
 	up_angle += angle;
+	GenerateBuffer ();
+}
+
+const gl::Buffer &Camera::GetBuffer (void) const
+{
+	return buffer;
+}
+
+void Camera::GenerateBuffer (void)
+{
+	bufferdata_t *data;
+
+	buffer.InvalidateData ();
+	data = reinterpret_cast<bufferdata_t*> (buffer.Map (GL_WRITE_ONLY));
+
+	data->viewport = viewport;
+	data->invviewport = glm::vec2 (1.0f / float (viewport.x),
+																1.0f / float (viewport.y));
+	data->farClipPlane = farClipPlane;
+	data->nearClipPlane = nearClipPlane;
+	data->projmat = projmat;
+	glm::quat rot;
+	rot = glm::rotate (rot, horizontal_angle, glm::vec3 (0, 1, 0));
+	rot = glm::rotate (rot, up_angle, glm::vec3 (1, 0, 0));
+	data->vmat = glm::lookAt (GetEye (), center,
+														rot * glm::vec3 (0, 1, 0));
+	data->vmatinv = glm::inverse (data->vmat);
+	data->projinfo = GetProjInfo ();
+	data->center = glm::vec4 (center, 0.0f);
+	data->eye = glm::vec4 (GetEye (), 0.0f);
+
+	buffer.Unmap ();
 }

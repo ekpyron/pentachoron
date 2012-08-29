@@ -56,9 +56,6 @@ bool Glow::Init (gl::Texture &screenmap, gl::Texture &gm,
 																	r->windowgrid.vprogram);
 	blendpipeline.UseProgramStages (GL_FRAGMENT_SHADER_BIT, blendprog);
 
-	blendprog["invviewport"] = glm::vec2 (1.0f / r->gbuffer.GetWidth (),
-																				1.0f / r->gbuffer.GetHeight ());
-
 	hblur.prog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
 	vblur.prog["invviewport"] = glm::vec2 (1.0f / width, 1.0f / height);
 

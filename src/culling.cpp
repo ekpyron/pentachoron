@@ -34,7 +34,6 @@ void Culling::Frame (void)
 void Culling::SetProjMatrix (const glm::mat4 &mat)
 {
 	projmat = mat;
-	r->geometry.SetProjMatrix (mat);
 }
 
 const glm::mat4 &Culling::GetProjMatrix (void)

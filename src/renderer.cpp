@@ -39,6 +39,10 @@ bool Renderer::Init (void)
 
 	gl::Hint (GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
 
+	(*logstream) << glfwGetTime ()  << " Initialize Camera..." << std::endl;
+	if (!camera.Init ())
+		 return false;
+
 	(*logstream) << glfwGetTime ()  << " Initialize Window Grid..." << std::endl;
 	if (!windowgrid.Init ())
 		 return false;
@@ -363,6 +367,8 @@ void Renderer::Frame (void)
 	}
 
 	camera.Frame (timefactor);
+	camera.GetBuffer ().BindBase (GL_UNIFORM_BUFFER, 0);
+
 	culling.Frame ();
 
 	gbuffer.Render (geometry);

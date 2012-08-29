@@ -10,7 +10,19 @@ out vec3 fTangent;
 out vec3 fBitangent;
 out vec3 fNormal;
 
-uniform mat4 projmat;
+layout (binding = 0, std140) uniform CameraBlock {
+       mat4x4 projmat;
+       mat4x4 vmat;
+       mat4x4 vmatinv;
+       vec4 projinfo;
+       uvec2 viewport;
+       vec2 invviewport;
+       vec4 center;
+       vec4 eye;
+       float farClipPlane;
+       float nearClipPlane;
+};
+
 uniform mat4 mvmat;
 
 const mat4 B = mat4 (-1,  3, -3, 1,

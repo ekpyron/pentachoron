@@ -258,7 +258,6 @@ private:
 	 gl::SmartUniform<GLfloat> luminance_threshold;
 	 gl::SmartUniform<GLfloat> screenlimit;
 	 gl::SmartUniform<glm::mat4> shadowmat;
-	 gl::SmartUniform<glm::vec3> eye;
 	 struct {
 			float turbidity;
 			float latitude;

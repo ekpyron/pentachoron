@@ -21,15 +21,25 @@ layout(binding = 1) uniform sampler2DMS msdepthmap;
 layout(binding = 2) uniform sampler2D depthmap;
 layout(binding = 3) uniform sampler2D luminancemap;
 
-uniform uvec2 viewport;
+layout (binding = 0, std140) uniform CameraBlock {
+       mat4x4 projmat;
+       mat4x4 vmat;
+       mat4x4 vmatinv;
+       vec4 projinfo;
+       uvec2 viewport;
+       vec2 invviewport;
+       vec4 center;
+       vec4 eye;
+       float farClipPlane;
+       float nearClipPlane;
+};
+
 uniform uvec2 gbufferdim;
 uniform uint antialiasing;
 uniform float antialiasing_threshold;
 uniform bool glow;
-uniform float farClipPlane;
-uniform float nearClipPlane;
 layout(row_major) uniform;
-layout(std140, binding=0) uniform Tonemapping
+layout(std140, binding=1) uniform Tonemapping
 {
 	struct
 	{

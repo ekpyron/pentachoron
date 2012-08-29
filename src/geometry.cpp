@@ -243,11 +243,6 @@ void Geometry::Node::Render (Geometry *geometry,
 
 }
 
-void Geometry::SetProjMatrix (const glm::mat4 &projmat)
-{
-			bboxprogram["projmat"] = projmat;
-}
-
 void Geometry::Render (GLuint p,
 											 const gl::Program &prog,
 											 const glm::mat4 &viewmat)

@@ -38,4 +38,15 @@ layout (binding = 0) uniform atomic_uint counter[NUM_TILES_X * NUM_TILES_Y];
 
 const float PI = 3.14159265358979323846f;
 
-uniform vec2 invviewport;
+layout (binding = 0, std140) uniform CameraBlock {
+       mat4x4 projmat;
+       mat4x4 vmat;
+       mat4x4 vmatinv;
+       vec4 projinfo;
+       uvec2 viewport;
+       vec2 invviewport;
+       vec4 center;
+       vec4 eye;
+       float farClipPlane;
+       float nearClipPlane;
+};

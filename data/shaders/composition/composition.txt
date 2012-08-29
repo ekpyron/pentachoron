@@ -47,8 +47,6 @@ uniform struct {
 uniform float screenlimit;
 uniform float shadow_alpha;
 
-uniform vec3 eye;
-
 vec4 compute_pixel (in struct PixelData data, out bool issky)
 {
 	uint num_lights;
@@ -74,7 +72,7 @@ vec4 compute_pixel (in struct PixelData data, out bool issky)
 	pos = getpos (vec3 (invviewport * gl_FragCoord.xy, data.depth));
 	normal = normalize (data.normal.xyz * 2 - 1);
 
-	viewdir = normalize (eye - pos);
+	viewdir = normalize (eye.xyz - pos);
 
 	{
 		diffuse = dot (compute_sky (normal, false), luminance_factor)

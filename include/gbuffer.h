@@ -45,7 +45,6 @@ public:
 	 void SetWireframe (bool w);
 
 	 void SetAntialiasing (GLuint samples);
-	 void SetProjMatrix (const glm::mat4 &projmat);
 	 gl::Buffer fraglist;
 	 gl::Buffer fragidx;
 

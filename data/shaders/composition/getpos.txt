@@ -15,9 +15,6 @@
  * along with DRE.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-uniform vec4 projinfo;
-uniform mat4 vmatinv;
-
 vec3 getpos (in vec3 pin)
 {
 	vec4 pos;

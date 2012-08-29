@@ -62,7 +62,6 @@ private:
 	 gl::SmartUniform<GLuint> antialiasing;
 	 gl::SmartUniform<GLfloat> antialiasing_threshold;
 	 gl::SmartUniform<GLint> glow;
-	 std::vector<gl::SmartUniform<glm::uvec2>> viewport_uniforms;
 	 struct
 	 {
 			GLfloat image_key;

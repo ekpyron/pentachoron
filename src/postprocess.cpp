@@ -183,10 +183,6 @@ bool PostProcess::Init (void)
 											{ MakePath ("shaders", "postprocess",
 																	fprogram_sources[i]) }))
 			 return false;
-
-		gl::SmartUniform<glm::uvec2> uniform (fprograms.back ()["viewport"],
-																					r->camera.GetViewport ());
-		viewport_uniforms.push_back (uniform);
 	}
 
 	luminance.Image2D (GL_TEXTURE_2D, 0, GL_R32F,
@@ -410,7 +406,6 @@ void PostProcess::Frame (void)
 		 = r->GetSampler (GL_LINEAR_MIPMAP_LINEAR,
 											GL_LINEAR, GL_CLAMP_TO_EDGE,
 											GL_CLAMP_TO_EDGE);
-	glm::uvec2 viewport;
 	GLuint program;
 	const char *tonemapNames[] = {
 		"tonemapDefault",
@@ -429,7 +424,7 @@ void PostProcess::Frame (void)
 	gl::Framebuffer::Unbind (GL_FRAMEBUFFER);
 	luminance.GenerateMipmap (GL_TEXTURE_2D);
 
-	viewport = r->camera.GetViewport ();
+	glm::uvec2 viewport = r->camera.GetViewport ();
 	gl::Viewport (0, 0, viewport.x, viewport.y);
 
 	switch (rendermode)
@@ -495,8 +490,7 @@ void PostProcess::Frame (void)
 		gl::UniformSubroutinesuiv (GL_FRAGMENT_SHADER, 1, &idx);
 	}
 
-	viewport_uniforms[program].Set (viewport);
-	tonemappingBuffer.BindBase (GL_UNIFORM_BUFFER, 0);
+	tonemappingBuffer.BindBase (GL_UNIFORM_BUFFER, 1);
 	glow.Set (r->composition.GetGlow ().GetSize () > 0);
 	antialiasing.Set (r->GetAntialiasing ());
 

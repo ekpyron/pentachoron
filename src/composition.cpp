@@ -98,8 +98,6 @@ bool Composition::Init (void)
 		 (fprogram["shadow_alpha"], 0.7);
 	shadowmat = gl::SmartUniform<glm::mat4>
 		 (fprogram["shadowmat"], glm::mat4 (1));
-	eye = gl::SmartUniform<glm::vec3>
-		 (fprogram["eye"], glm::vec3 (0));
 	sun.theta = gl::SmartUniform<GLfloat>
 		 (fprogram["sun.theta"], 0.0f);
 	sun.cos_theta = gl::SmartUniform<GLfloat>
@@ -120,16 +118,6 @@ bool Composition::Init (void)
 
 	SetupSunPosition ();
 	GeneratePerezCoefficients ();
-
-	fprogram["invviewport"]
-		 = glm::vec2 (1.0f / float (r->gbuffer.GetWidth ()),
-									1.0f / float (r->gbuffer.GetHeight ()));
-	minmaxdepthprog["invviewport"]
-		 = glm::vec2 (1.0f / float (r->gbuffer.GetWidth ()),
-									1.0f / float (r->gbuffer.GetHeight ()));
-	lightcullprog["invviewport"]
-		 = glm::vec2 (1.0f / float (r->gbuffer.GetWidth ()),
-									1.0f / float (r->gbuffer.GetHeight ()));
 
 	pipeline.UseProgramStages (GL_VERTEX_SHADER_BIT,
 														 r->windowgrid.vprogram);
@@ -507,7 +495,6 @@ void Composition::Frame (float timefactor)
 	info.glow.exponent = glow.GetExponent ();
 */
 	shadowmat.Set (r->shadowmap.GetMat ());
-	eye.Set (r->camera.GetEye ());
 
 	r->GetLightBuffer ().BindBase (GL_SHADER_STORAGE_BUFFER, 0);
 	r->gbuffer.fragidx.BindBase (GL_SHADER_STORAGE_BUFFER, 3);
@@ -560,8 +547,6 @@ void Composition::Frame (float timefactor)
 		numlights.Unmap ();
 		lightcullpipeline.Bind ();
 
-		lightcullprog["vmatinv"] = glm::inverse (r->camera.GetViewMatrix ());
-		lightcullprog["projinfo"] = r->camera.GetProjInfo ();
 		lightcullprog["num_lights"] = r->GetNumLights ();
 
 		numlights.BindBase (GL_ATOMIC_COUNTER_BUFFER, 0);
@@ -575,9 +560,6 @@ void Composition::Frame (float timefactor)
 
 	framebuffer.Bind (GL_FRAMEBUFFER);
 	pipeline.Bind ();
-
-	fprogram["vmatinv"] = glm::inverse (r->camera.GetViewMatrix ());
-	fprogram["projinfo"] = r->camera.GetProjInfo ();
 
 	fprogram["num_lights"] = r->GetNumLights ();
 

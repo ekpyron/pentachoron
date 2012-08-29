@@ -31,7 +31,6 @@ public:
 	 void Render (GLuint pass, const gl::Program &program,
 								const glm::mat4 &viewmat);
 	 const Material &GetMaterial (const std::string &name);
-	 void SetProjMatrix (const glm::mat4 &projmat);
 	 const glm::vec3 &GetBoxMin (void);
 	 const glm::vec3 &GetBoxMax (void);
 	 GLuint GetTessLevel (void) const;

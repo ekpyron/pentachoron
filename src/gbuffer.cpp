@@ -141,17 +141,6 @@ bool GBuffer::Init (void)
 	counter.Data (sizeof (GLuint) * 64, NULL, GL_DYNAMIC_DRAW);
 	counter.ClearData (GL_R32UI, GL_RED, GL_UNSIGNED_INT, NULL);
 
-	program["farClipPlane"] = r->camera.GetFarClipPlane ();
-	program["nearClipPlane"] = r->camera.GetNearClipPlane ();
-	quadtessprog["farClipPlane"] = r->camera.GetFarClipPlane ();
-	quadtessprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
-	triangletessprog["farClipPlane"] = r->camera.GetFarClipPlane ();
-	triangletessprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
-	transparencyprog["farClipPlane"] = r->camera.GetFarClipPlane ();
-	transparencyprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
-	sraaprog["farClipPlane"] = r->camera.GetFarClipPlane ();
-	sraaprog["nearClipPlane"] = r->camera.GetNearClipPlane ();
-
 	wireframe = false;
 
 	GL_CHECK_ERROR;
@@ -204,15 +193,6 @@ GLuint GBuffer::GetWidth (void)
 GLuint GBuffer::GetHeight (void)
 {
 	return height;
-}
-
-void GBuffer::SetProjMatrix (const glm::mat4 &projmat)
-{
-	program["projmat"] = projmat;
-	quadtessprog["projmat"] = projmat;	
-	triangletessprog["projmat"] = projmat;	
-	transparencyprog["projmat"] = projmat;
-	sraaprog["projmat"] = projmat;	
 }
 
 void GBuffer::Render (Geometry &geometry)

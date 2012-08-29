@@ -3,3 +3,5 @@
 * Rewrite the geometry rendering (without the ugly Geometry::Pass enum).
 
 * Have another look at/fix the specular lighting.
+
+* Fix different gbuffer size than viewport size by using gbufferdim and gbufferdiminv or something similar instead of viewport and invviewport in various shaders.
