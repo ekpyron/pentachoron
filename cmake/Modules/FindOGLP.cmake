@@ -4,11 +4,10 @@
 #
 # OGLP_FOUND
 # OGLP_INCLUDE_DIR
-# OGLP_LIBRARY
+# OGLP_LIBRARIES
 #
 
 find_path (OGLP_INCLUDE_DIR oglp/oglp.h)
-find_library (OGLP_LIBRARY NAMES oglp)
 
 if (OGLP_INCLUDE_DIR)
 set (OGLP_FOUND 1 CACHE STRING "Set to 1 if OGLP is found, 0 otherwise")

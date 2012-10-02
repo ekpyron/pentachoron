@@ -371,8 +371,8 @@ void Renderer::Frame (void)
 
 	culling.Frame ();
 
-	gbuffer.Render (geometry);
-	
+	gbuffer.Render (geometry);	
+
 	{
 		Shadow sunshadow;
 		sunshadow.direction = -glm::vec4 (composition.sun.direction.Get (),

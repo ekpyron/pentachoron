@@ -155,17 +155,13 @@ bool LoadTex (gl::Texture &texture, bool &result,
 
 	data.Bind (GL_PIXEL_UNPACK_BUFFER);
 	if (header.glType == 0)
-	{
-		texture.CompressedImage2D (GL_TEXTURE_2D, 0, header.glInternalFormat,
-															 header.pixelWidth, header.pixelHeight, 0,
-															 size, NULL);
-	}
+		 texture.CompressedImage2D (GL_TEXTURE_2D, 0, header.glInternalFormat,
+																header.pixelWidth, header.pixelHeight, 0,
+																size, NULL);
 	else
-	{
-		texture.Image2D (GL_TEXTURE_2D, 0, header.glInternalFormat,
-										 header.pixelWidth, header.pixelHeight, 0,
-										 header.glFormat, header.glType, NULL);
-	}
+		 texture.Image2D (GL_TEXTURE_2D, 0, header.glInternalFormat,
+											header.pixelWidth, header.pixelHeight, 0,
+											header.glFormat, header.glType, NULL);
 	texture.GenerateMipmap (GL_TEXTURE_2D);
 	gl::Buffer::Unbind (GL_PIXEL_UNPACK_BUFFER);
 

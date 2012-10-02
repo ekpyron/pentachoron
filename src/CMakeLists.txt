@@ -31,7 +31,7 @@ file (GLOB PENTACHORON_SOURCES *.cpp model/*.cpp font/*.cpp)
 
 add_executable (pentachoron ${PENTACHORON_SOURCES})
 target_link_libraries (pentachoron ${GLFW_LIBRARIES} ${FREETYPE_LIBRARIES}
-		       ${OGLP_LIBRARY} ${YAMLCPP_LIBRARY}
+		       ${OGLP_LIBRARIES} ${YAMLCPP_LIBRARY}
 		       ${OPENGL_LIBRARIES} ${ZLIB_LIBRARIES} pchm
 		       ${ANTTWEAKBAR_LIBRARY})
 

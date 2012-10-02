@@ -213,7 +213,7 @@ void Model::Render (GLuint pass, const gl::Program &program)
 			query = ret.first;
 		}
 
-		if (query->second.IsValid ())
+		if (query->second.IsQuery ())
 		{
 			do
 			{
@@ -237,7 +237,7 @@ void Model::Render (GLuint pass, const gl::Program &program)
 		query = queries.find (pass);
 		if (query != queries.end ())
 		{
-			if (query->second.IsValid ())
+			if (query->second.IsQuery ())
 			{
 				query->second.Get (GL_QUERY_RESULT_AVAILABLE, &result);
 				if (result == GL_TRUE)
